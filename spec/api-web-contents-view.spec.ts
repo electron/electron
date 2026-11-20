@@ -523,6 +523,73 @@ describe('WebContentsView', () => {
       }
     );
 
+    it(
+      'keeps the window as its owner when leaving HTML fullscreen adds the view to it again',
+      { tags: ['serial'] },
+      async () => {
+        const w = new BaseWindow();
+        const view = new WebContentsView();
+        w.contentView.addChildView(view);
+        await enterHtmlFullScreen(w, view);
+
+        const leaveHtmlFullScreen = once(view.webContents, 'leave-html-full-screen');
+        const leaveFullScreen = once(w, 'leave-full-screen');
+        view.webContents.once('leave-html-full-screen', () => {
+          w.contentView.addChildView(view);
+        });
+        w.contentView.removeChildView(view);
+        await leaveHtmlFullScreen;
+        await leaveFullScreen;
+        await waitUntil(() => view.webContents.executeJavaScript('document.fullscreenElement === null'));
+        expect(w.contentView.children[0]).toBe(view);
+        expect(BrowserWindow.fromWebContents(view.webContents)).toBe(w);
+      }
+    );
+
+    // Another page's HTML fullscreen is not the removed page's to leave.
+    it('does not leave HTML fullscreen when another view is removed', { tags: ['serial'] }, async () => {
+      const w = new BaseWindow();
+      const other = new WebContentsView();
+      w.contentView.addChildView(other);
+      await other.webContents.loadURL('about:blank');
+      const view = new WebContentsView();
+      w.contentView.addChildView(view);
+      await enterHtmlFullScreen(w, view);
+
+      let left = false;
+      view.webContents.once('leave-html-full-screen', () => {
+        left = true;
+      });
+      w.once('leave-full-screen', () => {
+        left = true;
+      });
+      w.contentView.removeChildView(other);
+      expect(BrowserWindow.fromWebContents(other.webContents)).toBe(null);
+      // Nothing is expected to happen; give it time to reach the page if it were.
+      await setTimeoutAsync(500);
+      expect(left).toBe(false);
+      expect(w.isFullScreen()).toBe(true);
+      expect(await view.webContents.executeJavaScript('document.fullscreenElement !== null')).toBe(true);
+      expect(BrowserWindow.fromWebContents(view.webContents)).toBe(w);
+    });
+
+    it('does not crash when the window closes while the page is in HTML fullscreen', { tags: ['serial'] }, async () => {
+      const w = new BaseWindow();
+      const view = new WebContentsView();
+      w.contentView.addChildView(view);
+      await enterHtmlFullScreen(w, view);
+
+      const closed = once(w, 'closed');
+      w.close();
+      await closed;
+      // The native window is destroyed in a task after 'closed'.
+      await setTimeoutAsync(100);
+
+      expect(view.webContents.isDestroyed()).toBe(false);
+      expect(BrowserWindow.fromWebContents(view.webContents)).toBe(null);
+      expect(await view.webContents.executeJavaScript('1 + 1')).toBe(2);
+    });
+
     for (const mode of ['bottom', 'detach'] as const) {
       it(`does not crash when the window closes with a <webview> guest and DevTools (mode: ${mode})`, async () => {
         const w = new BrowserWindow({ show: false });
