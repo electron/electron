@@ -39,3 +39,13 @@ export const webViewEvents: Record<string, readonly string[]> = {
   'did-change-theme-color': ['themeColor'],
   'update-target-url': ['url']
 } as const;
+
+// Properties forwarded from the event object rather than from positional arguments.
+export const webViewEventProperties: Record<string, readonly string[]> = {
+  'did-fail-load': ['frameToken'],
+  'did-frame-finish-load': ['frameToken'],
+  'did-start-navigation': ['frameToken'],
+  'did-redirect-navigation': ['frameToken'],
+  'did-frame-navigate': ['frameToken'],
+  'did-navigate-in-page': ['frameToken']
+} as const;
