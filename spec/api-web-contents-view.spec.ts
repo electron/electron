@@ -403,6 +403,27 @@ describe('WebContentsView', () => {
       expect(BrowserWindow.fromWebContents(guest)).toBe(wA);
     });
 
+    it('keeps the size of an offscreen page', async () => {
+      const w = new BaseWindow({ show: false, width: 100, height: 100 });
+      const view = new WebContentsView({ webPreferences: { offscreen: true, backgroundThrottling: false } });
+      w.contentView.addChildView(view);
+      const paint = once(view.webContents, 'paint') as Promise<[any, Electron.Rectangle, Electron.NativeImage]>;
+      await view.webContents.loadURL('data:text/html,<body style="background: red"></body>');
+      const [, , attachedImage] = await paint;
+      const attachedSize = attachedImage.getSize();
+      expect(attachedSize.width).toBeGreaterThan(0);
+      expect(attachedSize.height).toBeGreaterThan(0);
+      const getPageSize = () => view.webContents.executeJavaScript('[innerWidth, innerHeight]');
+      const attachedPageSize = await getPageSize();
+
+      w.contentView.removeChildView(view);
+      const repaint = once(view.webContents, 'paint') as Promise<[any, Electron.Rectangle, Electron.NativeImage]>;
+      view.webContents.invalidate();
+      const [, , detachedImage] = await repaint;
+      expect(detachedImage.getSize()).toEqual(attachedSize);
+      expect(await getPageSize()).toEqual(attachedPageSize);
+    });
+
     it('does not fullscreen the old window', { tags: ['serial'] }, async () => {
       const w = new BaseWindow();
       const view = new WebContentsView();

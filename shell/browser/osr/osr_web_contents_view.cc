@@ -79,7 +79,13 @@ void OffScreenWebContentsView::OnWindowClosed() {
 }
 
 gfx::Size OffScreenWebContentsView::GetSize() const {
-  return native_window_ ? native_window_->GetSize() : gfx::Size();
+  if (native_window_)
+    return native_window_->GetSize();
+  // Without a window, such as after a WebContentsView is removed from its
+  // window, keep the page's current size rather than resizing it to nothing.
+  if (auto* view = GetView())
+    return view->size();
+  return {};
 }
 
 #if !BUILDFLAG(IS_MAC)
