@@ -33,9 +33,11 @@
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/chrome_version.h"
+#include "chrome/common/pref_names.h"
 #include "components/embedder_support/user_agent_utils.h"
 #include "components/net_log/chrome_net_log.h"
 #include "components/network_hints/common/network_hints.mojom.h"
+#include "components/prefs/pref_service.h"
 #include "content/browser/keyboard_lock/keyboard_lock_service_impl.h"  // nogncheck
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
@@ -145,6 +147,7 @@
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/mojom/badging/badging.mojom.h"
 #include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
+#include "third_party/blink/public/mojom/persistent_renderer_prefs.mojom.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/native_theme/native_theme.h"
 #include "url/url_constants.h"
@@ -290,6 +293,55 @@ void BindNetworkHintsHandler(
     content::RenderFrameHost* frame_host,
     mojo::PendingReceiver<network_hints::mojom::NetworkHintsHandler> receiver) {
   NetworkHintsHandlerImpl::Create(frame_host, std::move(receiver));
+}
+
+class ElectronPersistentRendererPrefsService final
+    : public blink::mojom::PersistentRendererPrefsService {
+ public:
+  explicit ElectronPersistentRendererPrefsService(
+      base::WeakPtr<ElectronBrowserContext> browser_context)
+      : browser_context_(std::move(browser_context)) {}
+
+  ElectronPersistentRendererPrefsService(
+      const ElectronPersistentRendererPrefsService&) = delete;
+  ElectronPersistentRendererPrefsService& operator=(
+      const ElectronPersistentRendererPrefsService&) = delete;
+
+  void SetViewSourceLineWrapping(bool value) override {
+    if (!browser_context_)
+      return;
+
+    browser_context_->prefs()->SetBoolean(prefs::kViewSourceLineWrappingEnabled,
+                                          value);
+
+    for (const auto& web_contents :
+         content::WebContentsImpl::GetAllWebContents()) {
+      if (web_contents->GetBrowserContext() != browser_context_.get())
+        continue;
+
+      auto* renderer_prefs = web_contents->GetMutableRendererPrefs();
+      if (renderer_prefs->view_source_line_wrap_enabled == value)
+        continue;
+
+      renderer_prefs->view_source_line_wrap_enabled = value;
+      web_contents->SyncRendererPrefs();
+    }
+  }
+
+ private:
+  base::WeakPtr<ElectronBrowserContext> browser_context_;
+};
+
+void BindPersistentRendererPrefsService(
+    content::RenderFrameHost* frame_host,
+    mojo::PendingReceiver<blink::mojom::PersistentRendererPrefsService>
+        receiver) {
+  auto* browser_context = static_cast<ElectronBrowserContext*>(
+      frame_host->GetProcess()->GetBrowserContext());
+  mojo::MakeSelfOwnedReceiver(
+      std::make_unique<ElectronPersistentRendererPrefsService>(
+          browser_context->GetWeakPtr()),
+      std::move(receiver));
 }
 
 // On-device speech recognition is not supported; bind a stub that says so, as
@@ -515,6 +567,11 @@ void ElectronBrowserClient::OverrideWebPreferences(
   blink::RendererPreferences* renderer_prefs =
       web_contents->GetMutableRendererPrefs();
   renderer_prefs->can_accept_load_drops = false;
+  auto* browser_context =
+      static_cast<ElectronBrowserContext*>(web_contents->GetBrowserContext());
+  renderer_prefs->view_source_line_wrap_enabled =
+      browser_context->prefs()->GetBoolean(
+          ::prefs::kViewSourceLineWrappingEnabled);
 
   ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
   prefs->in_forced_colors = native_theme->forced_colors() !=
@@ -2208,6 +2265,8 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
       base::BindRepeating(&badging::BadgeManager::BindFrameReceiver));
   map->Add<blink::mojom::KeyboardLockService>(base::BindRepeating(
       &content::KeyboardLockServiceImpl::CreateMojoService));
+  map->Add<blink::mojom::PersistentRendererPrefsService>(
+      base::BindRepeating(&BindPersistentRendererPrefsService));
   map->Add<media::mojom::OnDeviceSpeechRecognition>(
       &OnDeviceSpeechRecognitionStub::Bind);
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
