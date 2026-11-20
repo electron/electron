@@ -243,6 +243,8 @@ filenames = {
     "shell/browser/ui/drag_util_views.cc",
     "shell/browser/ui/views/autofill_popup_view.cc",
     "shell/browser/ui/views/autofill_popup_view.h",
+    "shell/browser/ui/views/content_view_targeter_delegate.cc",
+    "shell/browser/ui/views/content_view_targeter_delegate.h",
     "shell/browser/ui/views/electron_views_delegate.cc",
     "shell/browser/ui/views/electron_views_delegate.h",
     "shell/browser/ui/views/frameless_view.cc",
