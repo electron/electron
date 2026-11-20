@@ -1628,6 +1628,35 @@ describe('cpp heap', { retry: 0 }, () => {
   });
 
   describe('webContents module', () => {
+    it('releases a destroyed opener while its independent popup is alive', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await remotely(async (snapshotHelper: string) => {
+        const { BrowserWindow } = require('electron');
+        const { once } = require('node:events');
+        const { collectGarbage } = require(snapshotHelper);
+        const { popup, openerRef } = await (async () => {
+          const opener = new BrowserWindow({ show: false });
+          await opener.loadURL('about:blank');
+          opener.webContents.setWindowOpenHandler(() => ({
+            action: 'allow',
+            outlivesOpener: true,
+            overrideBrowserWindowOptions: { show: false }
+          }));
+          const created = once(opener.webContents, 'did-create-window');
+          await opener.webContents.executeJavaScript("void window.open('about:blank')");
+          const [popup] = await created;
+          const openerRef = new WeakRef(opener.webContents);
+          opener.destroy();
+          return { popup, openerRef };
+        })();
+        const released = await collectGarbage(() => !openerRef.deref());
+        const alive = await popup.webContents.executeJavaScript('true');
+        popup.destroy();
+        return { released, alive };
+      }, snapshotHelperPath);
+      expect(result).toEqual({ released: true, alive: true });
+    });
+
     it('rejects pending debugger commands after its wrapper is collected', async () => {
       const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
       const result = await remotely(async (snapshotHelper: string) => {
