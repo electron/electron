@@ -6,10 +6,10 @@ Subject: build: allow electron to use exec_script
 This is similar to the //build usecase so we're OK adding ourselves here.
 
 diff --git a/.gn b/.gn
-index d8e367dbdfd63d4bc4d4e02a8f1ecdbfafa6fcd4..3920ee63f48344474dbffe78dfc20812b0c1c622 100644
+index e429ce77700c704b3ee9a521f1502a9660f33499..91e3b804708994ccebe266d943afb1b6a35ec2f0 100644
 --- a/.gn
 +++ b/.gn
-@@ -487,6 +487,31 @@ exec_script_allowlist =
+@@ -488,6 +488,31 @@ exec_script_allowlist =
        # script. exec_script only happens when the checkout_mesa gclient arg is
        # set. If/when a 'proper' GN build for Mesa exists, this can be removed.
        "//third_party/dawn/third_party/meson/meson_target.gni",

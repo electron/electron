@@ -4,15 +4,19 @@ From: "electron-claude[bot]"
 Date: Fri, 6 Nov 2026 13:32:42 +0000
 Subject: src: stop using deprecated ArrayBufferView::Buffer()
 
-V8 deprecated `v8::ArrayBufferView::Buffer()` in favour of
-`GetBuffer()`, which returns the new `v8::ArrayBufferBase` type that
-covers both ArrayBuffer and SharedArrayBuffer. Switch the headers that
-embedders compile with `-Werror` to `GetBuffer()`.
+V8 deprecated `v8::ArrayBufferView::Buffer()` and
+`v8::WasmMemoryObject::Buffer()` in favour of `GetBuffer()`, which
+returns the new `v8::ArrayBufferBase` type that covers both ArrayBuffer
+and SharedArrayBuffer, and has since removed them. Switch every caller
+to `GetBuffer()`, casting back to `v8::ArrayBuffer` only where a plain
+ArrayBuffer is required: detaching it (SharedArrayBuffers are never
+detachable) or handing it to code that constructs views over it.
 
 Refs: https://chromium-review.googlesource.com/c/v8/v8/+/8714721
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/8794471
 
 diff --git a/src/aliased_buffer-inl.h b/src/aliased_buffer-inl.h
-index 5cb36e707ce2db9f0de25d39c82d6327753b51ff..38ca828ea259f28db14d84b5eba2cc2834f0803f 100644
+index 5cb36e707ce2db9f0de25d39c82d6327753b51ff..79f5c3144711b4b39e3ded46c8b7f8e0460c1a67 100644
 --- a/src/aliased_buffer-inl.h
 +++ b/src/aliased_buffer-inl.h
 @@ -97,7 +97,7 @@ inline void AliasedBufferBase<NativeT, V8T>::Deserialize(
@@ -24,6 +28,655 @@ index 5cb36e707ce2db9f0de25d39c82d6327753b51ff..38ca828ea259f28db14d84b5eba2cc28
    buffer_ = reinterpret_cast<NativeT*>(raw + byte_offset_);
    js_array_.Reset(isolate_, arr);
    index_ = nullptr;
+@@ -146,7 +146,7 @@ template <typename NativeT, typename V8T>
+   requires std::is_scalar_v<NativeT>
+ v8::Local<v8::ArrayBuffer> AliasedBufferBase<NativeT, V8T>::GetArrayBuffer()
+     const {
+-  return GetJSArray()->Buffer();
++  return v8::Local<v8::ArrayBuffer>::Cast(GetJSArray()->GetBuffer());
+ }
+ 
+ template <typename NativeT, typename V8T>
+diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
+index a99b4f10af24be53f6a101e00259cae825ea19fb..1b817a7d1381e83a58f966bedd757b5701cc9490 100644
+--- a/src/crypto/crypto_util.cc
++++ b/src/crypto/crypto_util.cc
+@@ -1142,7 +1142,7 @@ MaybeLocal<Value> ToWebCryptoJobResult(Environment* env, Local<Value> value) {
+   }
+ 
+   if (Buffer::HasInstance(value)) {
+-    return value.As<ArrayBufferView>()->Buffer();
++    return value.As<ArrayBufferView>()->GetBuffer();
+   }
+ 
+   CHECK(value->IsBoolean() || (value->IsObject() && !value->IsArray() &&
+diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
+index 00ac9f6703aa4334f50b26c5027f56c229ceb6c1..fb50d1b6407af670dc6b75361170210791215300 100644
+--- a/src/crypto/crypto_util.h
++++ b/src/crypto/crypto_util.h
+@@ -706,7 +706,7 @@ class ArrayBufferOrViewContents final {
+       auto view = buf.As<v8::ArrayBufferView>();
+       offset_ = view->ByteOffset();
+       length_ = view->ByteLength();
+-      data_ = view->Buffer()->Data();
++      data_ = view->GetBuffer()->Data();
+     } else if (buf->IsArrayBuffer()) {
+       auto ab = buf.As<v8::ArrayBuffer>();
+       offset_ = 0;
+diff --git a/src/dataqueue/queue.cc b/src/dataqueue/queue.cc
+index 96a7956b8749f4e8565af6254d922fe45c3c8c9d..62797ce9e0e780898b9649eadb97b600b9de14d7 100644
+--- a/src/dataqueue/queue.cc
++++ b/src/dataqueue/queue.cc
+@@ -20,6 +20,8 @@
+ 
+ namespace node {
+ 
++using v8::ArrayBuffer;
++using v8::ArrayBufferBase;
+ using v8::ArrayBufferView;
+ using v8::BackingStore;
+ using v8::Local;
+@@ -1163,13 +1165,15 @@ std::unique_ptr<DataQueue::Entry> DataQueue::CreateInMemoryEntryFromView(
+   // the underlying buffer, something else could modify the buffer while we're
+   // holding the reference, which means we cannot guarantee that reads will be
+   // idempotent.
+-  if (!view->Buffer()->IsDetachable()) {
++  Local<ArrayBufferBase> buffer = view->GetBuffer();
++  if (!buffer->IsDetachable()) {
+     return nullptr;
+   }
+-  auto store = view->Buffer()->GetBackingStore();
++  auto store = buffer->GetBackingStore();
+   auto offset = view->ByteOffset();
+   auto length = view->ByteLength();
+-  USE(view->Buffer()->Detach(Local<Value>()));
++  // SharedArrayBuffers are never detachable, so this is a plain ArrayBuffer.
++  USE(buffer.As<ArrayBuffer>()->Detach(Local<Value>()));
+   return CreateInMemoryEntryFromBackingStore(std::move(store), offset, length);
+ }
+ 
+diff --git a/src/encoding_binding.cc b/src/encoding_binding.cc
+index 8a445088b54aa85ae67e474796de8b999ef9139f..2b8bf2b1005ae91356485f440d82823c9d9bfb28 100644
+--- a/src/encoding_binding.cc
++++ b/src/encoding_binding.cc
+@@ -15,6 +15,7 @@ namespace node {
+ namespace encoding_binding {
+ 
+ using v8::ArrayBuffer;
++using v8::ArrayBufferBase;
+ using v8::BackingStore;
+ using v8::BackingStoreInitializationMode;
+ using v8::BackingStoreOnFailureMode;
+@@ -206,7 +207,7 @@ void BindingData::EncodeInto(const FunctionCallbackInfo<Value>& args) {
+   Local<String> source = args[0].As<String>();
+ 
+   Local<Uint8Array> dest = args[1].As<Uint8Array>();
+-  Local<ArrayBuffer> buf = dest->Buffer();
++  Local<ArrayBufferBase> buf = dest->GetBuffer();
+ 
+   // Handle detached buffers - return {read: 0, written: 0}
+   if (buf->Data() == nullptr) {
+@@ -434,7 +435,7 @@ void BindingData::DecodeUTF8(const FunctionCallbackInfo<Value>& args) {
+ 
+   if (args[0]->IsArrayBufferView()) {
+     Local<v8::ArrayBufferView> view = args[0].As<v8::ArrayBufferView>();
+-    isShared = view->Buffer()->IsSharedArrayBuffer();
++    isShared = view->GetBuffer()->IsSharedArrayBuffer();
+   }
+ 
+   ArrayBufferViewContents<char> buffer(args[0]);
+diff --git a/src/ffi/data.cc b/src/ffi/data.cc
+index ca3315d43a355d64a574ff6d60b89fab45475e93..cf729414b748091140c0bfa58eb181c9dd133130 100644
+--- a/src/ffi/data.cc
++++ b/src/ffi/data.cc
+@@ -793,7 +793,7 @@ void GetRawPointer(const FunctionCallbackInfo<Value>& args) {
+     store = args[0].As<SharedArrayBuffer>()->GetBackingStore();
+   } else if (args[0]->IsArrayBufferView()) {
+     Local<ArrayBufferView> view = args[0].As<ArrayBufferView>();
+-    if (view->Buffer()->WasDetached()) {
++    if (view->GetBuffer()->WasDetached()) {
+       THROW_ERR_INVALID_ARG_VALUE(
+           env, "ArrayBufferView is backed by a detached ArrayBuffer");
+       return;
+@@ -801,7 +801,7 @@ void GetRawPointer(const FunctionCallbackInfo<Value>& args) {
+     // Access the store here to ensure that it exists. Small typed arrays
+     // may not have a store until this point and can instead be stored
+     // entirely in-heap.
+-    store = view->Buffer()->GetBackingStore();
++    store = view->GetBuffer()->GetBackingStore();
+     offset = view->ByteOffset();
+   } else {
+     THROW_ERR_INVALID_ARG_TYPE(
+diff --git a/src/ffi/fast.cc b/src/ffi/fast.cc
+index 4f6606d502512aa8c9fc7e771b3d184ba09fbcc2..bd5d55cc804c6bcae6957648d9a197d2a175e0c5 100644
+--- a/src/ffi/fast.cc
++++ b/src/ffi/fast.cc
+@@ -125,7 +125,7 @@ uintptr_t PointerFromValue(v8::Local<v8::Value> value) {
+   // ArrayBuffer and SharedArrayBuffer point at the start of their store.
+   if (value->IsArrayBufferView()) {
+     v8::Local<v8::ArrayBufferView> view = value.As<v8::ArrayBufferView>();
+-    void* data = view->Buffer()->Data();
++    void* data = view->GetBuffer()->Data();
+     return reinterpret_cast<uintptr_t>(static_cast<char*>(data) +
+                                        view->ByteOffset());
+   }
+@@ -253,7 +253,7 @@ extern "C" uintptr_t node_ffi_fast_buffer_data(v8::Local<v8::Value> value,
+   // lifetimes match the generic path.
+   if (value->IsArrayBufferView()) {
+     v8::Local<v8::ArrayBufferView> view = value.As<v8::ArrayBufferView>();
+-    if (view->Buffer()->WasDetached()) {
++    if (view->GetBuffer()->WasDetached()) {
+       if (isolate != nullptr) {
+         // No HandleScope is active during a Fast API call, so open one before
+         // creating the error object.
+diff --git a/src/ffi/types.cc b/src/ffi/types.cc
+index 5a910e63a3e3fdaea5a7e6176f4d5ba288ef671e..46451f619d59575dad6f74473857d8ac28fc4185 100644
+--- a/src/ffi/types.cc
++++ b/src/ffi/types.cc
+@@ -714,7 +714,7 @@ Maybe<FFIArgumentCategory> ToFFIArgument(Environment* env,
+       // invalidating that backing store during the active FFI call is
+       // unsupported and dangerous.
+       Local<ArrayBufferView> view = arg.As<ArrayBufferView>();
+-      if (view->Buffer()->WasDetached()) {
++      if (view->GetBuffer()->WasDetached()) {
+         THROW_ERR_INVALID_ARG_VALUE(
+             env,
+             "Argument %u is an ArrayBufferView backed by a detached "
+@@ -722,7 +722,8 @@ Maybe<FFIArgumentCategory> ToFFIArgument(Environment* env,
+             index);
+         return {};
+       }
+-      std::shared_ptr<BackingStore> store = view->Buffer()->GetBackingStore();
++      std::shared_ptr<BackingStore> store =
++          view->GetBuffer()->GetBackingStore();
+ 
+       if (!store) {
+         THROW_ERR_INVALID_ARG_VALUE(
+diff --git a/src/heap_utils.cc b/src/heap_utils.cc
+index bb7519e4b984ef9915f72bdfb08414f0763490c6..d7a7e264ccc06d879f39806221243acaa18c0b70 100644
+--- a/src/heap_utils.cc
++++ b/src/heap_utils.cc
+@@ -431,7 +431,7 @@ HeapProfiler::HeapSnapshotOptions GetHeapSnapshotOptions(
+   CHECK(options_value->IsUint8Array());
+   Local<Uint8Array> arr = options_value.As<Uint8Array>();
+   uint8_t* options =
+-      static_cast<uint8_t*>(arr->Buffer()->Data()) + arr->ByteOffset();
++      static_cast<uint8_t*>(arr->GetBuffer()->Data()) + arr->ByteOffset();
+   HeapProfiler::HeapSnapshotOptions result;
+   result.snapshot_mode = options[0]
+                              ? HeapProfiler::HeapSnapshotMode::kExposeInternals
+diff --git a/src/histogram.cc b/src/histogram.cc
+index 6efe2d6985cc97a47eef9e603bb5445013cbf302..4104ac2a16ddb0bb51b857f5fca4afc027e494d5 100644
+--- a/src/histogram.cc
++++ b/src/histogram.cc
+@@ -3122,7 +3122,7 @@ void HistogramImpl::GetQrde(const FunctionCallbackInfo<Value>& args) {
+   Local<Float64Array> input = args[0].As<Float64Array>();
+   CHECK_GE(input->Length(), 2);
+   CHECK_LE(input->Length(), 1001);
+-  auto backing = input->Buffer()->GetBackingStore();
++  auto backing = input->GetBuffer()->GetBackingStore();
+   const double* data = reinterpret_cast<const double*>(
+       static_cast<const char*>(backing->Data()) + input->ByteOffset());
+   std::vector<double> probabilities(data, data + input->Length());
+@@ -3206,7 +3206,7 @@ void HistogramImpl::DoImport(const FunctionCallbackInfo<Value>& args) {
+     return;
+   }
+   Local<Uint8Array> input = args[0].As<Uint8Array>();
+-  auto backing = input->Buffer()->GetBackingStore();
++  auto backing = input->GetBuffer()->GetBackingStore();
+   const uint8_t* data =
+       static_cast<const uint8_t*>(backing->Data()) + input->ByteOffset();
+   size_t len = input->ByteLength();
+@@ -3279,7 +3279,7 @@ void HistogramImpl::GetPercentilesAt(const FunctionCallbackInfo<Value>& args) {
+   CHECK(args[1]->IsFloat64Array());
+   Local<Float64Array> input = args[1].As<Float64Array>();
+   size_t length = input->Length();
+-  auto backing = input->Buffer()->GetBackingStore();
++  auto backing = input->GetBuffer()->GetBackingStore();
+   double* percentiles = reinterpret_cast<double*>(
+       static_cast<char*>(backing->Data()) + input->ByteOffset());
+ 
+diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
+index 59f80e66d69edc393d7b447342453d6f602c76ae..4c7ca3d3b402b5356d867bdbc833ec9ac4a1b7a0 100644
+--- a/src/js_native_api_v8.cc
++++ b/src/js_native_api_v8.cc
+@@ -3392,11 +3392,11 @@ napi_status NAPI_CDECL napi_get_typedarray_info(napi_env env,
+     *length = array->Length();
+   }
+ 
+-  v8::Local<v8::ArrayBuffer> buffer;
++  v8::Local<v8::ArrayBufferBase> buffer;
+   if (data != nullptr || arraybuffer != nullptr) {
+-    // Calling Buffer() may have the side effect of allocating the buffer,
++    // Calling GetBuffer() may have the side effect of allocating the buffer,
+     // so only do this when it’s needed.
+-    buffer = array->Buffer();
++    buffer = array->GetBuffer();
+   }
+ 
+   if (data != nullptr) {
+@@ -3481,11 +3481,11 @@ napi_status NAPI_CDECL napi_get_dataview_info(napi_env env,
+     *byte_length = array->ByteLength();
+   }
+ 
+-  v8::Local<v8::ArrayBuffer> buffer;
++  v8::Local<v8::ArrayBufferBase> buffer;
+   if (data != nullptr || arraybuffer != nullptr) {
+-    // Calling Buffer() may have the side effect of allocating the buffer,
++    // Calling GetBuffer() may have the side effect of allocating the buffer,
+     // so only do this when it’s needed.
+-    buffer = array->Buffer();
++    buffer = array->GetBuffer();
+   }
+ 
+   if (data != nullptr) {
+diff --git a/src/module_wrap.cc b/src/module_wrap.cc
+index efaf53ad2876d5a2176303b50517d9d961eef923..7045f5d832882850d5543997cd214fea179482a8 100644
+--- a/src/module_wrap.cc
++++ b/src/module_wrap.cc
+@@ -358,7 +358,7 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
+         CHECK(!can_use_builtin_cache);  // We don't use this option internally.
+         Local<ArrayBufferView> cached_data_buf = args[5].As<ArrayBufferView>();
+         uint8_t* data =
+-            static_cast<uint8_t*>(cached_data_buf->Buffer()->Data());
++            static_cast<uint8_t*>(cached_data_buf->GetBuffer()->Data());
+         user_cached_data =
+             new ScriptCompiler::CachedData(data + cached_data_buf->ByteOffset(),
+                                            cached_data_buf->ByteLength());
+diff --git a/src/node_blob.cc b/src/node_blob.cc
+index a04bc2be0ef5ab65ac39062de0549bb3e4b168c1..3183e7f0ef21d1be79466242ae52e836ccb66740 100644
+--- a/src/node_blob.cc
++++ b/src/node_blob.cc
+@@ -19,6 +19,7 @@ namespace node {
+ 
+ using v8::Array;
+ using v8::ArrayBuffer;
++using v8::ArrayBufferBase;
+ using v8::ArrayBufferView;
+ using v8::BackingStore;
+ using v8::BackingStoreInitializationMode;
+@@ -76,7 +77,7 @@ void Concat(const FunctionCallbackInfo<Value>& args) {
+     } else {
+       CHECK(val->IsArrayBufferView());
+       auto view = val.As<ArrayBufferView>();
+-      views.push_back(View{view->Buffer()->GetBackingStore(),
++      views.push_back(View{view->GetBuffer()->GetBackingStore(),
+                            view->ByteLength(),
+                            view->ByteOffset()});
+       total += view->ByteLength();
+@@ -205,13 +206,15 @@ void Blob::New(const FunctionCallbackInfo<Value>& args) {
+     Local<Value> entry = sources[i].Get(isolate);
+ 
+     auto entryFromArrayBuffer =
+-        [isolate](Local<ArrayBuffer> buf,
++        [isolate](Local<ArrayBufferBase> buf,
+                   size_t byte_length,
+                   size_t byte_offset =
+                       0) mutable -> std::unique_ptr<DataQueue::Entry> {
++      // SharedArrayBuffers are never detachable, so a detachable buffer is
++      // always a plain ArrayBuffer.
+       if (buf->IsDetachable()) {
+         std::shared_ptr<BackingStore> store = buf->GetBackingStore();
+-        if (buf->Detach(Local<Value>()).IsNothing()) {
++        if (buf.As<ArrayBuffer>()->Detach(Local<Value>()).IsNothing()) {
+           return nullptr;
+         }
+         return DataQueue::CreateInMemoryEntryFromBackingStore(
+@@ -244,7 +247,7 @@ void Blob::New(const FunctionCallbackInfo<Value>& args) {
+     } else if (entry->IsArrayBufferView()) {
+       Local<ArrayBufferView> view = entry.As<ArrayBufferView>();
+       auto ret = entryFromArrayBuffer(
+-          view->Buffer(), view->ByteLength(), view->ByteOffset());
++          view->GetBuffer(), view->ByteLength(), view->ByteOffset());
+       if (!ret) return;
+       entries[i] = std::move(ret);
+     } else if (Blob::HasInstance(env, entry)) {
+diff --git a/src/node_buffer.cc b/src/node_buffer.cc
+index 1d16813b38095f47cb79c97b6fb29846c9722fcc..68decf6c43fb0762a459929b916e96b76748ec50 100644
+--- a/src/node_buffer.cc
++++ b/src/node_buffer.cc
+@@ -56,6 +56,7 @@ namespace node {
+ namespace Buffer {
+ 
+ using v8::ArrayBuffer;
++using v8::ArrayBufferBase;
+ using v8::ArrayBufferView;
+ using v8::BackingStore;
+ using v8::BackingStoreInitializationMode;
+@@ -257,7 +258,7 @@ bool HasInstance(Local<Object> obj) {
+ char* Data(Local<Value> val) {
+   CHECK(val->IsArrayBufferView());
+   Local<ArrayBufferView> ui = val.As<ArrayBufferView>();
+-  return static_cast<char*>(ui->Buffer()->Data()) + ui->ByteOffset();
++  return static_cast<char*>(ui->GetBuffer()->Data()) + ui->ByteOffset();
+ }
+ 
+ 
+@@ -584,7 +585,7 @@ void StringSlice(const FunctionCallbackInfo<Value>& args) {
+   size_t length = end - start;
+ 
+   std::unique_ptr<char[]> data_copy;
+-  if (view->Buffer()->IsSharedArrayBuffer()) {
++  if (view->GetBuffer()->IsSharedArrayBuffer()) {
+     data_copy = std::make_unique_for_overwrite<char[]>(length);
+     memcpy(data_copy.get(), data_ptr + start, length);
+     data_ptr = data_copy.get();
+@@ -609,8 +610,8 @@ size_t CopyImpl(Local<Value> source_obj,
+   Local<ArrayBufferView> source = source_obj.As<ArrayBufferView>();
+   Local<ArrayBufferView> target = target_obj.As<ArrayBufferView>();
+ 
+-  Local<ArrayBuffer> source_ab = source->Buffer();
+-  Local<ArrayBuffer> target_ab = target->Buffer();
++  Local<ArrayBufferBase> source_ab = source->GetBuffer();
++  Local<ArrayBufferBase> target_ab = target->GetBuffer();
+ 
+   const size_t source_offset = source->ByteOffset() + source_start;
+   const size_t target_offset = target->ByteOffset() + target_start;
+@@ -618,12 +619,10 @@ size_t CopyImpl(Local<Value> source_obj,
+   // Defer byte-range clamping and detached/immutable handling to V8. When both
+   // sides are backed by a SharedArrayBuffer the relaxed atomic overload is
+   // used, which honors the SharedArrayBuffer memory model. Any other
+-  // combination (both regular, or one of each) goes through the ArrayBuffer
+-  // overload: it operates on the underlying backing store regardless of
+-  // shared-ness, so a plain memmove is performed (matching the historical
+-  // behavior for SharedArrayBuffer-backed buffers). The V8 API has no overload
+-  // that mixes ArrayBuffer and SharedArrayBuffer, so the two must never be
+-  // cross-cast.
++  // combination (both regular, or one of each) goes through the
++  // ArrayBufferBase overload: it operates on the underlying backing store
++  // regardless of shared-ness, so a plain memmove is performed (matching the
++  // historical behavior for SharedArrayBuffer-backed buffers).
+   if (source_ab->IsSharedArrayBuffer() && target_ab->IsSharedArrayBuffer()) {
+     return source_ab.As<SharedArrayBuffer>()->CopyArrayBufferBytes(
+         source_offset,
+@@ -1501,7 +1500,7 @@ static bool MaskArgs(Local<Value> source_obj,
+                      uint32_t mask) {
+   CHECK(destination_obj->IsArrayBufferView());
+   Local<ArrayBufferView> destination = destination_obj.As<ArrayBufferView>();
+-  Local<ArrayBuffer> destination_ab = destination->Buffer();
++  Local<ArrayBufferBase> destination_ab = destination->GetBuffer();
+   if (destination_ab->IsImmutable()) return false;
+   if (length == 0) return true;
+   const size_t destination_length = destination->ByteLength();
+diff --git a/src/node_contextify.cc b/src/node_contextify.cc
+index 661c6ffc4338b9ed594e315752e88a3624228874..6dcb4203f1f4cec7e5e3aff670d86ecdb390f5cb 100644
+--- a/src/node_contextify.cc
++++ b/src/node_contextify.cc
+@@ -1024,7 +1024,7 @@ void ContextifyScript::New(const FunctionCallbackInfo<Value>& args) {
+ 
+   ScriptCompiler::CachedData* cached_data = nullptr;
+   if (!cached_data_buf.IsEmpty()) {
+-    uint8_t* data = static_cast<uint8_t*>(cached_data_buf->Buffer()->Data());
++    uint8_t* data = static_cast<uint8_t*>(cached_data_buf->GetBuffer()->Data());
+     cached_data = new ScriptCompiler::CachedData(
+         data + cached_data_buf->ByteOffset(), cached_data_buf->ByteLength());
+   }
+@@ -1435,7 +1435,7 @@ void ContextifyFunction::CompileFunction(
+   // Read cache from cached data buffer
+   ScriptCompiler::CachedData* cached_data = nullptr;
+   if (!cached_data_buf.IsEmpty()) {
+-    uint8_t* data = static_cast<uint8_t*>(cached_data_buf->Buffer()->Data());
++    uint8_t* data = static_cast<uint8_t*>(cached_data_buf->GetBuffer()->Data());
+     cached_data = new ScriptCompiler::CachedData(
+       data + cached_data_buf->ByteOffset(), cached_data_buf->ByteLength());
+   }
+diff --git a/src/node_file.cc b/src/node_file.cc
+index f2fd41ee176bf4e867d3e148dce8a33570ac8c2a..1312471121e46c9a7ca94ce8ffc56dd4bb996e17 100644
+--- a/src/node_file.cc
++++ b/src/node_file.cc
+@@ -3972,7 +3972,7 @@ class WriteFileJob final : public AsyncWrap, public ThreadPoolWork {
+     // detached or collected meanwhile; a resizable buffer can still have its
+     // pages decommitted by a shrink, so its contents are copied instead.
+     length_ = view->ByteLength();
+-    backing_store_ = view->Buffer()->GetBackingStore();
++    backing_store_ = view->GetBuffer()->GetBackingStore();
+     if (backing_store_->IsResizableByUserJavaScript()) {
+       copy_.reset(new char[length_]);
+       memcpy(copy_.get(),
+diff --git a/src/node_ipc_serdes.cc b/src/node_ipc_serdes.cc
+index 05d5ae7ccffeb2fa7e9b4bb79c6d397186e264fd..e98187eae2e64401afb4e632f794bd8264cac871 100644
+--- a/src/node_ipc_serdes.cc
++++ b/src/node_ipc_serdes.cc
+@@ -346,7 +346,7 @@ static void Deserialize(const FunctionCallbackInfo<Value>& args) {
+ 
+   CHECK(args[0]->IsArrayBufferView());
+   Local<ArrayBufferView> view = args[0].As<ArrayBufferView>();
+-  Local<ArrayBuffer> ab = view->Buffer();
++  Local<ArrayBuffer> ab = view->GetBuffer().As<ArrayBuffer>();
+   const size_t byte_offset = view->ByteOffset();
+   const size_t byte_length = view->ByteLength();
+   const uint8_t* data = static_cast<const uint8_t*>(ab->Data()) + byte_offset;
+diff --git a/src/node_os.cc b/src/node_os.cc
+index 4c7ebde4644fb2c675c5a1533f9fcf1c52b393ee..2a5878198addf9a3bb34e611f48a6805459ec3c7 100644
+--- a/src/node_os.cc
++++ b/src/node_os.cc
+@@ -41,6 +41,7 @@ namespace os {
+ 
+ using v8::Array;
+ using v8::ArrayBuffer;
++using v8::ArrayBufferBase;
+ using v8::Boolean;
+ using v8::Context;
+ using v8::Float64Array;
+@@ -186,7 +187,7 @@ static void GetLoadAvg(const FunctionCallbackInfo<Value>& args) {
+   CHECK(args[0]->IsFloat64Array());
+   Local<Float64Array> array = args[0].As<Float64Array>();
+   CHECK_EQ(array->Length(), 3);
+-  Local<ArrayBuffer> ab = array->Buffer();
++  Local<ArrayBufferBase> ab = array->GetBuffer();
+   double* loadavg = static_cast<double*>(ab->Data());
+   uv_loadavg(loadavg);
+ }
+diff --git a/src/node_process_methods.cc b/src/node_process_methods.cc
+index 6a35e5c5e4c41903d613eaba14d6fb849c8af541..e839fc8cad362306e7712aeb8dcc8eb0150923c7 100644
+--- a/src/node_process_methods.cc
++++ b/src/node_process_methods.cc
+@@ -41,6 +41,7 @@ namespace node {
+ 
+ using v8::Array;
+ using v8::ArrayBuffer;
++using v8::ArrayBufferBase;
+ using v8::CFunction;
+ using v8::Context;
+ using v8::Float64Array;
+@@ -100,7 +101,7 @@ static void Chdir(const FunctionCallbackInfo<Value>& args) {
+   }
+ }
+ 
+-inline Local<ArrayBuffer> get_fields_array_buffer(
++inline Local<ArrayBufferBase> get_fields_array_buffer(
+     const FunctionCallbackInfo<Value>& args,
+     size_t index,
+     size_t array_length) {
+@@ -108,7 +109,7 @@ inline Local<ArrayBuffer> get_fields_array_buffer(
+   Local<Float64Array> arr = args[index].As<Float64Array>();
+   CHECK_EQ(arr->Length(), array_length);
+   CHECK_EQ(arr->ByteOffset(), 0);
+-  return arr->Buffer();
++  return arr->GetBuffer();
+ }
+ 
+ // CPUUsage use libuv's uv_getrusage() this-process resource usage accessor,
+@@ -126,7 +127,7 @@ static void CPUUsage(const FunctionCallbackInfo<Value>& args) {
+     return env->ThrowUVException(err, "uv_getrusage");
+ 
+   // Get the double array pointer from the Float64Array argument.
+-  Local<ArrayBuffer> ab = get_fields_array_buffer(args, 0, 2);
++  Local<ArrayBufferBase> ab = get_fields_array_buffer(args, 0, 2);
+   double* fields = static_cast<double*>(ab->Data());
+ 
+   // Set the Float64Array elements to be user / system values in microseconds.
+@@ -149,7 +150,7 @@ static void ThreadCPUUsage(const FunctionCallbackInfo<Value>& args) {
+   if (err) return env->ThrowUVException(err, "uv_getrusage_thread");
+ 
+   // Get the double array pointer from the Float64Array argument.
+-  Local<ArrayBuffer> ab = get_fields_array_buffer(args, 0, 2);
++  Local<ArrayBufferBase> ab = get_fields_array_buffer(args, 0, 2);
+   double* fields = static_cast<double*>(ab->Data());
+ 
+   // Set the Float64Array elements to be user / system values in microseconds.
+@@ -231,7 +232,7 @@ static void MemoryUsage(const FunctionCallbackInfo<Value>& args) {
+       env->isolate_data()->node_allocator();
+ 
+   // Get the double array pointer from the Float64Array argument.
+-  Local<ArrayBuffer> ab = get_fields_array_buffer(args, 0, 5);
++  Local<ArrayBufferBase> ab = get_fields_array_buffer(args, 0, 5);
+   double* fields = static_cast<double*>(ab->Data());
+ 
+   size_t rss;
+@@ -370,7 +371,7 @@ static void ResourceUsage(const FunctionCallbackInfo<Value>& args) {
+   if (err)
+     return env->ThrowUVException(err, "uv_getrusage");
+ 
+-  Local<ArrayBuffer> ab = get_fields_array_buffer(args, 0, 16);
++  Local<ArrayBufferBase> ab = get_fields_array_buffer(args, 0, 16);
+   double* fields = static_cast<double*>(ab->Data());
+ 
+   fields[0] = MICROS_PER_SEC * rusage.ru_utime.tv_sec + rusage.ru_utime.tv_usec;
+diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
+index 4f98c6224c7e096b143cc3a58ca9a7bf614db5fb..c0b5a0d2208f0a6a9ff5423663fe096ba62ea6fc 100644
+--- a/src/node_sqlite.cc
++++ b/src/node_sqlite.cc
+@@ -1833,7 +1833,7 @@ std::optional<std::string> ValidateDatabasePath(Environment* env,
+     size_t byteOffset = buffer->ByteOffset();
+     size_t byteLength = buffer->ByteLength();
+     auto data =
+-        static_cast<const uint8_t*>(buffer->Buffer()->Data()) + byteOffset;
++        static_cast<const uint8_t*>(buffer->GetBuffer()->Data()) + byteOffset;
+     if (std::find(data, data + byteLength, 0) == data + byteLength) {
+       return std::string(reinterpret_cast<const char*>(data), byteLength);
+     }
+diff --git a/src/node_wasi.cc b/src/node_wasi.cc
+index 6c2adc826571daf07798c9aed941a0c8e11e89e2..58f4c73672fae2001896c657419ee0635f5e222d 100644
+--- a/src/node_wasi.cc
++++ b/src/node_wasi.cc
+@@ -28,6 +28,7 @@ inline void Debug(const WASI& wasi, Args&&... args) {
+ 
+ using v8::Array;
+ using v8::ArrayBuffer;
++using v8::ArrayBufferBase;
+ using v8::BigInt;
+ using v8::CFunction;
+ using v8::Context;
+@@ -281,7 +282,7 @@ R WASI::WasiFunction<FT, F, R, Args...>::FastCallback(
+     THROW_ERR_WASI_NOT_STARTED(isolate);
+     return EinvalError<R>();
+   }
+-  Local<ArrayBuffer> ab = wasi->memory_.Get(isolate)->Buffer();
++  Local<ArrayBufferBase> ab = wasi->memory_.Get(isolate)->GetBuffer();
+   size_t mem_size = ab->ByteLength();
+   char* mem_data = static_cast<char*>(ab->Data());
+   CHECK_NOT_NULL(mem_data);
+@@ -403,7 +404,7 @@ void WASI::WasiFunction<FT, F, R, Args...>::SlowCallback(
+   }
+ 
+   Local<WasmMemoryObject> memory = PersistentToLocal::Strong(wasi->memory_);
+-  Local<ArrayBuffer> ab = memory->Buffer();
++  Local<ArrayBufferBase> ab = memory->GetBuffer();
+   size_t mem_size = ab->ByteLength();
+   char* mem_data = static_cast<char*>(ab->Data());
+   CHECK_NOT_NULL(mem_data);
+diff --git a/src/node_wasm_web_api.cc b/src/node_wasm_web_api.cc
+index d977793eb1369dafb728953d12afa93b82b5b4e5..e372849e57fac6e457fd74e28c88ff7905619911 100644
+--- a/src/node_wasm_web_api.cc
++++ b/src/node_wasm_web_api.cc
+@@ -107,7 +107,7 @@ void WasmStreamingObject::Push(const FunctionCallbackInfo<Value>& args) {
+ 
+   if (chunk->IsArrayBufferView()) [[likely]] {
+     Local<ArrayBufferView> view = chunk.As<ArrayBufferView>();
+-    bytes = view->Buffer()->Data();
++    bytes = view->GetBuffer()->Data();
+     offset = view->ByteOffset();
+     size = view->ByteLength();
+   } else if (chunk->IsArrayBuffer()) [[likely]] {
+diff --git a/src/node_zlib.cc b/src/node_zlib.cc
+index 3cb736c22aaccb2aa0ddc001718a633226e0575b..b9847e023c686eda89adb854806a2ea264a082dd 100644
+--- a/src/node_zlib.cc
++++ b/src/node_zlib.cc
+@@ -58,6 +58,7 @@
+ namespace node {
+ 
+ using v8::ArrayBuffer;
++using v8::ArrayBufferBase;
+ using v8::CFunction;
+ using v8::Context;
+ using v8::Function;
+@@ -829,7 +830,7 @@ class ZlibStream final : public CompressionStream<ZlibContext> {
+     CHECK(args[4]->IsUint32Array());
+     Local<Uint32Array> array = args[4].As<Uint32Array>();
+     CHECK_GE(array->Length(), 2);
+-    Local<ArrayBuffer> ab = array->Buffer();
++    Local<ArrayBufferBase> ab = array->GetBuffer();
+     uint32_t* write_result = static_cast<uint32_t*>(ab->Data());
+ 
+     CHECK(args[5]->IsFunction());
+diff --git a/src/quic/data.cc b/src/quic/data.cc
+index f15051da498f320724401c416d8223082c02e273..d6c618da93ce6a5ab76d39639ecdfdfb978aad51 100644
+--- a/src/quic/data.cc
++++ b/src/quic/data.cc
+@@ -128,7 +128,7 @@ Maybe<Store> Store::From(Local<ArrayBufferView> view) {
+   }
+   if (length > 0) {
+     memcpy(dest->Data(),
+-           static_cast<const uint8_t*>(view->Buffer()->Data()) + offset,
++           static_cast<const uint8_t*>(view->GetBuffer()->Data()) + offset,
+            length);
+   }
+   return Just(Store(std::move(dest), length, 0));
+@@ -154,7 +154,7 @@ Store Store::CopyFrom(Local<ArrayBuffer> buffer) {
+ 
+ Store Store::CopyFrom(Local<ArrayBufferView> view) {
+   Isolate* isolate = Isolate::GetCurrent();
+-  auto backing = view->Buffer()->GetBackingStore();
++  auto backing = view->GetBuffer()->GetBackingStore();
+   auto length = view->ByteLength();
+   auto offset = view->ByteOffset();
+   auto dest = ArrayBuffer::NewBackingStore(
+diff --git a/src/quic/streams.cc b/src/quic/streams.cc
+index 1354ad54c47fbe6f7fc49797b798836280cf8c35..e5404c729f259277bd065aa7f7d2554a6ad19d56 100644
+--- a/src/quic/streams.cc
++++ b/src/quic/streams.cc
+@@ -20,6 +20,7 @@ namespace node {
+ 
+ using v8::Array;
+ using v8::ArrayBuffer;
++using v8::ArrayBufferBase;
+ using v8::ArrayBufferView;
+ using v8::BackingStore;
+ using v8::BackingStoreInitializationMode;
+@@ -277,7 +278,10 @@ namespace {
+ // QUIC API.
+ // Returns nullptr on zero length or allocation failure.
+ std::unique_ptr<DataQueue::Entry> CreateEntryFromBuffer(
+-    Environment* env, Local<ArrayBuffer> buffer, size_t offset, size_t length) {
++    Environment* env,
++    Local<ArrayBufferBase> buffer,
++    size_t offset,
++    size_t length) {
+   if (length == 0) return nullptr;
+   JS_TRY_ALLOCATE_BACKING_OR_RETURN(env, copy, length, nullptr);
+   memcpy(copy->Data(),
+@@ -325,7 +329,8 @@ Maybe<std::shared_ptr<DataQueue>> Stream::GetDataQueueFromSource(
+     auto offset = view->ByteOffset();
+     auto length = view->ByteLength();
+     if (length > 0) {
+-      auto entry = CreateEntryFromBuffer(env, view->Buffer(), offset, length);
++      auto entry =
++          CreateEntryFromBuffer(env, view->GetBuffer(), offset, length);
+       if (!entry) {
+         return Nothing<std::shared_ptr<DataQueue>>();
+       }
+@@ -1369,8 +1374,8 @@ void Stream::WriteStreamData(const FunctionCallbackInfo<Value>& args) {
+     auto view = value.As<Uint8Array>();
+     auto length = view->ByteLength();
+     if (length == 0) return true;
+-    auto entry =
+-        CreateEntryFromBuffer(env, view->Buffer(), view->ByteOffset(), length);
++    auto entry = CreateEntryFromBuffer(
++        env, view->GetBuffer(), view->ByteOffset(), length);
+     if (!entry) {
+       return false;
+     }
 diff --git a/src/util-inl.h b/src/util-inl.h
 index 5eae3882feb7f950b1cbaceb1e6ff33ddfd26629..bee43889675c777694886521a2cb66d6650247cd 100644
 --- a/src/util-inl.h

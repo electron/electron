@@ -579,10 +579,10 @@ index f124be0421de8b3eb33b7075eff33bf22cd612f5..41904410d79f8d760f0199534c0dc5b3
    // Indication that the job is getting canceled.
    bool canceling_job_ = false;
 diff --git a/chrome/browser/printing/printer_query.cc b/chrome/browser/printing/printer_query.cc
-index fca882af17f6e23a55b35d122db42c944b2ae634..622680723239ce95951ab13e53d94d0a54b53547 100644
+index 8e73e7f2530fc039e271af741325fc1df3b344f4..9e2fda123faf27402ef7cd5f4332299f66330765 100644
 --- a/chrome/browser/printing/printer_query.cc
 +++ b/chrome/browser/printing/printer_query.cc
-@@ -362,17 +362,19 @@ void PrinterQuery::UpdatePrintSettings(base::DictValue new_settings,
+@@ -350,17 +350,19 @@ void PrinterQuery::UpdatePrintSettings(base::DictValue new_settings,
  #endif  // BUILDFLAG(IS_LINUX) && BUILDFLAG(USE_CUPS)
    }
  
@@ -712,7 +712,7 @@ index 6acf5b006b7e2eafeda1c37dad21c989f9adc534..c6dab044543c5eb0b90aa9230d7bf29b
    // runs a nested run loop in the renderer until print preview for
    // window.print() finishes.
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index fb0ff303d1c19d4a4777c69e04d415e58a0e0f4e..c62fc4275f6f8defb1339e9b625466d722685f9d 100644
+index b5da57dee43912728aca31e7eddbce9668f18755..b57bab9e5f8157231674a7c8bff310ce11177284 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -56,6 +56,7 @@
@@ -895,7 +895,7 @@ index fb0ff303d1c19d4a4777c69e04d415e58a0e0f4e..c62fc4275f6f8defb1339e9b625466d7
  }
  
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index f7b332eb9fadee6b21354b9df37c897db934a25a..5c88d569da6a80833b95f4e1a4f0988e955e7a6f 100644
+index 7182f8770eff53e0947fd6e22c9eb180f6fc009e..5d1729805e4d7bf4b5cca9649fe52bb623e69107 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
 @@ -261,7 +261,7 @@ class PrintRenderFrameHelper

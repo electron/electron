@@ -11,10 +11,10 @@ PlatformStyle::kAutoSelectFirstMenuItemFromKeyboard
 covers the other views platforms.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index 86b79ceeeaed820b7ee2772d232814997845ae1f..e0aac21b32ed7ddbf1c1e0fad6d89a364acab4e3 100644
+index 8a1fecc3e6d17cfc70ca00e3447a3d79e85c37ae..a6419f806d0eae1dd8c9a48b34d5df321ec97042 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
-@@ -875,6 +875,22 @@ void MenuController::Run(Widget* parent,
+@@ -865,6 +865,22 @@ void MenuController::Run(Widget* parent,
      SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
    }
  
@@ -37,7 +37,7 @@ index 86b79ceeeaed820b7ee2772d232814997845ae1f..e0aac21b32ed7ddbf1c1e0fad6d89a36
    if (button_controller) {
      pressed_lock_ = button_controller->TakeLock(
          false, ui::LocatedEvent::FromIfValid(event));
-@@ -3154,18 +3170,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+@@ -3137,18 +3153,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
        submenu_focus_manager_observations_.AddObservation(focus_manager);
      }
  

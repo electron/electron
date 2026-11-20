@@ -467,6 +467,7 @@ filenames = {
     "shell/browser/lib/bluetooth_chooser.h",
     "shell/browser/login_handler.cc",
     "shell/browser/login_handler.h",
+    "shell/browser/media/desktop_capture_devices_util_stub.cc",
     "shell/browser/media/media_capture_devices_dispatcher.cc",
     "shell/browser/media/media_capture_devices_dispatcher.h",
     "shell/browser/media/media_device_id_salt.cc",

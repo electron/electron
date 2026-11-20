@@ -14,7 +14,7 @@ target. Given neither the static nor the dynamic registration can be
 upstreamed, the minimal of the two changes is chosen here.
 
 diff --git a/base/trace_event/builtin_categories.h b/base/trace_event/builtin_categories.h
-index a001f5ef6c5516cbb9fdcb69a63f28d86989be3f..369a52aad161e286b41daa65d0606dda0beac197 100644
+index f12d58391f40a304438410be7e8d3822fe381183..a19ab0d27c2d3f8524fa5e6c8587371cfa6baed2 100644
 --- a/base/trace_event/builtin_categories.h
 +++ b/base/trace_event/builtin_categories.h
 @@ -15,6 +15,7 @@ PERFETTO_DEFINE_TEST_CATEGORY_PREFIXES("cat",
