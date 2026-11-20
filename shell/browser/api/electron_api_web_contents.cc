@@ -3831,8 +3831,8 @@ void WebContents::SetOwnerWindow(content::WebContents* web_contents,
   // Attached <webview> guests and the built-in DevTools frontend took their
   // window from this WebContents, so they follow it to its new one. An app
   // frontend from setDevToolsWebContents() may live in its own window, so it
-  // is left alone. Collect the guests first: giving one an owner can replay
-  // its pending openDevTools(), which runs JS that may attach or detach some.
+  // is left alone. Collect the guests first so a re-entrant attach or detach
+  // can't invalidate the WebViewManager iteration.
   std::vector<base::WeakPtr<content::WebContents>> guests;
   if (auto* manager = WebViewManager::GetWebViewManager(web_contents)) {
     manager->ForEachGuest(web_contents, [&](content::WebContents* guest) {
