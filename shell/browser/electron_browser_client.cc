@@ -417,6 +417,13 @@ void MaybeAppendSecureOriginsAllowlistSwitch(base::CommandLine* cmdline) {
   }
 }
 
+void BindElectronApiIPCForAllFramesPreload(
+    content::RenderFrameHost* render_frame_host,
+    mojo::PendingAssociatedReceiver<mojom::ElectronApiIPC> receiver) {
+  if (renderer_startup_data::HasAllFramesPreload(render_frame_host))
+    ElectronApiIPCHandlerImpl::Create(render_frame_host, std::move(receiver));
+}
+
 // Refs
 // https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/chrome_content_browser_client.cc;l=4056-4067;drc=e70e5ce76d4eafd833b4468a6d15bcd9ea0f6cea
 blink::mojom::PreferredContrast GetPreferredContrast(
@@ -1939,6 +1946,13 @@ void ElectronBrowserClient::
                                                   std::move(receiver));
               },
               &render_frame_host));
+    } else {
+      // Any other subframe gets IPC only for a document that runs a preload
+      // registered with allFrames. The renderer binds the interface from the
+      // document's own script context, after the document has committed.
+      associated_registry.AddInterface<mojom::ElectronApiIPC>(
+          base::BindRepeating(&BindElectronApiIPCForAllFramesPreload,
+                              &render_frame_host));
     }
   }
 

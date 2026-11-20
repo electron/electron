@@ -16,6 +16,39 @@ This document uses the following convention to categorize breaking changes:
 
 ## Breaking API Changes (47.0)
 
+### Deprecated: `webPreferences.nodeIntegrationInSubFrames`
+
+The `nodeIntegrationInSubFrames` web preference and the `<webview>`
+`nodeintegrationinsubframes` attribute are deprecated and will be removed in a
+future release. They run every preload script in every subframe and turn off
+the sandbox for cross-site subframes.
+
+Register the preload scripts that subframes need with
+`ses.registerPreloadScript()` and `allFrames: true` instead. Such a script runs
+in the main frame and in every subframe whose own URL passes its URL filters,
+and those subframes can use `ipcRenderer`. `webPreferences.preload` and other
+preload scripts keep running only in the main frame, and cross-site subframes
+stay sandboxed, so a script running there gets the sandboxed preload
+environment.
+
+```js
+// Deprecated
+const win = new BrowserWindow({
+  webPreferences: {
+    preload: path.join(__dirname, 'preload.js'),
+    nodeIntegrationInSubFrames: true
+  }
+})
+
+// Replace with
+session.defaultSession.registerPreloadScript({
+  type: 'frame',
+  filePath: path.join(__dirname, 'preload.js'),
+  matches: ['https://example.com/*'],
+  allFrames: true
+})
+```
+
 ### Removed: `level`, `message`, `line`, and `sourceId` arguments in `console-message` event on `WebContents`
 
 The positional arguments of the `console-message` event on `WebContents`,
