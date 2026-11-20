@@ -12,7 +12,9 @@
 #include "base/callback_list.h"
 #include "base/environment.h"
 #include "base/process/process_handle.h"
+#include "content/public/browser/browser_child_process_observer.h"
 #include "content/public/browser/service_process_host.h"
+#include "content/public/common/child_process_id.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
@@ -51,7 +53,8 @@ class UtilityProcessWrapper final
       public gin_helper::EventEmitterMixin<UtilityProcessWrapper>,
       private mojo::MessageReceiver,
       public node::mojom::NodeServiceClient,
-      public content::ServiceProcessHost::Observer {
+      public content::ServiceProcessHost::Observer,
+      public content::BrowserChildProcessObserver {
  public:
   enum class IOHandle : size_t { STDIN = 0, STDOUT = 1, STDERR = 2 };
   enum class IOType { IO_PIPE, IO_INHERIT, IO_IGNORE };
@@ -103,6 +106,7 @@ class UtilityProcessWrapper final
   void CloseStdioReadFds();
 
   void HandleTermination(uint32_t exit_code);
+  bool IsThisProcess(const content::ChildProcessData& data) const;
 
   void PostMessage(gin::Arguments* args);
   bool Kill();
@@ -118,8 +122,14 @@ class UtilityProcessWrapper final
   // content::ServiceProcessHost::Observer
   void OnServiceProcessTerminatedNormally(
       const content::ServiceProcessInfo& info) override;
-  void OnServiceProcessCrashed(
-      const content::ServiceProcessInfo& info) override;
+
+  // content::BrowserChildProcessObserver
+  void BrowserChildProcessCrashed(
+      const content::ChildProcessData& data,
+      const content::ChildProcessTerminationInfo& info) override;
+  void BrowserChildProcessKilled(
+      const content::ChildProcessData& data,
+      const content::ChildProcessTerminationInfo& info) override;
 
   void OnServiceProcessDisconnected(uint32_t exit_code,
                                     const std::string& description);
@@ -130,6 +140,9 @@ class UtilityProcessWrapper final
   node::mojom::URLLoaderFactoryParamsPtr CreateURLLoaderFactoryParams();
 
   base::ProcessId pid_ = base::kNullProcessId;
+  // Identifies the utility process in BrowserChildProcessObserver callbacks,
+  // whose ChildProcessData no longer carries the process.
+  content::ChildProcessId child_process_id_;
 #if BUILDFLAG(IS_WIN)
   // Non-owning handles, these will be closed when the
   // corresponding FD are closed via _close.

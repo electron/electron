@@ -18,9 +18,13 @@
 #include "base/task/single_thread_task_runner.h"
 #include "chrome/browser/browser_process.h"
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
+#include "content/public/browser/browser_child_process_host_iterator.h"
+#include "content/public/browser/child_process_data.h"
 #include "content/public/browser/child_process_host.h"
+#include "content/public/browser/child_process_termination_info.h"
 #include "content/public/browser/service_process_host.h"
 #include "content/public/browser/storage_partition.h"
+#include "content/public/common/process_type.h"
 #include "content/public/common/result_codes.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/object_template_builder.h"
@@ -222,6 +226,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 
   // Watch for service process termination events.
   content::ServiceProcessHost::AddObserver(this);
+  content::BrowserChildProcessObserver::Add(this);
 
   mojo::PendingReceiver<node::mojom::NodeService> receiver =
       node_service_remote_.BindNewPipeAndPassReceiver();
@@ -292,6 +297,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 
 UtilityProcessWrapper::~UtilityProcessWrapper() {
   content::ServiceProcessHost::RemoveObserver(this);
+  content::BrowserChildProcessObserver::Remove(this);
   // A wrapper that never reached HandleTermination(), e.g. one still alive at
   // heap teardown, still owns its port and stdio read ends. Both are native,
   // non-GC members. A port destroyed while still lent to |connector_| fails a
@@ -306,6 +312,17 @@ void UtilityProcessWrapper::OnServiceProcessLaunch(
     return;
   DCHECK(node_service_remote_.is_connected());
   pid_ = process.Pid();
+  // Remember the child process id: the process has already gone from the
+  // ChildProcessData that BrowserChildProcessCrashed/Killed receive.
+  for (content::BrowserChildProcessHostIterator it(
+           content::PROCESS_TYPE_UTILITY);
+       !it.Done(); ++it) {
+    const base::Process& host_process = it.GetProcess();
+    if (host_process.IsValid() && host_process.Pid() == pid_) {
+      child_process_id_ = it.GetData().GetChildProcessId();
+      break;
+    }
+  }
   // JS wraps these in net.Socket and owns them from here on.
   if (stdout_read_fd_ != -1)
     EmitWithoutEvent("stdout", std::exchange(stdout_read_fd_, -1));
@@ -327,7 +344,9 @@ void UtilityProcessWrapper::HandleTermination(uint32_t exit_code) {
   GetAllUtilityProcessWrappers().Remove(this);
 
   pid_ = base::kNullProcessId;
+  child_process_id_ = content::ChildProcessId();
   content::ServiceProcessHost::RemoveObserver(this);
+  content::BrowserChildProcessObserver::Remove(this);
   DispatchPendingMessages();
   CloseConnectorPort();
   CloseStdioReadFds();
@@ -370,16 +389,31 @@ void UtilityProcessWrapper::OnServiceProcessTerminatedNormally(
       info.GetProcess().Pid() != pid_)
     return;
 
-  HandleTermination(info.exit_code());
+  // A non-zero code from process.exit() arrives first through
+  // OnServiceProcessDisconnected.
+  HandleTermination(0);
 }
 
-void UtilityProcessWrapper::OnServiceProcessCrashed(
-    const content::ServiceProcessInfo& info) {
-  if (!info.IsService<node::mojom::NodeService>() ||
-      info.GetProcess().Pid() != pid_)
-    return;
+bool UtilityProcessWrapper::IsThisProcess(
+    const content::ChildProcessData& data) const {
+  return !child_process_id_.is_null() &&
+         data.process_type == content::PROCESS_TYPE_UTILITY &&
+         data.metrics_name == node::mojom::NodeService::Name_ &&
+         data.GetChildProcessId() == child_process_id_;
+}
 
-  HandleTermination(info.exit_code());
+void UtilityProcessWrapper::BrowserChildProcessCrashed(
+    const content::ChildProcessData& data,
+    const content::ChildProcessTerminationInfo& info) {
+  if (IsThisProcess(data))
+    HandleTermination(info.exit_code);
+}
+
+void UtilityProcessWrapper::BrowserChildProcessKilled(
+    const content::ChildProcessData& data,
+    const content::ChildProcessTerminationInfo& info) {
+  if (IsThisProcess(data))
+    HandleTermination(info.exit_code);
 }
 
 void UtilityProcessWrapper::CloseStdioReadFds() {
