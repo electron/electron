@@ -60,6 +60,10 @@ class ElectronBindings;
 class JavascriptEnvironment;
 class NodeBindings;
 
+#if BUILDFLAG(IS_LINUX)
+class SessionEndListenerLinux;
+#endif
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 class ElectronExtensionsClient;
 class ElectronExtensionsBrowserClient;
@@ -99,6 +103,11 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 
   Browser* browser() { return browser_.get(); }
   BrowserProcessImpl* browser_process() { return fake_browser_process_.get(); }
+
+#if BUILDFLAG(IS_LINUX)
+  // Null until PostEarlyInitialization() creates the listener.
+  static SessionEndListenerLinux* GetSessionEndListener();
+#endif
 
  protected:
   // content::BrowserMainParts:
@@ -166,6 +175,13 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 
   // depends-on: node_bindings_
   const std::unique_ptr<ElectronBindings> electron_bindings_;
+
+#if BUILDFLAG(IS_LINUX)
+  // Created at startup rather than with powerMonitor, so the shutdown delay
+  // lock does not depend on the app using it. Destroyed after js_env_ so the
+  // PowerMonitor wrapper can unregister.
+  std::unique_ptr<SessionEndListenerLinux> session_end_listener_;
+#endif
 
   // depends-on: node_bindings_
   std::unique_ptr<JavascriptEnvironment> js_env_;
