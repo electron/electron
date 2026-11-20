@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_GLOBAL_SHORTCUT_H_
 
 #include <map>
+#include <string>
 #include <vector>
 
 #include "base/functional/callback_forward.h"
@@ -14,6 +15,7 @@
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/microtasks_runner.h"
+#include "shell/common/gin_converters/accelerator_converter.h"
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h"
 
@@ -51,15 +53,18 @@ class GlobalShortcut final
   typedef std::map<std::string, base::RepeatingClosure> CommandCallbackMap;
 
   void Dispose();
-  // These take the accelerator as the string the app passed so that
-  // registration-resolved can report it back verbatim.
-  bool RegisterAll(const std::vector<std::string>& accelerators,
+  // These take the shortcut as the app passed it so that registration-resolved
+  // can report the accelerator back verbatim, and so callers can supply a
+  // description for the desktop portal to show.
+  bool RegisterAll(const std::vector<ShortcutRegistration>& shortcuts,
                    const base::RepeatingClosure& callback);
-  bool Register(const std::string& accelerator_str,
+  bool Register(const ShortcutRegistration& shortcut,
                 const base::RepeatingClosure& callback);
-  bool IsRegistered(const ui::Accelerator& accelerator);
-  void Unregister(const ui::Accelerator& accelerator);
+  bool IsRegistered(const ShortcutRegistration& shortcut);
+  void Unregister(const ShortcutRegistration& shortcut);
+  void UnregisterAccelerator(const ui::Accelerator& accelerator);
   void UnregisterSome(const std::vector<ui::Accelerator>& accelerators);
+  bool IsRegisteredAccelerator(const ui::Accelerator& accelerator);
   void UnregisterAll();
   void UnregisterAllInternal();
   void SetSuspended(bool suspend);
