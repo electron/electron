@@ -237,6 +237,12 @@ runs:
         sysctl vm.swapusage
         vm_stat
         echo "::endgroup::"
+        # For the siso spawn-helper ENOBUFS flake (.github/siso-patches/0004-*):
+        # shows whether kernel mbufs / socket buffers were exhausted.
+        echo "::group::mbuf / socket buffers"
+        netstat -m
+        sysctl kern.ipc.maxsockbuf kern.ipc.nmbclusters net.local.stream.sendspace net.local.stream.recvspace
+        echo "::endgroup::"
         echo "::group::kernel memorystatus / jetsam (last 45m)"
         log show --last 45m --style compact --predicate 'process == "kernel" AND (eventMessage CONTAINS "memorystatus" OR eventMessage CONTAINS "jetsam")' | tail -n 100
         echo "::endgroup::"
