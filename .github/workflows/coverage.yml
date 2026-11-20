@@ -349,8 +349,6 @@ jobs:
       target-arch: arm64
       report-runs-on: macos-15
 
-  # Rendered on Windows: the build host's llvm-cov reads electron.exe natively
-  # and resolves the coverage mapping's paths with either separator.
   report-windows-x64:
     needs: test-windows-x64
     if: ${{ !cancelled() && needs.test-windows-x64.result != 'skipped' }}
