@@ -247,6 +247,13 @@ jobs:
         # abnormal exits and sandboxed processes the suite produces.
         echo "LLVM_PROFILE_FILE=$COVERAGE_PROFILE_DIR/electron.%4m%c.profraw" >> $GITHUB_ENV
         echo "IS_COVERAGE=true" >> $GITHUB_ENV
+    # Apps launched through LaunchServices (e.g. ShipIt's post-update relaunch
+    # in the autoUpdater specs) get launchd's environment, not the job's.
+    - name: Set coverage profile path for LaunchServices launches on macOS
+      if: ${{ inputs.is-coverage == true && inputs.target-platform == 'macos' }}
+      run: |
+        launchctl setenv LLVM_PROFILE_FILE "$COVERAGE_PROFILE_DIR/electron.%4m%c.profraw"
+        launchctl getenv LLVM_PROFILE_FILE
     # Safe to parallelize: each step writes a disjoint location (src/electron
     # node_modules, ./depot_tools, ./generated_artifacts_*, ./src_artifacts_*,
     # system CUPS state) and none reads another's output; the env/PATH changes
