@@ -1473,7 +1473,7 @@ Ignore application menu shortcuts while this web contents is focused.
     * `frameName` string - Name of the window provided in `window.open()`
     * `features` string - Comma separated list of window features provided to `window.open()`.
     * `disposition` string - Can be `default`, `foreground-tab`,
-      `background-tab`, `new-window` or `other`. Corresponds to the manner
+      `background-tab`, `new-window`, `new-picture-in-picture` or `other`. Corresponds to the manner
       an associated link was clicked. See Chromium's
       [WindowOpenDisposition](https://source.chromium.org/chromium/chromium/src/+/main:ui/base/window_open_disposition.h).
       * `default` - Indicates Chromium deems in-window navigation valid
@@ -1481,6 +1481,8 @@ Ignore application menu shortcuts while this web contents is focused.
       * `foreground-tab` - Corresponds to a left click or shift + middle click.
       * `background-tab` - Corresponds to a middle click or ctrl/cmd + click.
       * `new-window` - Corresponds to a shift + left click.
+      * `new-picture-in-picture` - A native `documentPictureInPicture.requestWindow()` request.
+        Hosting this child requires a `createWindow` callback.
       * `other` - A catch-all for the remaining Chromium dispositions not
         handled by Electron.
     * `referrer` [Referrer](structures/referrer.md) - The referrer that will be
@@ -1502,6 +1504,28 @@ by `window.open()`, a link with `target="_blank"`, shift+clicking on a link, or
 submitting a form with `<form target="_blank">`. See
 [`window.open()`](window-open.md) for more details and how to use this in
 conjunction with `did-create-window`.
+
+For `new-picture-in-picture` requests, the handler must return `action: 'allow'`
+and a `createWindow` callback. Without a custom host, the request is denied.
+Host and show the child inside this callback. Earlier `web-contents-created`
+notifications may configure the child, but must not present it.
+The callback must use the supplied options to adopt the original native child;
+replacing its `webContents` does not preserve the native PiP identity. The options
+contain the requested content `width` and `height` (defaulting to 320 by 180) and
+`useContentSize: true`, subject to `overrideBrowserWindowOptions`.
+
+Electron connects the child to Chromium's native PiP controller before calling
+`createWindow`. This preserves the live opener relationship, PiP display mode,
+and native document lifecycle. The child closes when its opener document closes
+or navigates, regardless of `outlivesOpener`. Same-document navigations do not
+close it. Opening another PiP window replaces the current one, including video
+PiP. This does not allow ordinary popups to be converted into native PiP windows.
+
+The application owns the host's presentation: keep it always on top, display the
+opener's origin in trusted chrome, constrain its size, and disable fullscreen.
+For a `WebContentsView` host, remove or close the application's host when the
+child is destroyed and close the child when the host is closed. Electron supplies
+neither a default PiP window nor title-bar controls for this path.
 
 An example showing how to customize the process of new `BrowserWindow` creation to be `BrowserView` attached to main window instead:
 

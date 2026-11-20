@@ -84,6 +84,7 @@
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/visibility.h"
+#include "content/public/browser/weak_document_ptr.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/child_process_id.h"
 #include "content/public/common/page_visibility_state.h"
@@ -306,6 +307,9 @@ struct Converter<WindowOpenDisposition> {
       case WindowOpenDisposition::kNewPopup:
       case WindowOpenDisposition::kNewWindow:
         disposition = "new-window";
+        break;
+      case WindowOpenDisposition::kNewPictureInPicture:
+        disposition = "new-picture-in-picture";
         break;
       case WindowOpenDisposition::kSaveToDisk:
         disposition = "save-to-disk";
@@ -1223,6 +1227,12 @@ class WebContents::NativeLifecycle final
     if (auto* contents = contents_.Get())
       return contents->TakeFocus(source, reverse);
     return false;
+  }
+  blink::mojom::DisplayMode GetDisplayMode(
+      const content::WebContents* source) override {
+    if (auto* contents = contents_.Get())
+      return contents->GetDisplayMode(source);
+    return content::WebContentsDelegate::GetDisplayMode(source);
   }
   content::PictureInPictureResult EnterPictureInPicture(
       content::WebContents* source) override {
@@ -2253,12 +2263,25 @@ bool WebContents::OnWillCreateWindow(
 
   pending_child_web_preferences_.Reset();
 
+  content::WeakDocumentPtr pip_opener_document;
+  if (disposition == WindowOpenDisposition::kNewPictureInPicture)
+    pip_opener_document = opener->GetWeakDocumentPtr();
+
   // If the app prevents the default the window open is denied and
   // window.open() will return null in the renderer.
   if (Emit("-will-add-new-contents", target_url, frame_name, raw_features,
            disposition, referrer, body)) {
     pending_child_web_preferences_.Reset();
     return false;
+  }
+
+  if (disposition == WindowOpenDisposition::kNewPictureInPicture) {
+    auto* requesting_frame = pip_opener_document.AsRenderFrameHostIfValid();
+    // The policy callback may run a nested loop and replace the document.
+    if (!requesting_frame || !requesting_frame->IsActive()) {
+      pending_child_web_preferences_.Reset();
+      return false;
+    }
   }
 
   // A suppressed opener (e.g. noopener) already puts the child in its own
@@ -2350,18 +2373,68 @@ content::WebContents* WebContents::AddNewContents(
   auto* tracker = ChildWebContentsTracker::FromWebContents(new_contents.get());
   DCHECK(tracker);
 
+  const bool document_pip =
+      disposition == WindowOpenDisposition::kNewPictureInPicture;
+  const auto& pip_options = new_contents->GetPictureInPictureOptions();
+  // PiP identity belongs to Chromium's original child, not window features or
+  // application-supplied constructor options.
+  if (document_pip != pip_options.has_value() ||
+      (document_pip &&
+       (!source || source != web_contents() ||
+        source->GetPictureInPictureOptions().has_value() ||
+        new_contents->GetBrowserContext() != source->GetBrowserContext() ||
+        new_contents->GetOpener() != source->GetPrimaryMainFrame()))) {
+    if (was_blocked)
+      *was_blocked = true;
+    return nullptr;
+  }
+
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
 
   Type type = Type::kBrowserWindow;
   auto* web_preferences = WebContentsPreferences::From(new_contents.get());
-  if (web_preferences && web_preferences->IsOffscreen())
+  if (web_preferences && web_preferences->IsOffscreen()) {
+    if (document_pip) {
+      if (was_blocked)
+        *was_blocked = true;
+      return nullptr;
+    }
     type = Type::kOffScreen;
+  }
 
   v8::HandleScope handle_scope(isolate);
+  // Preserve the requested content size through the existing hosting callback.
+  const double width = document_pip ? static_cast<double>(pip_options->width)
+                                    : window_features.bounds.width();
+  const double height = document_pip ? static_cast<double>(pip_options->height)
+                                     : window_features.bounds.height();
+  base::WeakPtr<content::WebContents> weak_source;
+  std::optional<blink::DocumentToken> opener_document;
+  if (document_pip) {
+    weak_source = source->GetWeakPtr();
+    opener_document = source->GetPrimaryMainFrame()->GetDocumentToken();
+  }
+  const auto same_opener_document = [&] {
+    if (!weak_source)
+      return false;
+    auto* frame = weak_source->GetPrimaryMainFrame();
+    return frame->IsRenderFrameLive() &&
+           frame->GetDocumentToken() == *opener_document;
+  };
   // The '-add-new-contents' handlers below give the child its BrowserWindow,
   // but 'web-contents-created' fires first, so tell it an owner is coming.
   auto* api_web_contents = CreateAndTake(isolate, std::move(new_contents), type,
                                          /*expects_owner_window=*/true);
+  auto weak_child = api_web_contents->WeakRef();
+  // Creation notifies the application, which may destroy either participant.
+  if (document_pip &&
+      (!same_opener_document() || api_web_contents->IsDestroyed())) {
+    if (was_blocked)
+      *was_blocked = true;
+    if (!api_web_contents->IsDestroyed())
+      api_web_contents->Destroy();
+    return nullptr;
+  }
 
   // Rebind the paint callback to the child WebContents. The
   // OffScreenWebContentsView was initially created with the parent's OnPaint
@@ -2388,15 +2461,38 @@ content::WebContents* WebContents::AddNewContents(
     api_web_contents->Destroy();
     return nullptr;
   }
-  auto weak_child = api_web_contents->WeakRef();
+  if (document_pip) {
+    if (!same_opener_document() || api_web_contents->IsDestroyed()) {
+      if (was_blocked)
+        *was_blocked = true;
+      if (!api_web_contents->IsDestroyed())
+        api_web_contents->Destroy();
+      return nullptr;
+    }
+    auto* manager = PictureInPictureWindowManager::GetInstance();
+    // Register before the hosting callback can show the child, so its native
+    // document observers and capture coordinator precede presentation.
+    manager->EnterDocumentPictureInPicture(source,
+                                           api_web_contents->web_contents());
+    auto* child = weak_child->Get();
+    if (!same_opener_document() || !child || child->IsDestroyed() ||
+        manager->GetWebContents() != source ||
+        manager->GetChildWebContents() != child->web_contents()) {
+      if (was_blocked)
+        *was_blocked = true;
+      if (child && !child->IsDestroyed())
+        child->Destroy();
+      return nullptr;
+    }
+  }
   if (Emit("-add-new-contents", wrapper, disposition, user_gesture,
-           window_features.bounds.x(), window_features.bounds.y(),
-           window_features.bounds.width(), window_features.bounds.height(),
-           tracker->url, tracker->frame_name, tracker->referrer,
+           window_features.bounds.x(), window_features.bounds.y(), width,
+           height, tracker->url, tracker->frame_name, tracker->referrer,
            tracker->raw_features, tracker->body)) {
     if (was_blocked)
       *was_blocked = true;
-    api_web_contents->Destroy();
+    if (auto* child = weak_child->Get(); child && !child->IsDestroyed())
+      child->Destroy();
   } else if (auto* child = weak_child->Get(); child && !child->IsDestroyed()) {
     // The span in which an owner was promised ends here. If the handlers gave
     // the child a window, a deferred openDevTools() has already run. If not —
@@ -2562,8 +2658,27 @@ void WebContents::SetContentsBounds(content::WebContents* source,
 }
 
 void WebContents::CloseContents(content::WebContents* source) {
+  if (source && source->GetPictureInPictureOptions().has_value()) {
+    if (document_pip_close_pending_)
+      return;
+    document_pip_close_pending_ = true;
+    // Chromium's document controller continues using itself after ClosePage().
+    // Let it finish before an application close listener can destroy its opener
+    // or request a replacement. Ordinary window close notifications stay
+    // inline.
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE, base::BindOnce(
+                       [](WebContents* contents) {
+                         if (contents && !contents->IsDestroyed())
+                           contents->CloseContents(nullptr);
+                       },
+                       WeakRef()));
+    return;
+  }
   {
     Emit("close");
+    if (document_pip_close_pending_ && (disposing_ || destroyed_))
+      return;
 
     auto* autofill_driver_factory =
         AutofillDriverFactory::FromWebContents(web_contents());
@@ -6274,6 +6389,15 @@ bool WebContents::TakeFocus(content::WebContents* source, bool reverse) {
   }
 
   return false;
+}
+
+blink::mojom::DisplayMode WebContents::GetDisplayMode(
+    const content::WebContents* source) {
+  if (source && source == web_contents() &&
+      source->GetPictureInPictureOptions().has_value()) {
+    return blink::mojom::DisplayMode::kPictureInPicture;
+  }
+  return content::WebContentsDelegate::GetDisplayMode(source);
 }
 
 content::PictureInPictureResult WebContents::EnterPictureInPicture(

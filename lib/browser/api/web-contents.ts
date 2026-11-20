@@ -278,6 +278,13 @@ WebContents.prototype._init = function () {
         throw err;
       }
 
+      // Native PiP needs an application-owned host. Do not fall back to an
+      // ordinary BrowserWindow without its required presentation and controls.
+      if (disposition === 'new-picture-in-picture' && !result.createWindow) {
+        event.preventDefault();
+        return;
+      }
+
       windowOpenOutlivesOpenerOption = result.outlivesOpener;
       windowOpenOverriddenOptions = result.browserWindowConstructorOptions;
       createWindow = result.createWindow;
@@ -317,8 +324,8 @@ WebContents.prototype._init = function () {
         _userGesture,
         _left,
         _top,
-        _width,
-        _height,
+        width,
+        height,
         url,
         frameName,
         referrer,
@@ -338,27 +345,40 @@ WebContents.prototype._init = function () {
           disposition !== 'foreground-tab' &&
           disposition !== 'new-window' &&
           disposition !== 'background-tab' &&
-          disposition !== 'save-to-disk'
+          disposition !== 'save-to-disk' &&
+          disposition !== 'new-picture-in-picture'
         ) {
           event.preventDefault();
           return;
         }
 
-        openGuestWindow({
-          embedder: this,
-          guest: webContents,
-          overrideBrowserWindowOptions: overriddenOptions,
-          disposition,
-          referrer,
-          postData,
-          windowOpenArgs: {
-            url,
-            frameName,
-            features: rawFeatures
-          },
-          outlivesOpener,
-          createWindow: windowOpenFunction
-        });
+        const documentPip = disposition === 'new-picture-in-picture';
+        if (documentPip && !windowOpenFunction) {
+          event.preventDefault();
+          return;
+        }
+        try {
+          openGuestWindow({
+            embedder: this,
+            guest: webContents,
+            overrideBrowserWindowOptions: documentPip
+              ? { width: width || 320, height: height || 180, useContentSize: true, ...overriddenOptions }
+              : overriddenOptions,
+            disposition,
+            referrer,
+            postData,
+            windowOpenArgs: {
+              url,
+              frameName,
+              features: rawFeatures
+            },
+            outlivesOpener: documentPip ? false : outlivesOpener,
+            createWindow: windowOpenFunction
+          });
+        } catch (error) {
+          if (documentPip) event.preventDefault();
+          throw error;
+        }
       }
     );
   }
