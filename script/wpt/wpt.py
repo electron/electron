@@ -310,6 +310,7 @@ def prepare_latest(work, meta, label):
                 'os_version', 'revision', 'full_revision_hash', 'time_start',
                 'raw_results_url', 'labels')
   }
+  meta['wptfyi_label'] = label
   meta['binary_args'] = []
   meta['mojojs'] = False
   version = run_info.get('browser_version', label)
@@ -397,8 +398,16 @@ def runner_command(args, work, p, meta, report, extra):
         '--reuse-window',
     ]
   else:
-    # wpt.fyi's stable runs have experimental features off.
-    cmd.append('--no-enable-experimental')
+    # Match how upstream wpt's Taskcluster jobs produced the Chrome run that
+    # is compared with (tools/ci/tc/tasks/test.yml, taskcluster-run.py):
+    # `wpt run --channel=canary` or `dev` turns on experimental web platform
+    # features, `beta` and `stable` leave them off, and every Chrome run gets
+    # --enable-swiftshader.
+    experimental = meta.get('wptfyi_label') in ('canary', 'dev', 'experimental')
+    cmd += [
+        '--enable-experimental' if experimental else '--no-enable-experimental',
+        '--enable-swiftshader',
+    ]
   if meta.get('mojojs'):
     cmd += ['--enable-mojojs', f"--mojojs-path={p['mojojs']}"]
   binary_args = list(meta.get('binary_args', []))
@@ -575,13 +584,13 @@ def main():
       default='pinned',
       help=
       'pinned: the tests and expectations in Chromium at the version in DEPS. '
-      'latest: the newest upstream wpt commit with a complete Chrome run on '
-      'wpt.fyi, and that run\'s results.')
+      'latest: the newest upstream wpt commit with a complete Chrome Canary '
+      'run on wpt.fyi, and that run\'s results.')
   prepare.add_argument(
       '--wptfyi-label',
-      default='stable',
-      help=
-      'wpt.fyi label of the Chrome run to compare with (stable or experimental)'
+      default='canary',
+      help='wpt.fyi label of the Chrome run to compare with: canary, dev, '
+      'beta or stable'
   )
   prepare.add_argument(
       '--keep-venv',

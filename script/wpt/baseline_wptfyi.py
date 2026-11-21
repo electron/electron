@@ -4,6 +4,11 @@ Uses the wpt.fyi API documented at
 https://github.com/web-platform-tests/wpt.fyi/blob/main/api/README.md:
 `/api/runs` lists test runs, newest first, and each run has a
 `raw_results_url` pointing at the wptreport JSON that was uploaded for it.
+
+Runs are picked by label. wpt.fyi keeps the channel a run was uploaded with
+as a label, so Chrome Canary runs carry `canary` (and `experimental`, which
+Chrome Dev runs carry too); see `_channel_to_labels` in
+https://github.com/web-platform-tests/wpt.fyi/blob/main/results-processor/wptreport.py.
 """
 
 import gzip
@@ -26,7 +31,7 @@ def fetch(url, timeout=600):
   return data
 
 
-def list_runs(label='stable', max_count=20):
+def list_runs(label='canary', max_count=20):
   """Chrome runs of upstream wpt's master branch on Linux, newest first."""
   query = urllib.parse.urlencode([('product', 'chrome'), ('label', 'master'),
                                   ('label', label), ('max-count', max_count)])
@@ -55,7 +60,7 @@ def to_baseline(report):
   return tests
 
 
-def newest_complete_run(label='stable', log=print):
+def newest_complete_run(label='canary', log=print):
   """Returns (run, baseline tests) for the newest run that is complete."""
   for run in list_runs(label):
     log(f"Fetching {run['raw_results_url']}")

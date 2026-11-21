@@ -10,11 +10,11 @@ places, chosen by the WPT revision:
 | Revision | Tests | Baseline |
 |---|---|---|
 | `pinned` | The copy of WPT in Chromium at the version in `DEPS` (`third_party/blink/web_tests/external/wpt`) | Chromium's own expectations for those tests at that version: `TestExpectations` and the `-expected.txt` files |
-| `latest` | The newest upstream WPT commit that has a complete Chrome run on [wpt.fyi](https://wpt.fyi) | The results of that Chrome run |
+| `latest` | The newest upstream WPT commit that has a complete Chrome Canary run on [wpt.fyi](https://wpt.fyi) | The results of that Chrome Canary run |
 
 `pinned` answers "does Electron pass what the Chromium it is built from
 passes?" and is what pull requests use. `latest` answers "does this branch pass
-what current Chrome passes?", which also shows web platform fixes a release
+what Chrome Canary passes today?", which also shows web platform fixes a release
 branch is missing.
 
 ## Running locally
