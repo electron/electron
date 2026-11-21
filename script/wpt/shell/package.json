@@ -1,0 +1,7 @@
+{
+  "name": "electron-wpt-shell",
+  "version": "1.0.0",
+  "private": true,
+  "main": "main.js",
+  "description": "Minimal host app that wptrunner drives through Electron's chromedriver"
+}

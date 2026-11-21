@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wptrunner-electron"
+version = "0.1.0"
+description = "Out-of-tree wptrunner product that drives Electron through its own ChromeDriver"
+requires-python = ">=3.9"
+# wptrunner itself comes from the wpt checkout the tests are run from.
+dependencies = []
+
+[project.entry-points."wptrunner.products"]
+electron = "wptrunner_electron:get_product"
+
+[tool.setuptools]
+packages = ["wptrunner_electron"]

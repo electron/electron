@@ -1,0 +1,213 @@
+name: Pipeline Segment - Web Platform Tests
+
+# Runs web-platform-tests against a Linux x64 build of Electron from the same
+# workflow run and compares the results with Chromium's, using script/wpt
+# (see script/wpt/README.md). Chromium itself is never run here: the baseline
+# is either Chromium's own in-tree expectations (pinned) or a Chrome run that
+# wpt.fyi already has (latest).
+
+on:
+  workflow_call:
+    inputs:
+      wpt-revision:
+        type: string
+        description: 'pinned (the tests in Chromium at the version in DEPS) or latest (the newest upstream wpt commit with a Chrome run on wpt.fyi)'
+        required: true
+      test-runs-on:
+        type: string
+        description: 'What host to run the tests on'
+        required: true
+      test-container:
+        type: string
+        description: 'JSON container information for aks runs-on'
+        required: false
+        default: '{"image":null}'
+    secrets:
+      CHROMIUM_GIT_COOKIE:
+        required: false
+
+concurrency:
+  group: electron-wpt-${{ inputs.wpt-revision }}-${{ github.ref_protected == true && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.ref_protected != true }}
+
+permissions: {}
+
+env:
+  WPT_REVISION: ${{ inputs.wpt-revision }}
+  TOTAL_SHARDS: 16
+
+jobs:
+  # Fetches the tests and the baseline once, so that every shard runs the same
+  # tree and chromium.googlesource.com is cloned from a single job.
+  prepare:
+    name: Prepare
+    runs-on: ${{ inputs.test-runs-on }}
+    permissions:
+      contents: read
+    container: ${{ fromJSON(inputs.test-container) }} # zizmor: ignore[unpinned-images] the caller passes ghcr.io/electron/build tagged by the content hash computed in build.yml; there is no static digest to pin
+    # Callers' defaults do not propagate into reusable workflows.
+    defaults:
+      run:
+        shell: bash
+    env:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        path: src/electron
+        ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
+    - name: Set Chromium Git Cookie
+      uses: ./src/electron/.github/actions/set-chromium-cookie
+    - name: Install Python venv support
+      run: |
+        if ! python3 -c 'import ensurepip' 2>/dev/null; then
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update -y
+          apt-get install -y --no-install-recommends python3-venv
+        fi
+    - name: Fetch Tests and Baseline
+      timeout-minutes: 45
+      run: |
+        python3 src/electron/script/wpt/wpt.py prepare --work wpt-work --revision "$WPT_REVISION"
+        mkdir wpt-baseline
+        cp wpt-work/baseline.json wpt-work/meta.json wpt-baseline/
+        tar -czf wpt-work.tar.gz wpt-work
+    - name: Upload Tests
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: wpt-tree
+        path: wpt-work.tar.gz
+        retention-days: 1
+        compression-level: 0
+    - name: Upload Baseline
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: wpt-baseline
+        path: wpt-baseline
+
+  shard:
+    name: Shard ${{ matrix.shard }}
+    needs: prepare
+    runs-on: ${{ inputs.test-runs-on }}
+    permissions:
+      contents: read
+    container: ${{ fromJSON(inputs.test-container) }} # zizmor: ignore[unpinned-images] the caller passes ghcr.io/electron/build tagged by the content hash computed in build.yml; there is no static digest to pin
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    env:
+      SHARD: ${{ matrix.shard }}
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        path: src/electron
+        ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
+    # dist.zip and chromedriver.zip from the build job of this workflow run.
+    - name: Download Generated Artifacts
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: generated_artifacts_linux_x64
+        path: ./generated_artifacts_linux_x64
+    - name: Download Tests
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: wpt-tree
+    - name: Unpack Electron and Tests
+      run: |
+        mkdir electron-dist
+        unzip -q generated_artifacts_linux_x64/dist.zip -d electron-dist
+        unzip -q -o generated_artifacts_linux_x64/chromedriver.zip -d electron-dist
+        rm -rf generated_artifacts_linux_x64
+        tar -xzf wpt-work.tar.gz
+        rm wpt-work.tar.gz
+    - name: Install Python venv support
+      run: |
+        if ! python3 -c 'import ensurepip' 2>/dev/null; then
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update -y
+          apt-get install -y --no-install-recommends python3-venv
+        fi
+    - name: Run Web Platform Tests
+      timeout-minutes: 150
+      run: |
+        # The wpt servers answer for *.web-platform.test.
+        python3 src/electron/script/wpt/wpt.py hosts --work wpt-work >> /etc/hosts
+        # Run as builduser with the sandbox on, like Electron's own tests.
+        mkdir wpt-reports
+        chown -R builduser wpt-work wpt-reports
+        chmod 4755 electron-dist/chrome-sandbox
+        # Testing builds have DCHECKs on: they need --strip-feature-params
+        # (https://github.com/electron/electron/issues/55990) and run slower
+        # than the release builds test timeouts are written for.
+        runuser -u builduser -- python3 src/electron/script/wpt/wpt.py run \
+          --work wpt-work \
+          --electron-dir electron-dist \
+          --out wpt-reports \
+          --total-chunks "$TOTAL_SHARDS" \
+          --this-chunk "$SHARD" \
+          --timeout-multiplier 2 \
+          --strip-feature-params
+    - name: Upload Report
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: wpt-report-${{ matrix.shard }}
+        path: wpt-reports
+        if-no-files-found: ignore
+
+  # The name of this job is what a required status check refers to. Keep it
+  # the same wherever this workflow is called from.
+  summary:
+    name: Summary
+    needs: [prepare, shard]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        path: src/electron
+        ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
+        sparse-checkout: script/wpt
+    - name: Download Baseline
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: wpt-baseline
+        path: wpt-work
+    - name: Download Reports
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        pattern: wpt-report-*
+        path: wpt-reports
+        merge-multiple: true
+    # Fails when Electron fails something the baseline passes that
+    # script/wpt/expectations/known-differences.txt does not cover.
+    - name: Compare with Baseline
+      run: |
+        python3 src/electron/script/wpt/wpt.py summarize \
+          --work wpt-work \
+          --reports wpt-reports \
+          --expect-reports "$TOTAL_SHARDS" \
+          --summary "$GITHUB_STEP_SUMMARY" \
+          --out wpt-diff
+    - name: Upload Comparison
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: wpt-diff
+        path: wpt-diff
+        if-no-files-found: ignore
