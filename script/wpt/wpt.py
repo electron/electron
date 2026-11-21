@@ -172,14 +172,34 @@ def ensure_venv(work, wpt_tools):
   if os.path.exists(path) and subprocess.run(
       pip + ['-r', path], check=False, stdout=sys.stderr).returncode != 0:
     log('WebTransport requirements failed to install; continuing without')
-  # Installed from a copy, because building it leaves files next to the
-  # sources.
-  product = os.path.join(work, 'venv', 'wptrunner-electron')
-  shutil.copytree(os.path.join(HERE, 'product'), product, dirs_exist_ok=True)
-  run(pip + ['--no-deps', product])
+  register_product(python)
   with open(marker, 'w', encoding='utf-8'):
     pass
   return python
+
+
+def register_product(python):
+  """Makes the `electron` wptrunner product in product/ visible to the
+  virtualenv. wptrunner finds out-of-tree products through the
+  `wptrunner.products` entry point group, which is read from package
+  metadata, so this writes that metadata by hand instead of building and
+  installing a package (which would need a build backend from PyPI)."""
+  code = 'import sysconfig; print(sysconfig.get_paths()["purelib"])'
+  site_packages = subprocess.check_output([python, '-c', code],
+                                          text=True).strip()
+  dist_info = os.path.join(site_packages, 'wptrunner_electron-0.dist-info')
+  os.makedirs(dist_info, exist_ok=True)
+  files = {
+      os.path.join(dist_info, 'METADATA'):
+      'Metadata-Version: 2.1\nName: wptrunner-electron\nVersion: 0\n',
+      os.path.join(dist_info, 'entry_points.txt'):
+      '[wptrunner.products]\nelectron = wptrunner_electron:get_product\n',
+      os.path.join(site_packages, 'wptrunner_electron.pth'):
+      os.path.join(HERE, 'product') + '\n',
+  }
+  for path, content in files.items():
+    with open(path, 'w', encoding='utf-8') as f:
+      f.write(content)
 
 
 def wpt_cli(work, p):

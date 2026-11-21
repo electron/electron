@@ -15,8 +15,9 @@ Everything is reused from wptrunner's built-in `chrome` product except:
   * run_info gets the Electron and Chromium versions, so reports say what
   was tested.
 
-It is registered through the `wptrunner.products` entry point (see
-pyproject.toml), so `wpt run electron ...` works without changes to wpt.
+wpt.py registers it in the `wptrunner.products` entry point group (see
+register_product there), so `wpt run electron ...` works without changes to
+wpt.
 """
 
 import json
