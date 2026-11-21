@@ -250,7 +250,7 @@ def markdown(result, meta, problems=(), list_limit=300):
   if flaky:
     out += ['<details><summary>Flaky</summary>', ''] + _items_table(flaky, 100)
     out += ['', '</details>', '']
-  return f"{'\n'.join(out)}\n"
+  return '\n'.join(out) + '\n'
 
 
 def known_differences_lines(items):
