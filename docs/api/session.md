@@ -841,8 +841,8 @@ it, consuming one attempt, and the event fires again with `error` set to
 > authenticator allows it, and requests that strictly require a PIN cannot
 > proceed. Register the listener before any WebAuthn request starts.
 
-This event allows security keys that require user verification to work on
-platforms where no system-level WebAuthn UI exists (notably Linux). On
+On Linux and macOS, applications can use this event to prompt for a PIN when
+Chromium requests one for an external security key. On
 Windows, security key requests are handled by the operating system's own
 dialogs and this event is not emitted.
 
