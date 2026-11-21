@@ -2922,6 +2922,21 @@ describe('chromium features', () => {
         `);
         expect(data).toBe('undefined undefined undefined undefined');
       });
+
+      it('works with --enable-experimental-web-platform-features', async () => {
+        const appPath = path.join(fixturesPath, 'apps', 'shared-worker-experimental-features');
+        const args = [appPath];
+        if (process.platform === 'darwin') args.push('--use-mock-keychain');
+        const appProcess = ChildProcess.spawn(process.execPath, args);
+
+        let output = '';
+        appProcess.stdout.on('data', (data) => {
+          output += data;
+        });
+        const [code] = await once(appProcess, 'exit');
+        expect(output).toContain('title: hello');
+        expect(code).toBe(0);
+      });
     });
   });
 
