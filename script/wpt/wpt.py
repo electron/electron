@@ -219,7 +219,9 @@ def ensure_vpython(work, spec):
                         os.path.join(work, 'vpython-root'))
   if not os.access(os.path.expanduser('~'), os.W_OK):
     os.environ.setdefault('XDG_CACHE_HOME', os.path.join(work, 'cache'))
-  command = [vpython3, '-vpython-spec', spec, '--']
+  # No `--` after vpython's own flags: vpython hands it on to Python, which
+  # then takes whatever follows as a script path, `-c` and `-m` included.
+  command = [vpython3, '-vpython-spec', spec]
   # The first use downloads vpython itself and then Python and the packages
   # in the spec. Do that here, where a failure is easy to tell apart from a
   # failure of the tool that was going to run, and try again if it fails.
