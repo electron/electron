@@ -59,16 +59,17 @@ jobs:
       run: |
         branches=$(curl -fsSL https://releases.electronjs.org/schedule.json |
           jq -r '.[] | select(.status == "stable" or .status == "prerelease") | .branch')
-        failed=0
         for branch in $branches; do
           if ! [[ "$branch" =~ ^[0-9]+-x-y$ ]]; then
             continue
           fi
           echo "Dispatching WPT on $branch"
-          # A branch without this workflow cannot be dispatched to.
-          gh workflow run wpt.yml --ref "$branch" -f wpt-revision=latest || failed=1
+          # A branch that does not have this workflow yet cannot be dispatched
+          # to; that should not fail the run on main.
+          if ! gh workflow run wpt.yml --ref "$branch" -f wpt-revision=latest; then
+            echo "::warning::Could not start WPT on $branch"
+          fi
         done
-        exit "$failed"
 
   # GCLIENT_EXTRA_ARGS feeds the DEPS hash, so these must match the values
   # pipeline-segment-electron-build.yml sets or the src cache is missed.
