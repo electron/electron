@@ -1427,6 +1427,12 @@ will be drawn and no mouse events will be registered. Mouse events outside of
 the region will not be received by that window, but will fall through to
 whatever is behind the window.
 
+> [!NOTE]
+> On Linux Wayland sessions, `setShape` restricts the mouse input region so that
+> events outside the given shape fall through to the window below. Due to Wayland
+> protocol limitations, non-rectangular drawing requires a transparent window
+> (`transparent: true`).
+
 #### `win.setThumbarButtons(buttons)` _Windows_
 
 * `buttons` [ThumbarButton[]](structures/thumbar-button.md)
