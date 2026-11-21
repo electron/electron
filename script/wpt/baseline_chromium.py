@@ -10,6 +10,9 @@ formats:
   checked-in base manifest.
   * `WebTestFinder.skip_tests` gives the tests Chromium does not run (Skip
   lines in TestExpectations and NeverFixTests, manual tests).
+  * `filter_tests` with TestLists/chrome.filter and content_shell.filter
+  gives the tests Chromium runs in Chrome or content_shell instead of
+  headless_shell; they are left out as well.
   * `blinkpy.wpt_tests.test_loader.TestLoader.load_metadata` translates
   TestExpectations lines and `*-expected.txt` testharness baselines into
   wptrunner metadata, the same in-memory tree wptrunner is given on
@@ -28,6 +31,10 @@ import sys
 import warnings
 
 TEST_TYPES = ('testharness', 'reftest', 'crashtest')
+
+# third_party/blink/web_tests/TestLists files with the tests that do not run
+# in headless_shell_wpt_tests (docs/testing/run_web_platform_tests.md).
+OTHER_SUITE_FILTERS = ('chrome.filter', 'content_shell.filter')
 
 
 def main():
@@ -63,7 +70,8 @@ def main():
   path_finder.bootstrap_wpt_imports()
   from blinkpy.common.host import Host
   from blinkpy.w3c.wpt_manifest import WPTManifest
-  from blinkpy.web_tests.controllers.web_test_finder import WebTestFinder
+  from blinkpy.web_tests.controllers.web_test_finder import (WebTestFinder,
+                                                             filter_tests)
   from blinkpy.web_tests.models.test_expectations import TestExpectations
   from blinkpy.wpt_tests.product import HeadlessShell
   from blinkpy.wpt_tests.test_loader import TestLoader, _test_basename
@@ -109,8 +117,26 @@ def main():
   for _test_type, path, tests in manifest.itertypes(*TEST_TYPES):
     items.extend((path, test) for test in tests)
   blink_names = {f"external/wpt{test.id}": test.id for _, test in items}
-  skipped = WebTestFinder(port, options).skip_tests([], list(blink_names),
-                                                    expectations)
+  finder = WebTestFinder(port, options)
+  skipped = set(finder.skip_tests([], list(blink_names), expectations))
+  # Chromium's bots run every WPT in one of three suites, and the checked-in
+  # expectations of a test are the ones of its suite. Only the default suite,
+  # headless_shell_wpt_tests, drives the browser through ChromeDriver like
+  # the run on Electron does. The tests in these lists run in content_shell
+  # with run_web_tests.py (input through eventSender and testRunner instead
+  # of WebDriver) or in Chrome, so their expectations say nothing about a
+  # ChromeDriver run. Leave them out the way the bots do for that suite, with
+  # --inverted-test-launcher-filter-file (testing/buildbot).
+  # pylint: disable=protected-access
+  filters = finder._invert_filters(
+      finder._read_filter_files([
+          os.path.join(port.web_tests_dir(), 'TestLists', name)
+          for name in OTHER_SUITE_FILTERS
+      ], port.TEST_PATH_SEPARATOR))
+  # pylint: enable=protected-access
+  in_suite = set(filter_tests(list(blink_names), filters))
+  other_suite = set(blink_names) - in_suite - skipped
+  skipped |= other_suite
 
   baseline = {}
   metadata_by_path = {}
@@ -146,7 +172,8 @@ def main():
     json.dump([arg for arg in binary_args if 'crash' not in arg], f)
   with_expectations = sum(1 for entry in baseline.values() if entry)
   print(f'{len(baseline)} tests, {with_expectations} with non-pass '
-        f'expectations, {len(skipped)} skipped by Chromium')
+        f'expectations, {len(skipped)} skipped by Chromium '
+        f'({len(other_suite)} of them run in another suite)')
 
 
 def statuses(node):
