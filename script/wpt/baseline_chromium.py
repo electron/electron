@@ -153,7 +153,8 @@ def statuses(node):
     value = node.get('expected')
   except KeyError:
     return ['PASS', 'OK']
-  return [value] if isinstance(value, str) else list(value)
+  # Sorted, because the order blinkpy gives varies between Python versions.
+  return [value] if isinstance(value, str) else sorted(value)
 
 
 if __name__ == '__main__':
