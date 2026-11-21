@@ -175,7 +175,7 @@ def ensure_venv(work, wpt_tools):
   # Installed from a copy, because building it leaves files next to the
   # sources.
   product = os.path.join(work, 'venv', 'wptrunner-electron')
-  shutil.copytree(os.path.join(HERE, 'product'), product)
+  shutil.copytree(os.path.join(HERE, 'product'), product, dirs_exist_ok=True)
   run(pip + ['--no-deps', product])
   with open(marker, 'w', encoding='utf-8'):
     pass
