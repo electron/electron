@@ -455,6 +455,25 @@ jobs:
       SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
       SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
+  # Opt-in with the run-wpt label: compares web-platform-tests results of the
+  # linux-x64 build with Chromium's expectations for the same tests. Not part
+  # of gha-done, so it never blocks a pull request without the label.
+  wpt:
+    name: WPT
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-wpt.yml
+    needs: [setup, linux-x64]
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'run-wpt') }}
+    with:
+      wpt-revision: pinned
+      test-runs-on: electron-arc-centralus-linux-amd64-4core
+      test-container: '{"image":"ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}","options":"--user root --privileged --init --umask 0022"}'
+      src-cache-runs-on: electron-arc-centralus-linux-amd64-8core
+      src-cache-container: '{"image":"ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}","options":"--user root --umask 0022","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
+    secrets:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+
   linux-x64-asan:
     permissions:
       contents: read

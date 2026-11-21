@@ -1,0 +1,60 @@
+# Known differences between Electron and Chromium in web-platform-tests.
+#
+# A failure that passes in the baseline fails the WPT summary job unless a
+# line here matches it. A line is up to three glob patterns separated by
+# " | ": test URL, subtest name, failure message. Patterns left out match
+# anything. See README.md for how to add lines from a CI run.
+#
+# Group lines under a comment that says why Electron differs. If the reason is
+# a bug rather than a decision, link the issue.
+
+# window.prompt() is not supported (shell/renderer/window_setup.cc).
+* | * | *prompt() is not supported*
+
+# Electron's permission check handler can only answer granted or denied, so
+# the shell app reports "denied" where Chrome without UI reports "prompt".
+* | * | *expected "prompt" but got "denied"*
+
+# Electron parses window.open() features itself and does not clamp or reject
+# the same values Blink does.
+/html/browsers/the-window-object/open-close/*
+
+# No on-device model service: the built-in AI APIs are unavailable.
+/ai/*
+
+# User-Agent Client Hints are not populated (empty Sec-CH-UA).
+/client-hints/*
+
+# screen.orientation.lock() has no ScreenOrientationDelegate.
+/screen-orientation/*
+
+# WebAuthn discoverable credentials: no account selection for requests
+# without allowCredentials.
+/webauthn/getcredential-rk-passing.https.html
+
+# Local Network Access checks are disabled (kLocalNetworkAccessChecks in
+# shell/browser/feature_list.cc).
+/infrastructure/assumptions/non-local-ports*
+/fetch/local-network-access/*
+
+# Reports are not delivered to the reporting endpoint. Not root-caused.
+/connection-allowlist/tentative/*
+/reporting/* | * | *report*
+
+# test_driver.minimize_window() needs CDP Browser.getWindowForTarget.
+# TODO: remove once https://github.com/electron/electron/pull/55945 lands.
+* | * | *Action minimize_window not implemented*
+/accelerometer/*
+/ambient-light/*
+/gyroscope/*
+/magnetometer/*
+/orientation-sensor/*
+/gravity-sensor/*
+
+# Builds with DCHECKs only: sqlite_vfs::PendingFileSet closes a file on the UI
+# thread and hits a thread-restrictions DCHECK in the browser process.
+/css/css-page/crashtests/counter-containment-00[12].html
+/print/crashtests/reload-crash.html
+
+# Transient user activation is not consumed by CloseWatcher. Not root-caused.
+/close-watcher/user-activation/y-preventDefault-consume-transient-activation.html*

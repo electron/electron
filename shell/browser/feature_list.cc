@@ -14,6 +14,7 @@
 #include "base/metrics/field_trial.h"
 #include "components/spellcheck/common/spellcheck_features.h"
 #include "content/public/common/content_features.h"
+#include "content/public/common/content_switch_dependent_feature_overrides.h"
 #include "electron/buildflags/buildflags.h"
 #include "media/base/media_switches.h"
 #include "net/base/features.h"
@@ -118,7 +119,12 @@ void InitializeFeatureList() {
   if (platform_specific_disable_features.size() > 0) {
     disable_features += std::string(",") + platform_specific_disable_features;
   }
-  base::FeatureList::InitInstance(enable_features, disable_features);
+  // Apply the same switch-dependent overrides content's own startup does, so
+  // that e.g. --enable-experimental-web-platform-features enables the same
+  // features in the browser process as Blink does in the renderer.
+  base::FeatureList::InitInstance(
+      enable_features, disable_features,
+      content::GetSwitchDependentFeatureOverrides(*cmd_line));
 }
 
 void InitializeFieldTrials() {
