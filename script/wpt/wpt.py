@@ -493,6 +493,11 @@ def runner_command(args, work, p, meta, report, extra):
                      stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError:
       cmd.append('--no-enable-webtransport-h3')
+    else:
+      # `wpt run` starts the WebTransport-over-HTTP/3 server by itself only
+      # for its built-in browsers (the setup classes in tools/wpt/run.py);
+      # for any other product it has to be asked for.
+      cmd.append('--enable-webtransport-h3')
   return cmd + extra
 
 
