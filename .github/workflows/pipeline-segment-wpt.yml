@@ -38,13 +38,14 @@ env:
 
 jobs:
   # Fetches the tests and the baseline once, so that every shard runs the same
-  # tree and chromium.googlesource.com is cloned from a single job.
+  # tree and chromium.googlesource.com is cloned from a single job. This runs
+  # on a hosted runner instead of the build container because Chromium's
+  # blinkpy, which converts the expectations, needs Python 3.11 or newer.
   prepare:
     name: Prepare
-    runs-on: ${{ inputs.test-runs-on }}
+    runs-on: ubuntu-latest
     permissions:
       contents: read
-    container: ${{ fromJSON(inputs.test-container) }} # zizmor: ignore[unpinned-images] the caller passes ghcr.io/electron/build tagged by the content hash computed in build.yml; there is no static digest to pin
     # Callers' defaults do not propagate into reusable workflows.
     defaults:
       run:
@@ -63,9 +64,8 @@ jobs:
     - name: Install Python venv support
       run: |
         if ! python3 -c 'import ensurepip' 2>/dev/null; then
-          export DEBIAN_FRONTEND=noninteractive
-          apt-get update -y
-          apt-get install -y --no-install-recommends python3-venv
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends python3-venv
         fi
     - name: Fetch Tests and Baseline
       timeout-minutes: 45

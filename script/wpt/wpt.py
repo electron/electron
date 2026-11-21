@@ -239,6 +239,9 @@ def fetch_mojojs(version, dest):
 
 
 def prepare_pinned(work, meta):
+  if sys.version_info < (3, 11):
+    raise SystemExit('Chromium\'s blinkpy, which the pinned baseline is built '
+                     'with, needs Python 3.11 or newer')
   version = deps_var(os.path.join(ELECTRON_ROOT, 'DEPS'), 'chromium_version')
   meta['chromium_version'] = version
   p = paths_for(work, 'pinned')
