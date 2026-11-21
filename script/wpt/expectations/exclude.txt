@@ -9,6 +9,9 @@
 #   wdspec: most of WebDriver BiDi and New Window need CDP Target.createTarget
 #     and Target.createBrowserContext, which Electron does not implement.
 
+# Electron does not support prerender speculation rules.
+/speculation-rules/prerender/
+
 # WebDriver protocol tests (wdspec), in case the type filter is lifted.
 /webdriver/
 /infrastructure/webdriver/

@@ -5,6 +5,10 @@ name: Pipeline Segment - Web Platform Tests
 # (see script/wpt/README.md). Chromium itself is never run here: the baseline
 # is either Chromium's own in-tree expectations (pinned) or a Chrome
 # Canary run that wpt.fyi already has (latest).
+#
+# For pinned, the tests, the expectations and Chromium's test tools come from
+# the src cache the checkout job of the same workflow run saved, and Chromium's
+# Python tools run with depot_tools' vpython3.
 
 on:
   workflow_call:
@@ -17,6 +21,16 @@ on:
         type: string
         description: 'What host to run the tests on'
         required: true
+      src-cache-runs-on:
+        type: string
+        description: 'For pinned: a host that can read the src cache'
+        required: false
+        default: electron-arc-centralus-linux-amd64-8core
+      src-cache-container:
+        type: string
+        description: 'For pinned: JSON container information with the src cache volume'
+        required: false
+        default: '{"image":null}'
       test-container:
         type: string
         description: 'JSON container information for aks runs-on'
@@ -38,20 +52,24 @@ env:
 
 jobs:
   # Fetches the tests and the baseline once, so that every shard runs the same
-  # tree and chromium.googlesource.com is cloned from a single job. This runs
-  # on a hosted runner instead of the build container because Chromium's
-  # blinkpy, which converts the expectations, needs Python 3.11 or newer.
+  # tree. For pinned they are in Chromium, so this runs where the src cache
+  # can be read, like the build; for latest they are downloaded and a hosted
+  # runner is enough.
   prepare:
     name: Prepare
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.wpt-revision == 'pinned' && inputs.src-cache-runs-on || 'ubuntu-latest' }}
     permissions:
       contents: read
+    container: ${{ fromJSON(inputs.wpt-revision == 'pinned' && inputs.src-cache-container || '{"image":null}') }} # zizmor: ignore[unpinned-images] the caller passes ghcr.io/electron/build tagged by the content hash computed in build.yml; there is no static digest to pin
     # Callers' defaults do not propagate into reusable workflows.
     defaults:
       run:
         shell: bash
     env:
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      # Feeds the DEPS hash that names the src cache, so it must match what
+      # the Linux checkout job sets.
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
     steps:
     - name: Checkout Electron
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -60,16 +78,46 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
         persist-credentials: false
     - name: Set Chromium Git Cookie
+      if: ${{ inputs.wpt-revision == 'pinned' }}
       uses: ./src/electron/.github/actions/set-chromium-cookie
-    - name: Install Python venv support
+    - name: Generate DEPS Hash
+      if: ${{ inputs.wpt-revision == 'pinned' }}
       run: |
-        if ! python3 -c 'import ensurepip' 2>/dev/null; then
-          sudo apt-get update -y
-          sudo apt-get install -y --no-install-recommends python3-venv
-        fi
+        node src/electron/script/generate-deps-hash.js
+        echo "DEPSHASH=v2-src-cache-$(cat src/electron/.depshash)" >> $GITHUB_ENV
+    # The Chromium checkout Electron is built from, as the checkout job of
+    # this workflow run saved it.
+    - name: Restore src cache via AKS
+      if: ${{ inputs.wpt-revision == 'pinned' }}
+      uses: ./src/electron/.github/actions/restore-cache-aks
+      with:
+        target-platform: linux
+    # Restoring the cache removes src/electron.
+    - name: Checkout Electron
+      if: ${{ inputs.wpt-revision == 'pinned' }}
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        path: src/electron
+        ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
+    - name: Get Depot Tools
+      if: ${{ inputs.wpt-revision == 'pinned' }}
+      timeout-minutes: 5
+      run: |
+        # googlesource.com sometimes cuts a clone off mid-pack; retry it. A
+        # clone that fails during checkout leaves ./depot_tools behind, so
+        # have the retry remove it first.
+        RETRY_CLEAN_PATH=depot_tools bash src/electron/script/actions/retry.sh git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+        # Ensure depot_tools does not update.
+        touch depot_tools/.disable_auto_update
     - name: Fetch Tests and Baseline
       timeout-minutes: 45
       run: |
+        # For vpython3 (pinned). At the end of PATH, so that python3 stays
+        # the system one and not depot_tools' wrapper.
+        export PATH="$PATH:$PWD/depot_tools"
+        # For pinned this copies what is needed out of src, the Chromium
+        # checkout this Electron checkout is in.
         python3 src/electron/script/wpt/wpt.py prepare --work wpt-work --revision "$WPT_REVISION"
         mkdir wpt-baseline
         cp wpt-work/baseline.json wpt-work/meta.json wpt-baseline/
@@ -128,7 +176,20 @@ jobs:
         rm -rf generated_artifacts_linux_x64
         tar -xzf wpt-work.tar.gz
         rm wpt-work.tar.gz
+    # pinned runs wptrunner with depot_tools' vpython3 and Chromium's
+    # vpython.toml; latest runs upstream wpt in a virtualenv.
+    - name: Get Depot Tools
+      if: ${{ inputs.wpt-revision == 'pinned' }}
+      timeout-minutes: 5
+      run: |
+        # googlesource.com sometimes cuts a clone off mid-pack; retry it. A
+        # clone that fails during checkout leaves ./depot_tools behind, so
+        # have the retry remove it first.
+        RETRY_CLEAN_PATH=depot_tools bash src/electron/script/actions/retry.sh git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+        # Ensure depot_tools does not update.
+        touch depot_tools/.disable_auto_update
     - name: Install Python venv support
+      if: ${{ inputs.wpt-revision != 'pinned' }}
       run: |
         if ! python3 -c 'import ensurepip' 2>/dev/null; then
           export DEBIAN_FRONTEND=noninteractive
@@ -138,23 +199,34 @@ jobs:
     - name: Run Web Platform Tests
       timeout-minutes: 150
       run: |
+        # For vpython3 (pinned). At the end of PATH, so that python3 stays
+        # the system one and not depot_tools' wrapper.
+        export PATH="$PATH:$PWD/depot_tools"
         # The wpt servers answer for *.web-platform.test.
         python3 src/electron/script/wpt/wpt.py hosts --work wpt-work >> /etc/hosts
         # Run as builduser with the sandbox on, like Electron's own tests.
-        mkdir wpt-reports
-        chown -R builduser wpt-work wpt-reports
+        # vpython3 installs itself into depot_tools on first use and keeps its
+        # Python environments in wpt-work, so builduser needs both.
+        mkdir wpt-reports wpt-html
+        chown -R builduser wpt-work wpt-reports wpt-html
+        if [ -d depot_tools ]; then
+          chown -R builduser depot_tools
+        fi
         chmod 4755 electron-dist/chrome-sandbox
         # Testing builds have DCHECKs on: they need --strip-feature-params
         # (https://github.com/electron/electron/issues/55990) and run slower
         # than the release builds test timeouts are written for.
-        runuser -u builduser -- python3 src/electron/script/wpt/wpt.py run \
+        # What follows -- goes to wptrunner: mozlog's HTML report of the
+        # first run, one self-contained file.
+        runuser -u builduser -- env "PATH=$PATH" python3 src/electron/script/wpt/wpt.py run \
           --work wpt-work \
           --electron-dir electron-dist \
           --out wpt-reports \
           --total-chunks "$TOTAL_SHARDS" \
           --this-chunk "$SHARD" \
           --timeout-multiplier 2 \
-          --strip-feature-params
+          --strip-feature-params \
+          -- "--log-html=$PWD/wpt-html/wpt-html-$SHARD.html"
     - name: Upload Report
       if: ${{ !cancelled() }}
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -162,6 +234,15 @@ jobs:
         name: wpt-report-${{ matrix.shard }}
         path: wpt-reports
         if-no-files-found: ignore
+    # Not zipped, so that it opens in the browser from the run's page.
+    - name: Upload HTML Report
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: wpt-html-${{ matrix.shard }}.html
+        path: wpt-html/wpt-html-${{ matrix.shard }}.html
+        if-no-files-found: ignore
+        archive: false
 
   # The name of this job is what a required status check refers to. Keep it
   # the same wherever this workflow is called from.
