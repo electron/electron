@@ -27,15 +27,11 @@
 
 const { app, BrowserWindow, session } = require('electron');
 
-const WPT_HOST_RE = /^(?:[^.]+\.)*(?:web-platform\.test|not-web-platform\.test|xn--lve-6lad\.(?:web-platform|not-web-platform)\.test|localhost|127\.0\.0\.1)$/;
+const WPT_HOST_RE =
+  /^(?:[^.]+\.)*(?:web-platform\.test|not-web-platform\.test|xn--lve-6lad\.(?:web-platform|not-web-platform)\.test|localhost|127\.0\.0\.1)$/;
 
 // Permissions Chrome grants without showing a prompt.
-const GRANTED_WITHOUT_PROMPT = new Set([
-  'clipboard-sanitized-write',
-  'fullscreen',
-  'pointerLock',
-  'keyboardLock'
-]);
+const GRANTED_WITHOUT_PROMPT = new Set(['clipboard-sanitized-write', 'fullscreen', 'pointerLock', 'keyboardLock']);
 
 const webPreferences = {
   contextIsolation: true,
@@ -44,11 +40,11 @@ const webPreferences = {
   backgroundThrottling: false
 };
 
-function log (...args) {
+function log(...args) {
   if (process.env.ELECTRON_WPT_SHELL_LOG) console.error('[wpt-shell]', ...args);
 }
 
-function setupSession (ses) {
+function setupSession(ses) {
   ses.setPermissionRequestHandler((wc, permission, callback, details) => {
     const granted = GRANTED_WITHOUT_PROMPT.has(permission);
     log('request', permission, details && details.requestingUrl, granted);
