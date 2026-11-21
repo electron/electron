@@ -3486,7 +3486,7 @@ describe('webContents module', { retry: 0 }, () => {
     };
 
     it('animates images by default', async () => {
-      const w = new BrowserWindow({ show: true, width: 200, height: 200 });
+      const w = new BrowserWindow({ show: true, alwaysOnTop: true, width: 200, height: 200 });
       await loadAnimation(w);
       const seen = new Set<string>();
       await waitUntil(async () => {
@@ -3497,7 +3497,7 @@ describe('webContents module', { retry: 0 }, () => {
     });
 
     it('stops images from animating when set to "noAnimation"', async () => {
-      const w = new BrowserWindow({ show: true, width: 200, height: 200 });
+      const w = new BrowserWindow({ show: true, alwaysOnTop: true, width: 200, height: 200 });
       w.webContents.setImageAnimationPolicy('noAnimation');
       await loadAnimation(w);
       // Wait for the first (red) frame to be painted so the samples below are
