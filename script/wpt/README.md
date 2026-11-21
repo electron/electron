@@ -73,6 +73,13 @@ Electron runs in a window under Xvfb instead of headless; it does not use
 Chromium's test fonts; and a few of the switches are specific to
 `headless_shell` and have no effect on Electron.
 
+Chromium does not run every WPT that way. The tests listed in
+`third_party/blink/web_tests/TestLists/content_shell.filter` run in
+`content_shell`, which sends input through its own test APIs instead of
+ChromeDriver, and the ones in `chrome.filter` run in Chrome. Chromium's
+expectations for those tests do not describe a ChromeDriver run, so `pinned`
+leaves them out, as Chromium's `headless_shell` suite does.
+
 ## Known differences
 
 A test that passes in the baseline and fails on Electron fails the run, unless

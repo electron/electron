@@ -44,6 +44,7 @@ CHROMIUM_PATHS = [
     'testing',
     'third_party/blink/tools',
     'third_party/blink/web_tests/*',
+    'third_party/blink/web_tests/TestLists',
     'third_party/blink/web_tests/external',
     'third_party/blink/web_tests/platform/linux/external/wpt',
     'third_party/blink/web_tests/platform/win/external/wpt',
