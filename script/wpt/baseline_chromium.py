@@ -107,9 +107,11 @@ def main():
   # TestLoader.__init__ starts loading tests for a wptrunner run; only its
   # expectation translation is wanted here, so skip the constructor.
   loader = object.__new__(TestLoader)
+  # pylint: disable=protected-access
   loader._port = port
   loader._expectations = expectations
   loader._tests_to_skip = []
+  # pylint: enable=protected-access
   loader.sanitizer_mode = False
   run_info = {'os': 'linux', 'product': 'headless_shell', 'debug': False}
 
