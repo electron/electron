@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Filip Skokan <panva.ip@gmail.com>
+Date: Wed, 14 Oct 2026 11:37:36 +0200
+Subject: test: wait for inspector restart before exit
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The self-directed debug signal restarts the inspector asynchronously.
+Wait for the replacement server to listen before asking the child to
+exit, instead of racing startup against a zero-delay timer.
+
+Refs: https://github.com/nodejs/reliability/issues/1687
+Signed-off-by: Filip Skokan <panva.ip@gmail.com>
+Assisted-by: Codex
+PR-URL: https://github.com/nodejs/node/pull/66722
+Refs: https://github.com/nodejs/reliability/issues/1686
+Refs: https://github.com/nodejs/reliability/issues/1690
+Reviewed-By: Antoine du Hamel <duhamelantoine1995@gmail.com>
+Reviewed-By: James M Snell <jasnell@gmail.com>
+Reviewed-By: Matteo Collina <matteo.collina@gmail.com>
+Reviewed-By: Guilherme Araújo <arauujogui@gmail.com>
+(cherry picked from commit 592a0bd89c5f1e1857f0eb6420e71f29e3ac307a)
+
+diff --git a/test/parallel/test-inspector-debug-end.js b/test/parallel/test-inspector-debug-end.js
+index 328f15628e3c6a6f2f8f723803a3d92b4e5620b1..fe5a62430fde308c6cc3c70cb1edb865eb85769c 100644
+--- a/test/parallel/test-inspector-debug-end.js
++++ b/test/parallel/test-inspector-debug-end.js
+@@ -22,18 +22,23 @@ async function testNoSessionNoCrash() {
+ async function testSessionNoCrash() {
+   console.log('Test there\'s no crash stopping server after connecting');
+   const script = `process._debugEnd();
+-                  process._debugProcess(process.pid);
+-                  setTimeout(() => {
+-                      console.log("Done");
+-                      process.exit(42);
+-                  });`;
++                  process.stdin.once('data', () => {
++                    console.log("Done");
++                    process.exit(42);
++                  });
++                  process._debugProcess(process.pid);`;
+ 
+   const instance = new NodeInstance('--inspect-brk=0', script);
+   const session = await instance.connectInspectorSession();
+   await session.send({ method: 'NodeRuntime.enable' });
+   await session.waitForNotification('NodeRuntime.waitingForDebugger');
++  instance.resetPort();
+   await session.send({ 'method': 'Runtime.runIfWaitingForDebugger' });
+   await session.waitForServerDisconnect();
++  // _debugProcess() starts the inspector asynchronously. Wait for the new
++  // server to listen before asking the child to exit.
++  await instance.portPromise;
++  instance.write('exit');
+   assert.strictEqual((await instance.expectShutdown()).exitCode, 42);
+ }
+ 
