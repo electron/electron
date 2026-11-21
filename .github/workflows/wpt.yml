@@ -2,7 +2,8 @@ name: WPT
 
 # Builds Electron for Linux x64 and runs web-platform-tests against it. The
 # weekly run compares main and every supported release branch with the newest
-# Chrome results on wpt.fyi, to catch web platform fixes a branch is missing.
+# Chrome Canary results on wpt.fyi, to catch web platform fixes a branch is
+# missing.
 # See script/wpt/README.md.
 
 run-name: WPT (${{ github.ref_name }}, ${{ inputs.wpt-revision || 'latest' }})

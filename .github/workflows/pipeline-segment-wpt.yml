@@ -3,15 +3,15 @@ name: Pipeline Segment - Web Platform Tests
 # Runs web-platform-tests against a Linux x64 build of Electron from the same
 # workflow run and compares the results with Chromium's, using script/wpt
 # (see script/wpt/README.md). Chromium itself is never run here: the baseline
-# is either Chromium's own in-tree expectations (pinned) or a Chrome run that
-# wpt.fyi already has (latest).
+# is either Chromium's own in-tree expectations (pinned) or a Chrome
+# Canary run that wpt.fyi already has (latest).
 
 on:
   workflow_call:
     inputs:
       wpt-revision:
         type: string
-        description: 'pinned (the tests in Chromium at the version in DEPS) or latest (the newest upstream wpt commit with a Chrome run on wpt.fyi)'
+        description: 'pinned (the tests in Chromium at the version in DEPS) or latest (the newest upstream wpt commit with a Chrome Canary run on wpt.fyi)'
         required: true
       test-runs-on:
         type: string
