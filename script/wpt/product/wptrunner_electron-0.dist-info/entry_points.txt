@@ -1,0 +1,2 @@
+[wptrunner.products]
+electron = wptrunner_electron:get_product

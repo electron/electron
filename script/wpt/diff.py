@@ -14,8 +14,9 @@ compared.
 
 A result is an Electron-only failure when Electron does not pass, the baseline
 accepts a pass, and the baseline does not accept the status Electron got. When
-a test is run more than once (the shards retry what failed), it only counts if
-every run fails; results that differ between runs are reported as flaky.
+a test is run more than once (the shards retry what failed, except tests that
+timed out), it only counts if every run fails; results that differ between
+runs are reported as flaky.
 
 Known differences (expectations/known-differences.txt) are lines of up to
 three `|`-separated glob patterns: test URL, subtest name, message. Missing

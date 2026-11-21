@@ -17,6 +17,7 @@ import shutil
 import socket
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -27,25 +28,29 @@ sys.path.insert(0, HERE)
 import baseline_wptfyi  # noqa: E402
 import diff  # noqa: E402
 
-CHROMIUM_GIT = 'https://chromium.googlesource.com'
 WPT_GIT = 'https://github.com/web-platform-tests/wpt.git'
 CFT_URL = ('https://storage.googleapis.com/chrome-for-testing-public/'
            '%s/mojojs.zip')
 
-# What Chromium's run_wpt_tests.py needs from chromium/src, plus the files
-# blinkpy imports on the way.
-CHROMIUM_SPARSE_PATHS = [
-    '/DEPS',
-    '/build/util/',
-    '/testing/',
-    '/third_party/blink/tools/',
-    '/third_party/blink/web_tests/*',
-    '!/third_party/blink/web_tests/*/',
-    '/third_party/blink/web_tests/external/',
-    '/third_party/blink/web_tests/platform/linux/external/wpt/',
-    '/third_party/blink/web_tests/platform/win/external/wpt/',
-    '/third_party/blink/web_tests/resources/',
-    '/third_party/wpt_tools/',
+# What `pinned` takes from the Chromium checkout Electron is built from: the
+# tests, the expectations, Chromium's wptrunner, and blinkpy with the files it
+# imports on the way. Paths ending in /* stand for the files directly in that
+# directory.
+CHROMIUM_PATHS = [
+    'DEPS',
+    'vpython.toml',
+    'vpython.toml.uv.lock',
+    'build/util',
+    'testing',
+    'third_party/blink/tools',
+    'third_party/blink/web_tests/*',
+    'third_party/blink/web_tests/external',
+    'third_party/blink/web_tests/platform/linux/external/wpt',
+    'third_party/blink/web_tests/platform/win/external/wpt',
+    'third_party/blink/web_tests/resources',
+    # blinkpy parses TestExpectations with typ.
+    'third_party/catapult/third_party/typ',
+    'third_party/wpt_tools',
 ]
 
 # wdspec and print-reftest need CDP commands Electron does not implement yet
@@ -66,6 +71,11 @@ CHROMIUM_BINARY_ARGS = [
     # have; this is the closest equivalent.
     '--lang=en-US',
 ]
+
+# Test statuses the retry pass does not run again: every timeout would take
+# the whole (multiplied) test timeout a second time. Such a test counts as
+# failing after its one run.
+NO_RETRY = ('TIMEOUT', 'EXTERNAL-TIMEOUT')
 
 WPT_HOSTS = ('web-platform.test,.web-platform.test,'
              'not-web-platform.test,.not-web-platform.test')
@@ -99,8 +109,8 @@ def deps_var(deps_path, name):
   return match.group(1)
 
 
-def sparse_clone(url, revision, dest, paths=None):
-  """Fetches one commit without history or unneeded blobs."""
+def clone_commit(url, revision, dest):
+  """Fetches one commit without history."""
   if os.path.isdir(dest):
     log(f'Reusing {dest}')
     return
@@ -111,17 +121,49 @@ def sparse_clone(url, revision, dest, paths=None):
 
   git('init', '-q')
   git('remote', 'add', 'origin', url)
-  if paths:
-    git('config', 'remote.origin.promisor', 'true')
-    git('config', 'remote.origin.partialclonefilter', 'blob:none')
-    git('sparse-checkout', 'set', '--no-cone', *paths)
-    git('fetch', '-q', '--depth=1', '--filter=blob:none', 'origin', revision)
-  else:
-    git('fetch', '-q', '--depth=1', 'origin', revision)
+  git('fetch', '-q', '--depth=1', 'origin', revision)
   git('-c', 'advice.detachedHead=false', 'checkout', '-q', 'FETCH_HEAD')
   # The history is not needed again and would double the size of the
   # artifact the tree is passed to the shards in.
   shutil.rmtree(os.path.join(dest, '.git'))
+
+
+def copy_chromium_files(chromium_src, dest):
+  """Copies CHROMIUM_PATHS out of a Chromium checkout, so that the shards get
+  a tree of a few hundred MB instead of a whole checkout."""
+  if os.path.isdir(dest):
+    log(f'Reusing {dest}')
+    return
+  log(f'Copying Chromium\'s tests and tools from {chromium_src}')
+  ignore = shutil.ignore_patterns('.git', '__pycache__')
+  for path in CHROMIUM_PATHS:
+    files_only = path.endswith('/*')
+    path = path[:-2] if files_only else path
+    source = os.path.join(chromium_src, *path.split('/'))
+    target = os.path.join(dest, *path.split('/'))
+    if not os.path.exists(source):
+      raise SystemExit(f'{source} not found: --chromium-src must be the '
+                       'Chromium checkout (src) that Electron is built in')
+    if files_only:
+      os.makedirs(target, exist_ok=True)
+      for entry in os.scandir(source):
+        if entry.is_file():
+          shutil.copy2(entry.path, target)
+    elif os.path.isdir(source):
+      shutil.copytree(source, target, symlinks=True, ignore=ignore)
+    else:
+      os.makedirs(os.path.dirname(target), exist_ok=True)
+      shutil.copy2(source, target)
+
+
+def chromium_checkout_version(chromium_src):
+  try:
+    with open(os.path.join(chromium_src, 'chrome', 'VERSION'),
+              encoding='utf-8') as f:
+      parts = dict(line.strip().split('=', 1) for line in f if '=' in line)
+    return '.'.join(parts[key] for key in ('MAJOR', 'MINOR', 'BUILD', 'PATCH'))
+  except (OSError, KeyError):
+    return None
 
 
 def paths_for(work, revision=None):
@@ -135,6 +177,7 @@ def paths_for(work, revision=None):
   if (revision or read_json(p['meta'])['revision']) == 'pinned':
     src = os.path.join(work, 'chromium', 'src')
     p['chromium'] = src
+    p['vpython_spec'] = os.path.join(src, 'vpython.toml')
     p['wpt_tools'] = os.path.join(src, 'third_party', 'wpt_tools', 'wpt')
     p['tests'] = os.path.join(src, 'third_party', 'blink', 'web_tests',
                               'external', 'wpt')
@@ -145,14 +188,62 @@ def paths_for(work, revision=None):
   return p
 
 
-def venv_python(work):
-  return os.path.join(work, 'venv', 'bin', 'python')
+def python_command(work, p):
+  """The command prefix that starts the Python the wpt tools run with.
+
+  `pinned` uses depot_tools' vpython3 with Chromium's own vpython.toml, which
+  is how Chromium runs blinkpy and wptrunner: the same Python version and the
+  same packages, with nothing to install here. `latest` runs upstream wpt,
+  which has no vpython spec, in a virtualenv with wpt's requirements."""
+  if 'vpython_spec' in p:
+    return ensure_vpython(work, p['vpython_spec'])
+  return [ensure_venv(work, p['wpt_tools'])]
+
+
+_VPYTHON = []
+
+
+def ensure_vpython(work, spec):
+  if _VPYTHON:
+    return list(_VPYTHON)
+  vpython3 = shutil.which('vpython3')
+  if not vpython3:
+    raise SystemExit('vpython3 not found: `pinned` runs Chromium\'s Python '
+                     'tools with vpython3, so depot_tools has to be on PATH')
+  # vpython keeps its environments in the user's cache directory. CI runs
+  # this as root and then as builduser, whose home directory may not be
+  # writable, so keep them in the work directory, which both can write to.
+  # They are set in os.environ because wptrunner starts more Python
+  # processes, which go through vpython again.
+  os.environ.setdefault('VPYTHON_VIRTUALENV_ROOT',
+                        os.path.join(work, 'vpython-root'))
+  if not os.access(os.path.expanduser('~'), os.W_OK):
+    os.environ.setdefault('XDG_CACHE_HOME', os.path.join(work, 'cache'))
+  command = [vpython3, '-vpython-spec', spec, '--']
+  # The first use downloads vpython itself and then Python and the packages
+  # in the spec. Do that here, where a failure is easy to tell apart from a
+  # failure of the tool that was going to run, and try again if it fails.
+  probe = command + ['-c', 'import sys; print(sys.version)']
+  log(f"$ {' '.join(probe)}")
+  for attempt in range(3):
+    if attempt:
+      time.sleep(10 * attempt)
+    result = subprocess.run(probe,
+                            check=False,
+                            stdout=subprocess.PIPE,
+                            text=True)
+    if result.returncode == 0:
+      log(f'vpython3 gives Python {result.stdout.strip()}')
+      _VPYTHON.extend(command)
+      return command
+    log(f'vpython3 exited with {result.returncode}')
+  raise SystemExit(f'vpython3 could not set up the environment in {spec}')
 
 
 def ensure_venv(work, wpt_tools):
   """Creates the virtualenv wptrunner runs in. It is not relocatable, so
   every job creates its own instead of receiving it with the tree."""
-  python = venv_python(work)
+  python = os.path.join(work, 'venv', 'bin', 'python')
   marker = os.path.join(work, 'venv', '.electron-wpt')
   if os.path.exists(marker):
     return python
@@ -160,52 +251,27 @@ def ensure_venv(work, wpt_tools):
   pip = [
       python, '-m', 'pip', 'install', '--quiet', '--disable-pip-version-check'
   ]
-  # What `wpt run` installs. Chromium's copy of the tools has no
-  # requirements file for some of them.
+  # What `wpt run` installs.
   for name in ('manifest', 'wptrunner', 'serve'):
-    path = os.path.join(wpt_tools, 'tools', name, 'requirements.txt')
-    if os.path.exists(path):
-      run(pip + ['-r', path])
+    run(pip +
+        ['-r', os.path.join(wpt_tools, 'tools', name, 'requirements.txt')])
   # WebTransport needs aioquic, which does not build everywhere; without it
   # the WebTransport-over-HTTP/3 server is left off.
   path = os.path.join(wpt_tools, 'tools', 'webtransport', 'requirements.txt')
-  if os.path.exists(path) and subprocess.run(
-      pip + ['-r', path], check=False, stdout=sys.stderr).returncode != 0:
+  if subprocess.run(pip + ['-r', path], check=False,
+                    stdout=sys.stderr).returncode != 0:
     log('WebTransport requirements failed to install; continuing without')
-  register_product(python)
   with open(marker, 'w', encoding='utf-8'):
     pass
   return python
 
 
-def register_product(python):
-  """Makes the `electron` wptrunner product in product/ visible to the
-  virtualenv. wptrunner finds out-of-tree products through the
-  `wptrunner.products` entry point group, which is read from package
-  metadata, so this writes that metadata by hand instead of building and
-  installing a package (which would need a build backend from PyPI)."""
-  code = 'import sysconfig; print(sysconfig.get_paths()["purelib"])'
-  site_packages = subprocess.check_output([python, '-c', code],
-                                          text=True).strip()
-  dist_info = os.path.join(site_packages, 'wptrunner_electron-0.dist-info')
-  os.makedirs(dist_info, exist_ok=True)
-  files = {
-      os.path.join(dist_info, 'METADATA'):
-      'Metadata-Version: 2.1\nName: wptrunner-electron\nVersion: 0\n',
-      os.path.join(dist_info, 'entry_points.txt'):
-      '[wptrunner.products]\nelectron = wptrunner_electron:get_product\n',
-      os.path.join(site_packages, 'wptrunner_electron.pth'):
-      os.path.join(HERE, 'product') + '\n',
-  }
-  for path, content in files.items():
-    with open(path, 'w', encoding='utf-8') as f:
-      f.write(content)
-
-
 def wpt_cli(work, p):
-  return [
-      venv_python(work),
-      os.path.join(p['wpt_tools'], 'wpt'), '--venv', p['venv'],
+  """The `wpt` command line of the tools in the work directory, through
+  wpt_cli.py so that it knows the `electron` product. --skip-venv-setup keeps
+  it from creating a virtualenv of its own and installing into it."""
+  return python_command(work, p) + [
+      os.path.join(HERE, 'wpt_cli.py'), p['wpt_tools'], '--venv', p['venv'],
       '--skip-venv-setup'
   ]
 
@@ -238,26 +304,21 @@ def fetch_mojojs(version, dest):
   return True
 
 
-def prepare_pinned(work, meta):
-  if sys.version_info < (3, 11):
-    raise SystemExit('Chromium\'s blinkpy, which the pinned baseline is built '
-                     'with, needs Python 3.11 or newer')
+def prepare_pinned(work, meta, chromium_src):
   version = deps_var(os.path.join(ELECTRON_ROOT, 'DEPS'), 'chromium_version')
   meta['chromium_version'] = version
   p = paths_for(work, 'pinned')
   src = p['chromium']
-  sparse_clone(f"{CHROMIUM_GIT}/chromium/src.git", f"refs/tags/{version}", src,
-               CHROMIUM_SPARSE_PATHS)
-  # blinkpy parses TestExpectations with typ, which lives in catapult.
-  sparse_clone(f"{CHROMIUM_GIT}/catapult.git",
-               deps_var(os.path.join(src, 'DEPS'), 'catapult_revision'),
-               os.path.join(src, 'third_party', 'catapult'),
-               ['/third_party/typ/'])
-  python = ensure_venv(work, p['wpt_tools'])
+  if not os.path.isdir(src):
+    checkout = chromium_checkout_version(chromium_src)
+    if checkout and checkout != version:
+      log(f'Warning: {chromium_src} is at Chromium {checkout} but DEPS has '
+          f'{version}; the tests and the baseline are from {checkout}')
+  copy_chromium_files(chromium_src, src)
+  python = python_command(work, p)
 
   binary_args_path = os.path.join(work, 'chromium-binary-args.json')
-  run([
-      python,
+  run(python + [
       os.path.join(HERE, 'baseline_chromium.py'), '--chromium-src', src,
       '--out', p['baseline'], '--skip-out', p['skip'], '--runner-args-out',
       binary_args_path
@@ -267,7 +328,7 @@ def prepare_pinned(work, meta):
 
   meta['mojojs'] = fetch_mojojs(version, p['mojojs'])
   meta['baseline'] = f'Chromium {version}'
-  meta['tests_from'] = (f'chromium/src {version}, '
+  meta['tests_from'] = (f'Chromium {version}, '
                         '`third_party/blink/web_tests/external/wpt`')
   meta['baseline_detail'] = ('Chromium\'s in-tree `TestExpectations` and '
                              f'`-expected.txt` baselines at {version}')
@@ -296,8 +357,7 @@ def prepare_latest(work, meta, label):
   del tests
   p = paths_for(work, 'latest')
   wpt = p['tests']
-  sparse_clone(WPT_GIT, sha, wpt)
-  ensure_venv(work, p['wpt_tools'])
+  clone_commit(WPT_GIT, sha, wpt)
   run(
       wpt_cli(work, p) + [
           'manifest', '--no-download', '--tests-root', wpt, '--path',
@@ -327,13 +387,14 @@ def cmd_prepare(args):
   os.makedirs(work, exist_ok=True)
   meta = {'revision': args.revision}
   if args.revision == 'pinned':
-    prepare_pinned(work, meta)
+    prepare_pinned(work, meta, os.path.abspath(args.chromium_src))
   else:
     prepare_latest(work, meta, args.wptfyi_label)
   write_json(os.path.join(work, 'meta.json'), meta)
-  # Every job makes its own virtualenv (see ensure_venv).
+  # Every job makes its own Python environment (see python_command).
   if not args.keep_venv:
-    shutil.rmtree(os.path.join(work, 'venv'), ignore_errors=True)
+    for name in ('venv', 'vpython-root', 'cache'):
+      shutil.rmtree(os.path.join(work, name), ignore_errors=True)
   log(f"Prepared {work}: tests from {meta['tests_from']}, "
       f"baseline {meta['baseline']}")
 
@@ -424,7 +485,7 @@ def runner_command(args, work, p, meta, report, extra):
     ]
   else:
     try:
-      subprocess.run([venv_python(work), '-c', 'import aioquic'],
+      subprocess.run(python_command(work, p) + ['-c', 'import aioquic'],
                      check=True,
                      stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError:
@@ -453,7 +514,6 @@ def cmd_run(args):
   work = os.path.abspath(args.work)
   p = paths_for(work)
   meta = read_json(p['meta'])
-  ensure_venv(work, p['wpt_tools'])
   os.makedirs(os.path.join(work, 'metadata'), exist_ok=True)
   os.makedirs(args.out, exist_ok=True)
   if meta['revision'] == 'pinned':
@@ -484,12 +544,17 @@ def cmd_run(args):
     raise SystemExit('wptrunner produced no results')
 
   # Run what failed once more, so that the summary can tell flaky tests from
-  # failing ones.
+  # failing ones (see NO_RETRY for the exception).
   known = diff.Known(os.path.join(HERE, 'expectations',
                                   'known-differences.txt'))
   result = diff.compare(read_json(p['baseline']), [read_json(report)], known)
-  retry = sorted({item['test'] for item in result['new']})
-  log(f'{len(retry)} tests have new Electron-only failures')
+  retry = sorted({
+      item['test']
+      for item in result['new']
+      if item['subtest'] is not None or item['status'] not in NO_RETRY
+  })
+  log(f"{len({item['test'] for item in result['new']})} tests have new "
+      f'Electron-only failures, {len(retry)} to run again')
   if not retry or args.no_retry:
     return
   if len(retry) > args.retry_limit:
@@ -567,8 +632,9 @@ def cmd_hosts(args):
   `wpt make-hosts-file` does; Chromium's copy of the tools lacks it."""
   work = os.path.abspath(args.work)
   p = paths_for(work)
-  python = ensure_venv(work, p['wpt_tools'])
-  subprocess.run([python, '-c', HOSTS_SCRIPT, p['wpt_tools']], check=True)
+  subprocess.run(python_command(work, p) +
+                 ['-c', HOSTS_SCRIPT, p['wpt_tools']],
+                 check=True)
 
 
 def main():
@@ -593,9 +659,16 @@ def main():
       'beta or stable'
   )
   prepare.add_argument(
+      '--chromium-src',
+      default=os.path.dirname(ELECTRON_ROOT),
+      help='pinned: the Chromium checkout to take the tests, the '
+      'expectations and the tools from (default: the one this Electron '
+      'checkout is in)')
+  prepare.add_argument(
       '--keep-venv',
       action='store_true',
-      help='keep the virtualenv (when `run` follows in the same place)')
+      help='keep the Python environment (when `run` follows in the same '
+      'place)')
   prepare.set_defaults(func=cmd_prepare)
 
   run_parser = sub.add_parser('run', help='run the tests on Electron')

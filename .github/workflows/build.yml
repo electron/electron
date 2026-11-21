@@ -469,6 +469,8 @@ jobs:
       wpt-revision: pinned
       test-runs-on: electron-arc-centralus-linux-amd64-4core
       test-container: '{"image":"ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}","options":"--user root --privileged --init --umask 0022"}'
+      src-cache-runs-on: electron-arc-centralus-linux-amd64-8core
+      src-cache-container: '{"image":"ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}","options":"--user root --umask 0022","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
     secrets:
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
 

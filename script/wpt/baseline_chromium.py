@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Turn Chromium's in-tree WPT expectations into a baseline file.
 
-Runs inside a sparse Chromium checkout (see wpt.py `prepare --revision
-pinned`) with the wpt virtualenv's Python. It reuses blinkpy, the code
-Chromium's own run_wpt_tests.py uses, instead of re-implementing the formats:
+Runs on the files wpt.py `prepare --revision pinned` copies out of a Chromium
+checkout, with vpython3 and Chromium's vpython.toml. It reuses blinkpy, the
+code Chromium's own run_wpt_tests.py uses, instead of re-implementing the
+formats:
 
   * `WPTManifest.ensure_manifest` builds external/wpt/MANIFEST.json from the
   checked-in base manifest.
