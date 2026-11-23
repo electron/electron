@@ -5,6 +5,7 @@ import { afterAll, afterEach, beforeAll, expect, it } from 'vitest';
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
@@ -30,6 +31,7 @@ const SHIM_BUNDLE_ID = 'org.electronjs.spec.app-shim';
 type OnScreenWindow = { pid: number; x: number; y: number; width: number; height: number };
 
 const execFile = promisify(cp.execFile);
+const require = createRequire(import.meta.url);
 
 // The windows the window server has on screen, with the process that owns
 // each. Read with JXA so that the answer comes from outside Electron.
@@ -54,6 +56,51 @@ async function onScreenWindows(): Promise<OnScreenWindow[]> {
     })));`;
   const { stdout } = await execFile('osascript', ['-l', 'JavaScript', '-e', script], { encoding: 'utf8' });
   return JSON.parse(stdout);
+}
+
+const KCG_EVENT_FLAG_MASK_COMMAND = 0x100000;
+
+// Without the Accessibility (post event) permission of the responsible
+// process, CGEventPostToPid() drops events silently. CI has it; elsewhere,
+// check the same way spec/api-browser-window-posted-click.spec.ts does.
+function canPostEvents(): boolean {
+  if (process.env.CI) return true;
+  if (process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS) return false;
+  return !!require('@electron-ci/mouse-input').getDiagnostics().postEventAccess;
+}
+
+// Posts Command-P straight to a process with CGEventPostToPid(), so that it
+// reaches the shim without the shim having to be the active app. osascript
+// runs without blocking this process, for the reason given above.
+//
+// AppKit matches a key equivalent against the event's
+// charactersIgnoringModifiers, which comes from the key code through the
+// current keyboard layout, so the key code of P on a US keyboard types another
+// character on, say, Dvorak. The key code posted is the one whose event AppKit
+// reads as "p" in the current layout, or the US one if no key is.
+async function postCommandP(pid: number): Promise<void> {
+  const script = `
+    ObjC.import('AppKit');
+    ObjC.import('CoreGraphics');
+    const keyEvent = (keyCode, down) => {
+      const event = $.CGEventCreateKeyboardEvent(null, keyCode, down);
+      $.CGEventSetFlags(event, ${KCG_EVENT_FLAG_MASK_COMMAND});
+      return event;
+    };
+    let keyCode = 35; // kVK_ANSI_P
+    try {
+      for (let candidate = 0; candidate < 128; candidate++) {
+        const ns = $.NSEvent.eventWithCGEvent(keyEvent(candidate, true));
+        if (!ns.isNil() && ns.charactersIgnoringModifiers.js === 'p') {
+          keyCode = candidate;
+          break;
+        }
+      }
+    } catch (e) {}
+    for (const down of [true, false]) {
+      $.CGEventPostToPid(${pid}, keyEvent(keyCode, down));
+    }`;
+  await execFile('osascript', ['-l', 'JavaScript', '-e', script]);
 }
 
 ifdescribe(process.platform === 'darwin' && !process.mas)('app shims', () => {
@@ -308,12 +355,48 @@ ifdescribe(process.platform === 'darwin' && !process.mas)('app shims', () => {
 
   it('takes a menu of its own, or null, and nothing else', async () => {
     const shim = await launchShim();
-    const menu = Menu.buildFromTemplate([{ role: 'appMenu' }, { label: 'Tools', submenu: [{ label: 'Ping' }] }]);
-    expect(() => shim.setApplicationMenu(menu)).not.toThrow();
-    expect(() => shim.setApplicationMenu(null)).not.toThrow();
+    const clicked: string[] = [];
+    const menu = Menu.buildFromTemplate([
+      { role: 'appMenu' },
+      {
+        label: 'Tools',
+        submenu: [
+          { label: 'Ping', accelerator: 'Command+P', click: () => clicked.push('Ping') },
+          { label: 'Checked', type: 'checkbox', checked: true },
+          { type: 'separator' },
+          { label: 'More', submenu: [{ label: 'Pong' }] }
+        ]
+      }
+    ]);
+    shim.setApplicationMenu(menu);
+    // A window comes over the same pipe as the menu, after it: once the shim
+    // has shown this one, it has built the menu and put it in its menu bar.
+    const w = new BaseWindow({ appShim: shim, width: 400, height: 300 });
+    await once(w, 'show');
+
+    // Only the menu the shim built has this key equivalent, and choosing an
+    // item there runs the item's click handler here.
+    if (canPostEvents()) {
+      await waitUntil(
+        async () => {
+          await postCommandP(shim.pid);
+          return clicked.length > 0;
+        },
+        { rate: 250 }
+      );
+      expect(clicked[0]).toBe('Ping');
+    }
+
+    // A menu of another shape replaces it, and null brings back the shim's
+    // own. Another window, again, shows that the shim has taken both.
+    shim.setApplicationMenu(Menu.buildFromTemplate([{ label: 'Other', submenu: [{ label: 'Item' }] }]));
+    shim.setApplicationMenu(null);
+    const barrier = new BaseWindow({ appShim: shim, width: 300, height: 200 });
+    await once(barrier, 'show');
+    expect(shim.isConnected()).toBe(true);
+
     expect(() => shim.setApplicationMenu('menu' as any)).toThrow(/Must pass a Menu or null/);
     expect(() => (shim as any).setApplicationMenu()).toThrow(/Must pass a Menu or null/);
-    expect(shim.isConnected()).toBe(true);
   });
 
   it('gives a window with a hidden title bar its whole frame as content', async () => {
