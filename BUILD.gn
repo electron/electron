@@ -2067,6 +2067,19 @@ dist_zip("electron_ffmpeg_zip") {
   outputs = [ "$root_build_dir/ffmpeg.zip" ]
 }
 
+if (is_linux && ozone_platform_wayland) {
+  # Chromium's bundled Weston, with its ui-controls module, for the Wayland
+  # spec leg: the module lets spec/fixtures/native-addon/mouse-input inject
+  # pointer input as a Wayland client (zcr_ui_controls_v2). Test only, never
+  # part of dist.zip; see script/actions/run-tests-wayland.sh.
+  dist_zip("electron_weston_zip") {
+    testonly = true
+    data_deps = [ "//third_party/weston" ]
+    deps = data_deps
+    outputs = [ "$root_build_dir/weston.zip" ]
+  }
+}
+
 electron_chromedriver_deps = [
   ":licenses",
   "//chrome/test/chromedriver:chromedriver_server",

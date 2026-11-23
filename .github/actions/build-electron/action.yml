@@ -181,6 +181,10 @@ runs:
         ARTIFACT_PLATFORM: ${{ inputs.artifact-platform }}
         TARGET_ARCH: ${{ inputs.target-arch }}
         GENERATE_CHROMEDRIVER: ${{ inputs.generate-chromedriver }}
+        # Chromium's bundled Weston plus its ui-controls module, for the
+        # Wayland spec leg (linux x64, no ASan; see
+        # pipeline-electron-build-and-tidy-and-test-and-nan.yml).
+        GENERATE_WESTON: ${{ inputs.target-platform == 'linux' && inputs.target-arch == 'x64' && inputs.is-asan != 'true' && inputs.is-release != 'true' && inputs.generate-test-artifacts == 'true' }}
         # Lets siso grow its output download concurrency past the static 200
         # when RBE keeps up. Cache-hit builds are bound by those downloads.
         SISO_EXPERIMENTS: ${{ inputs.target-platform == 'macos' && inputs.is-release != 'true' && 'adaptive-flush' || '' }}
@@ -207,6 +211,9 @@ runs:
         EXTRA_TARGETS=""
         if [ "$GENERATE_CHROMEDRIVER" = "true" ]; then
           EXTRA_TARGETS="electron:electron_chromedriver_zip"
+        fi
+        if [ "$GENERATE_WESTON" = "true" ]; then
+          EXTRA_TARGETS="$EXTRA_TARGETS electron:electron_weston_zip"
         fi
 
         if [ "$IS_RELEASE" = "true" ]; then

@@ -406,6 +406,9 @@ jobs:
         cd src/out/Default
         unzip -:o dist.zip
         if [ -f xcache.zip ]; then unzip -:o xcache.zip electron_xcache; fi
+        # Bundled weston + ui-controls for the Wayland leg, see
+        # script/actions/run-tests-wayland.sh.
+        if [ -f ../weston/weston.zip ]; then (cd ../weston && unzip -:o weston.zip); fi
     - name: Import & Trust Self-Signed Codesigning Cert on MacOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |

@@ -1,6 +1,9 @@
 // End-to-end coverage for setIgnoreMouseEvents() driven by real OS input (see
 // spec/fixtures/native-addon/mouse-input): SendInput() on Windows,
-// CGEventPost() on macOS and XTEST on Linux X11.
+// CGEventPost() on macOS, XTEST on Linux X11 and Chromium's zcr_ui_controls_v2
+// protocol on Wayland. The latter needs a compositor that offers it: the
+// Wayland CI leg runs Chromium's bundled Weston with its ui-controls module
+// (script/actions/run-tests-wayland.sh).
 //
 // Why real input: webContents.sendInputEvent() feeds Blink directly, so it
 // cannot tell whether the OS lets clicks through the window or whether moves
@@ -42,14 +45,12 @@ type PageEvent = { type: string; x?: number; y?: number };
 // A BrowserWindow or a WebContentsView showing makePage().
 type Page = { webContents: Electron.WebContents };
 
-// Nothing can inject input into a Wayland compositor from a client, so only
-// X11 is covered on Linux.
-const hasRealInput =
-  process.platform === 'win32' || process.platform === 'darwin' || (process.platform === 'linux' && !isWayland);
+const hasRealInput = process.platform === 'win32' || process.platform === 'darwin' || process.platform === 'linux';
 // { forward: true } is macOS and Windows only.
 const canForward = process.platform === 'win32' || process.platform === 'darwin';
-// Only these can ask the OS which window it hit tests at a point.
-const canHitTest = process.platform === 'win32' || process.platform === 'linux';
+// Only these can ask the OS which window it hit tests at a point. A Wayland
+// client cannot ask the compositor.
+const canHitTest = process.platform === 'win32' || (process.platform === 'linux' && !isWayland);
 
 // #target turns orange while hovered. Element.matches(':hover') is not usable
 // here: it stays false while the (never focused) window is inactive even
@@ -81,7 +82,12 @@ const PAGE = `data:text/html,${encodeURIComponent(PAGE_HTML)}`;
 
 // Window placement in DIPs. OUTSIDE is well clear of the window, MARGIN is
 // inside the window but outside #target.
-const BOUNDS = { x: 100, y: 100, width: 400, height: 400 };
+//
+// Wayland clients cannot place their windows, and Weston's desktop-shell puts
+// a new window at a random spot in the work area unless the window fills it.
+// So on Wayland every window fills the output and BOUNDS is set to its bounds
+// in beforeAll; OUTSIDE is then only a starting point, not outside anything.
+let BOUNDS = { x: 100, y: 100, width: 400, height: 400 };
 const OUTSIDE = { x: 30, y: 30 };
 const MARGIN = { x: 20, y: 20 };
 const TARGET_CENTER = { x: 200, y: 200 };
@@ -94,8 +100,10 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
     let initialCursor: { x?: number; y?: number } | undefined;
 
     // Converts DIPs to the coordinates the addon takes: physical pixels on
-    // Windows and X11, points (which are DIPs) on macOS.
-    const toScreen = (dip: Electron.Point) => (process.platform === 'darwin' ? dip : screen.dipToScreenPoint(dip));
+    // Windows and X11, points (which are DIPs) on macOS, compositor logical
+    // coordinates (also DIPs) on Wayland.
+    const toScreen = (dip: Electron.Point) =>
+      process.platform === 'darwin' || isWayland ? dip : screen.dipToScreenPoint(dip);
     const inWindow = ({ x, y }: Electron.Point) => ({ x: BOUNDS.x + x, y: BOUNDS.y + y });
 
     // Moves the real cursor to a point in DIPs and waits until the OS reports
@@ -139,6 +147,7 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
     beforeAll(async () => {
       mouse = require('@electron-ci/mouse-input');
       initialCursor = mouse.getCursorPos();
+      if (isWayland) BOUNDS = screen.getPrimaryDisplay().workArea;
       skipReason = await cannotInject();
       if (skipReason) {
         // On CI this must not turn into a silent skip, or a runner image
@@ -158,6 +167,9 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
     });
 
     afterEach(closeAllWindows);
+    afterAll(() => {
+      BOUNDS = { x: 100, y: 100, width: 400, height: 400 };
+    });
 
     const events = (page: Page): Promise<PageEvent[]> => page.webContents.executeJavaScript('events');
     const count = async (page: Page, type: string) => (await events(page)).filter((e) => e.type === type).length;
@@ -329,6 +341,58 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
         async () => (await count(below, 'mousedown')) > 0
       );
       expect(await count(above, 'mousedown')).toBe(0);
+    });
+
+    // setShape() limits where the window takes input: X11 input shape,
+    // Windows window region, Wayland wl_surface input region. macOS does not
+    // support it. Frameless and transparent, as Wayland can only show a
+    // non-rectangular shape through transparency.
+    ifit(process.platform !== 'darwin')('takes clicks inside its shape and lets the rest through', async () => {
+      // A corner of the window, away from TARGET_CENTER.
+      const SHAPE = { x: 0, y: 0, width: 150, height: 150 };
+      const INSIDE = { x: 75, y: 75 };
+      await moveTo(OUTSIDE);
+      const below = await createWindow({ acceptFirstMouse: true });
+      below.setAlwaysOnTop(true);
+      below.showInactive();
+      const shaped = await createWindow({ transparent: true, acceptFirstMouse: true });
+      shaped.setAlwaysOnTop(true);
+      shaped.showInactive();
+      shaped.setShape([SHAPE]);
+
+      // Inside first: a click that falls through activates the window below,
+      // which a window manager (Weston's desktop-shell) then raises over the
+      // shaped window.
+      await glide(OUTSIDE, inWindow(INSIDE));
+      if (canHitTest) {
+        const p = toScreen(inWindow(INSIDE));
+        await waitUntilAt(p, 'the shaped window being hit tested inside its shape', () =>
+          mouse.isWindowAtPoint(shaped.getNativeWindowHandle(), p.x, p.y)
+        );
+      }
+      await mouse.click();
+      await waitUntilAt(
+        toScreen(inWindow(INSIDE)),
+        'a mousedown inside the shape',
+        async () => (await count(shaped, 'mousedown')) > 0
+      );
+      expect(await count(below, 'mousedown')).toBe(0);
+
+      await clearEvents(shaped);
+      await glide(inWindow(INSIDE), inWindow(TARGET_CENTER));
+      if (canHitTest) {
+        const p = toScreen(inWindow(TARGET_CENTER));
+        await waitUntilAt(p, 'the window below being hit tested outside the shape', () =>
+          mouse.isWindowAtPoint(below.getNativeWindowHandle(), p.x, p.y)
+        );
+      }
+      await mouse.click();
+      await waitUntilAt(
+        toScreen(inWindow(TARGET_CENTER)),
+        'a mousedown in the window below',
+        async () => (await count(below, 'mousedown')) > 0
+      );
+      expect(await count(shaped, 'mousedown')).toBe(0);
     });
 
     ifit(canForward)('forwards mouse moves to the page', async () => {

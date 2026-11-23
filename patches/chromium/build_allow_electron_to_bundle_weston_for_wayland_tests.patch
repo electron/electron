@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Mon, 23 Nov 2026 12:00:00 -0500
+Subject: build: allow electron to bundle weston for wayland tests
+
+Electron's Wayland spec leg runs a headless Weston with Chromium's
+ui-controls module loaded, so the mouse-input spec addon can inject
+pointer input through the zcr_ui_controls_v2 protocol. Chromium only
+lets //ui/ozone/platform/wayland depend on the bundled Weston (behind
+use_bundled_weston), and turning that arg on would make Weston a
+runtime dependency of the Electron binary itself and land it in
+dist.zip. This lets //electron:electron_weston_zip package it as a
+separate, test only artifact instead.
+
+This patch can be removed if upstream widens the visibility of
+//third_party/weston:weston.
+
+diff --git a/third_party/weston/BUILD.gn b/third_party/weston/BUILD.gn
+index 66a3e41f6d822aa9b975ef39e8519b794d5ff4e1..426b43b59de0130d6a5fbe6776ef1f7b38d66f22 100644
+--- a/third_party/weston/BUILD.gn
++++ b/third_party/weston/BUILD.gn
+@@ -639,7 +639,10 @@ shared_library("desktop_shell") {
+ 
+ executable("weston") {
+   visibility = []
+-  visibility = [ "//ui/ozone/platform/wayland" ]
++  visibility = [
++    "//electron:*",
++    "//ui/ozone/platform/wayland",
++  ]
+   deps = [
+     ":compositor",
+     ":libweston",

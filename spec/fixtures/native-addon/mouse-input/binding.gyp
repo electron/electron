@@ -39,12 +39,16 @@
             'OTHER_CFLAGS': ['-fobjc-arc'],
           },
         }],
-        # X11 only. libX11 and libXtst are dlopen()ed, so no X11 development
+        # X11 (XTEST) and Wayland (Chromium's zcr_ui_controls_v2). libX11,
+        # libXtst and libwayland-client are dlopen()ed, so no development
         # headers or link time dependencies are needed.
         ['OS=="linux"', {
           'sources': [
             'src/impl.h',
             'src/impl_linux.cc',
+            'src/impl_linux.h',
+            'src/impl_linux_wayland.cc',
+            'src/impl_linux_x11.cc',
             'src/main_posix.cc',
           ],
           'libraries': [
