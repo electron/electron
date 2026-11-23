@@ -240,5 +240,60 @@ describe('tray module', { tags: ['serial'] }, () => {
         tray.setTitle('Hello World!', { fontType: 'blep' as any });
       }).toThrow(/fontType must be one of 'monospaced' or 'monospacedDigit'/);
     });
+
+    describe('with ANSI escape codes', () => {
+      const esc = (codes: string) => `\u001b[${codes}m`;
+
+      it('styles the title and gets back only its text', () => {
+        tray.setTitle(`${esc('1;31')}red${esc('0')} plain ${esc('4;32')}green`);
+        expect(tray.getTitle()).toBe('red plain green');
+      });
+
+      it('takes every foreground and background color, bold or not', () => {
+        const codes: string[] = [];
+        for (let code = 30; code <= 37; code++) codes.push(`${code}`, `1;${code}`, `22;${code}`);
+        for (let code = 40; code <= 47; code++) codes.push(`${code}`);
+        codes.push('39', '49', '0');
+        tray.setTitle(codes.map((code) => `${esc(code)}x`).join(''));
+        expect(tray.getTitle()).toBe('x'.repeat(codes.length));
+      });
+
+      it('passes over codes it does not know', () => {
+        // 256 colors and truecolor, italic, underline and blink.
+        tray.setTitle(`${esc('38;5;196')}a${esc('48;2;0;128;255')}b${esc('3;4;5')}c${esc('23;24;25')}d`);
+        expect(tray.getTitle()).toBe('abcd');
+      });
+
+      it('keeps an "m" that comes after a code', () => {
+        tray.setTitle(`${esc('32')}memo ${esc('0')}mm`);
+        expect(tray.getTitle()).toBe('memo mm');
+      });
+
+      it('takes an empty code as a reset', () => {
+        tray.setTitle(`${esc('31')}red${esc('')}plain`);
+        expect(tray.getTitle()).toBe('redplain');
+      });
+
+      it('copes with sequences that are partial or not SGR', () => {
+        // Each escape is dropped; what follows it, up to an "m", is not a code.
+        tray.setTitle('a\u001b[31');
+        expect(tray.getTitle()).toBe('a31');
+        tray.setTitle('a\u001b[2Jb');
+        expect(tray.getTitle()).toBe('a2Jb');
+        tray.setTitle('a\u001b[\u001b[b');
+        expect(tray.getTitle()).toBe('ab');
+        tray.setTitle('a\u001b[');
+        expect(tray.getTitle()).toBe('a');
+        tray.setTitle(esc('31'));
+        expect(tray.getTitle()).toBe('');
+      });
+
+      it('applies a font type to a styled title', () => {
+        tray.setTitle(`${esc('1;34')}12:00`, { fontType: 'monospacedDigit' });
+        expect(tray.getTitle()).toBe('12:00');
+        tray.setTitle(`${esc('45')}12:00`, { fontType: 'monospaced' });
+        expect(tray.getTitle()).toBe('12:00');
+      });
+    });
   });
 });
