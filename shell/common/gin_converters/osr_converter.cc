@@ -9,6 +9,7 @@
 #include "v8-function.h"
 
 #include <string>
+#include <tuple>
 
 #include "base/containers/to_vector.h"
 #include "base/task/single_thread_task_runner.h"
@@ -57,6 +58,16 @@ struct OffscreenReleaseHolderMonitor {
   }
 
   void ReleaseTexture() { holder_.reset(); }
+
+  // Called when the texture object is garbage collected without `release()`.
+  // The app may still hold `textureInfo` (and may later import it), so keep
+  // the native handle and frame alive rather than recycling them underneath
+  // it. This intentionally leaks the frame, matching the warning emitted.
+  void LeakUnreleasedTexture() {
+    if (holder_) {
+      std::ignore = holder_.release();
+    }
+  }
 
   [[nodiscard]] bool IsTextureReleased() const { return holder_ == nullptr; }
 
@@ -163,6 +174,7 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
       [](const v8::WeakCallbackInfo<OffscreenReleaseHolderMonitor>& data) {
         auto* monitor = data.GetParameter();
         if (!monitor->IsTextureReleased()) {
+          monitor->LeakUnreleasedTexture();
           // Emit a warning when user didn't properly manually release the
           // texture, output it in second pass callback.
           data.SetSecondPassCallback([](const v8::WeakCallbackInfo<
