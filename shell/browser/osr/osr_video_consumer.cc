@@ -170,9 +170,10 @@ void OffScreenVideoConsumer::OnFrameCaptured(
     }
 #endif
 
-    // The release holder will be released from JS side when `release` called
-    texture.releaser_holder = new OffscreenReleaserHolder(std::move(gmb_handle),
-                                                          std::move(callbacks));
+    // The JS texture object takes a reference; the frame is returned once it
+    // calls `release()` and this value goes out of scope.
+    texture.releaser_holder = base::MakeRefCounted<OffscreenReleaserHolder>(
+        std::move(gmb_handle), std::move(callbacks));
 
     callback_.Run(content_rect, {}, std::move(texture));
     return;
