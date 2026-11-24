@@ -53,6 +53,9 @@ CHROMIUM_PATHS = [
     'third_party/blink/web_tests/resources',
     # blinkpy parses TestExpectations with typ.
     'third_party/catapult/third_party/typ',
+    # The fonts Chromium's expectations were made with (see font_sysroot).
+    'third_party/test_fonts/fontconfig/fonts.conf',
+    'third_party/test_fonts/test_fonts',
     'third_party/wpt_tools',
 ]
 
@@ -185,6 +188,7 @@ def paths_for(work, revision=None):
     p['tests'] = os.path.join(src, 'third_party', 'blink', 'web_tests',
                               'external', 'wpt')
     p['certs'] = os.path.join(src, 'third_party', 'wpt_tools', 'certs')
+    p['test_fonts'] = os.path.join(src, 'third_party', 'test_fonts')
     p['skip'] = os.path.join(work, 'chromium-skip.txt')
   else:
     p['wpt_tools'] = p['tests'] = os.path.join(work, 'wpt')
@@ -446,6 +450,26 @@ def cmd_prepare(args):
       f"baseline {meta['baseline']}")
 
 
+def font_sysroot(work, p):
+  """Chromium runs its tests with the fonts in //third_party/test_fonts and
+  nothing else: a build puts fonts.conf in <out>/etc/fonts and the fonts in
+  <out>/test_fonts, and run_wpt_tests.py points FONTCONFIG_SYSROOT at <out>
+  (WPTAdapter.test_env). This makes the same layout without a build. Done in
+  `run` because fontconfig needs a cache directory it can write to."""
+  root = os.path.join(work, 'font-sysroot')
+  conf = os.path.join(root, 'etc', 'fonts', 'fonts.conf')
+  if not os.path.exists(conf):
+    os.makedirs(os.path.dirname(conf))
+    # The directories fonts.conf names, which fontconfig looks up under the
+    # sysroot.
+    os.makedirs(os.path.join(root, 'fontconfig_caches'))
+    os.symlink(os.path.join(p['test_fonts'], 'test_fonts'),
+               os.path.join(root, 'test_fonts'))
+    shutil.copy2(os.path.join(p['test_fonts'], 'fontconfig', 'fonts.conf'),
+                 conf)
+  return root
+
+
 def has_ipv6():
   try:
     with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
@@ -581,6 +605,8 @@ def cmd_run(args):
   os.makedirs(args.out, exist_ok=True)
   if meta['revision'] == 'pinned':
     write_chromium_server_config(p)
+    # For the browsers wptrunner starts.
+    os.environ['FONTCONFIG_SYSROOT'] = font_sysroot(work, p)
 
   with open(os.path.join(work, 'exclude.txt'), 'w', encoding='utf-8') as out:
     for path in (os.path.join(HERE, 'expectations',

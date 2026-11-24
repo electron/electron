@@ -83,9 +83,11 @@ of Electron and not because of configuration. Chromium's Python tools are run
 the way Chromium runs them, with depot_tools' `vpython3` and the `vpython.toml`
 in the Chromium checkout, which provides the Python version and the packages
 they need. `latest` runs upstream WPT, which has no such file, in a virtualenv
-with WPT's own requirements. What could not be matched for `pinned`:
-Electron runs in a window under Xvfb instead of headless; it does not use
-Chromium's test fonts; and a few of the switches are specific to
+with WPT's own requirements. Chromium's expectations are also made with a
+fixed set of fonts, `third_party/test_fonts`, and no others, so `pinned` gives
+Electron the same ones through `FONTCONFIG_SYSROOT`, as `run_wpt_tests.py`
+does. What could not be matched for `pinned`: Electron runs in a window under
+Xvfb instead of headless, and a few of the switches are specific to
 `headless_shell` and have no effect on Electron.
 
 Chromium does not run every WPT that way. The tests listed in
