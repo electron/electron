@@ -36,6 +36,10 @@ inputs:
     description: 'Build and upload chromedriver'
     required: false
     default: 'true'
+  generate-wpt-mojojs:
+    description: 'Generate mojojs.zip, the MojoJS bindings web-platform-tests load (see script/wpt). Not supported on Windows.'
+    required: false
+    default: 'false'
   generate-test-artifacts:
     description: 'Generate artifacts only consumed by test jobs (src artifacts, cross-arch snapshots; mksnapshot fixup on non-release builds). Only disable when no test job consumes this build.'
     required: false
@@ -181,6 +185,7 @@ runs:
         ARTIFACT_PLATFORM: ${{ inputs.artifact-platform }}
         TARGET_ARCH: ${{ inputs.target-arch }}
         GENERATE_CHROMEDRIVER: ${{ inputs.generate-chromedriver }}
+        GENERATE_WPT_MOJOJS: ${{ inputs.generate-wpt-mojojs }}
         # Lets siso grow its output download concurrency past the static 200
         # when RBE keeps up. Cache-hit builds are bound by those downloads.
         SISO_EXPERIMENTS: ${{ inputs.target-platform == 'macos' && inputs.is-release != 'true' && 'adaptive-flush' || '' }}
@@ -213,6 +218,9 @@ runs:
         if [ "$GENERATE_CHROMEDRIVER" = "true" ]; then
           EXTRA_TARGETS="electron:electron_chromedriver_zip"
         fi
+        if [ "$GENERATE_WPT_MOJOJS" = "true" ]; then
+          EXTRA_TARGETS="$EXTRA_TARGETS electron:electron_wpt_mojojs"
+        fi
 
         if [ "$IS_RELEASE" = "true" ]; then
           e build --target electron:release_build $EXTRA_TARGETS $QUIET_FLAG $REAPI_BATCH_FLAGS
@@ -221,6 +229,10 @@ runs:
         fi
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
+
+        if [ "$GENERATE_WPT_MOJOJS" = "true" ]; then
+          python3 electron/script/wpt/wpt.py mojojs --gen-dir out/Default/gen --out out/Default/mojojs.zip
+        fi
 
         # Build stats and object checksums
         BUILD_STATS_ARGS="out/Default/siso.INFO --out-dir out/Default --output-object-checksums object-checksums.${ARTIFACT_PLATFORM}_${TARGET_ARCH}.json"

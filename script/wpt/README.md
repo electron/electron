@@ -45,9 +45,24 @@ python3 script/wpt/wpt.py summarize --work /tmp/wpt --reports /tmp/wpt-reports
 Testing builds have DCHECKs on and need `--strip-feature-params` on `run`
 until [#55990](https://github.com/electron/electron/issues/55990) is fixed.
 
+Tests that fake a device or a service (WebXR, Shape Detection, Web NFC,
+Battery Status and others) do it with MojoJS bindings that the wpt server
+serves at `/gen/`. Without `--mojojs`, `run` uses the bindings published with
+Chrome for Testing, which only match release builds of Electron: official
+builds scramble mojom message IDs, so in a testing build these tests fail with
+`Received unknown message`. To use the bindings of the build instead, as
+Chromium's own runs do, build them and pass the build's `gen` directory:
+
+```sh
+e build -t electron:electron_wpt_mojojs
+python3 script/wpt/wpt.py run --work /tmp/wpt --electron-dir ../out/Testing \
+  --mojojs ../out/Testing/gen --out /tmp/wpt-reports webxr
+```
+
 ## What runs where
 
-- `wpt.py` is the entry point: `prepare`, `run`, `summarize` and `hosts`.
+- `wpt.py` is the entry point: `prepare`, `run`, `summarize` and `hosts`,
+  and `mojojs`, which packages the MojoJS bindings of a build as `mojojs.zip`.
 - `baseline_chromium.py` builds the `pinned` baseline with Chromium's own
   `blinkpy`, from the files `prepare` copies out of the Chromium checkout.
 - `baseline_wptfyi.py` builds the `latest` baseline from the wpt.fyi API.
@@ -112,5 +127,7 @@ over 16 shards and writes the comparison to the run summary. For `pinned`, its
 `Prepare` job takes Chromium's files from the src cache the checkout job of
 the same run saved. Each shard also uploads wptrunner's HTML report of its
 results as `wpt-html-<shard>.html`, which opens in the browser from the run's
-page. Only the `testharness`, `reftest` and `crashtest` test types are run for
+page. The build job generates the MojoJS bindings
+(`//electron:electron_wpt_mojojs`) and adds them to its artifacts as
+`mojojs.zip`, which the shards pass to `run --mojojs`. Only the `testharness`, `reftest` and `crashtest` test types are run for
 now.

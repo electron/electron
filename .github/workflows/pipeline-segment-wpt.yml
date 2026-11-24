@@ -158,7 +158,8 @@ jobs:
         path: src/electron
         ref: ${{ github.event.pull_request.head.sha }}
         persist-credentials: false
-    # dist.zip and chromedriver.zip from the build job of this workflow run.
+    # dist.zip, chromedriver.zip and mojojs.zip from the build job of this
+    # workflow run.
     - name: Download Generated Artifacts
       uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
@@ -173,6 +174,9 @@ jobs:
         mkdir electron-dist
         unzip -q generated_artifacts_linux_x64/dist.zip -d electron-dist
         unzip -q -o generated_artifacts_linux_x64/chromedriver.zip -d electron-dist
+        # The MojoJS bindings of this build: gen/ in the archive is what the
+        # tests load from /gen/.
+        unzip -q generated_artifacts_linux_x64/mojojs.zip -d electron-mojojs
         rm -rf generated_artifacts_linux_x64
         tar -xzf wpt-work.tar.gz
         rm wpt-work.tar.gz
@@ -221,6 +225,7 @@ jobs:
         runuser -u builduser -- env "PATH=$PATH" python3 src/electron/script/wpt/wpt.py run \
           --work wpt-work \
           --electron-dir electron-dist \
+          --mojojs electron-mojojs/gen \
           --out wpt-reports \
           --total-chunks "$TOTAL_SHARDS" \
           --this-chunk "$SHARD" \

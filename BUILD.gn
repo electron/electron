@@ -2085,6 +2085,30 @@ dist_zip("electron_chromedriver_zip") {
   outputs = [ "$root_build_dir/chromedriver.zip" ]
 }
 
+# The MojoJS bindings that web-platform-tests load from /gen/ to fake devices
+# and services (see script/wpt). These are the bindings in
+# //:blink_web_tests_support_data, which Chromium's own WPT runs serve from
+# the build they test; taking them from this build keeps the mojom message
+# IDs the same as the ones in the Electron binary under test.
+group("electron_wpt_mojojs") {
+  testonly = true
+  data_deps = [
+    "//:layout_test_data_mojo_bindings",
+    "//:layout_test_data_mojo_bindings_lite",
+    "//content/web_test:web_test_common_mojom_js_data_deps",
+    "//device/bluetooth/public/mojom:fake_bluetooth_interfaces_js_data_deps",
+    "//device/vr/public/mojom:vr_service_js_data_deps",
+    "//media/capture/mojom:image_capture_js_data_deps",
+    "//mojo/public/mojom/base:base_js_data_deps",
+    "//services/device/public/mojom:generic_sensor_js_data_deps",
+    "//services/device/public/mojom:mojom_js_data_deps",
+    "//services/device/public/mojom:usb_js_data_deps",
+    "//services/shape_detection/public/mojom:mojom_js_data_deps",
+    "//skia/public/mojom:mojom_js_data_deps",
+    "//third_party/blink/public/mojom:mojom_platform_js_data_deps",
+  ]
+}
+
 mksnapshot_deps = [
   ":licenses",
   "//v8:mksnapshot($v8_snapshot_toolchain)",

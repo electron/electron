@@ -125,6 +125,7 @@ jobs:
       gn-build-type: testing
       generate-symbols: false
       generate-chromedriver: true
+      generate-wpt-mojojs: true
       generate-test-artifacts: false
       upload-to-storage: '0'
     secrets:

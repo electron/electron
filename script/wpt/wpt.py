@@ -4,6 +4,7 @@
   wpt.py prepare    fetch the tests and the baseline to compare with
   wpt.py run        run the tests (or one chunk of them) on Electron
   wpt.py summarize  compare the reports with the baseline
+  wpt.py mojojs     package the MojoJS bindings of an Electron build
 
 See README.md in this directory.
 """
@@ -20,6 +21,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ELECTRON_ROOT = os.path.dirname(os.path.dirname(HERE))
@@ -307,6 +309,48 @@ def fetch_mojojs(version, dest):
   return True
 
 
+# What of a build's gen/ directory the tests load from /gen/: the ES module
+# bindings of every mojom, and the bindings libraries.
+MOJOJS_PATTERNS = [
+    '**/*.mojom.m.js',
+    'mojo/public/js/*.js',
+    'layout_test_data/mojo/public/js/*.js',
+]
+
+# In mojojs.zip so that a build without the bindings target (the
+# electron_wpt_mojojs group in BUILD.gn) fails here and not as test failures.
+MOJOJS_REQUIRED = [
+    'mojo/public/js/bindings.js',
+    'layout_test_data/mojo/public/js/mojo_bindings.js',
+    'device/vr/public/mojom/vr_service.mojom.m.js',
+    'services/shape_detection/public/mojom/facedetection.mojom.m.js',
+]
+
+
+def cmd_mojojs(args):
+  """Writes mojojs.zip, like the one published with Chrome for Testing but
+  from an Electron build: the bindings have to be from the build that is
+  tested, since mojom message IDs differ between builds (official builds
+  scramble them)."""
+  gen = os.path.abspath(args.gen_dir)
+  missing = [
+      name for name in MOJOJS_REQUIRED
+      if not os.path.isfile(os.path.join(gen, name))
+  ]
+  if missing:
+    raise SystemExit(f"Not in {gen}: {', '.join(missing)}. "
+                     'Build //electron:electron_wpt_mojojs first.')
+  files = sorted({
+      path
+      for pattern in MOJOJS_PATTERNS
+      for path in glob.glob(os.path.join(gen, pattern), recursive=True)
+  })
+  with zipfile.ZipFile(args.out, 'w', zipfile.ZIP_DEFLATED) as archive:
+    for path in files:
+      archive.write(path, os.path.join('gen', os.path.relpath(path, gen)))
+  log(f'Wrote {len(files)} files to {args.out}')
+
+
 def prepare_pinned(work, meta, chromium_src):
   version = deps_var(os.path.join(ELECTRON_ROOT, 'DEPS'), 'chromium_version')
   meta['chromium_version'] = version
@@ -472,8 +516,19 @@ def runner_command(args, work, p, meta, report, extra):
         '--enable-experimental' if experimental else '--no-enable-experimental',
         '--enable-swiftshader',
     ]
-  if meta.get('mojojs'):
-    cmd += ['--enable-mojojs', f"--mojojs-path={p['mojojs']}"]
+  # The bindings of the Electron build when they are given, else the ones
+  # `prepare` got from Chrome for Testing (see README.md for the difference).
+  mojojs = None
+  if args.mojojs:
+    mojojs = os.path.abspath(args.mojojs)
+    if not os.path.isfile(os.path.join(mojojs, 'mojo', 'public', 'js',
+                                       'bindings.js')):
+      raise SystemExit(f'{mojojs} is not the gen directory of a build with '
+                       'MojoJS bindings')
+  elif meta.get('mojojs'):
+    mojojs = p['mojojs']
+  if mojojs:
+    cmd += ['--enable-mojojs', f'--mojojs-path={mojojs}']
   binary_args = list(meta.get('binary_args', []))
   if os.geteuid() == 0:
     binary_args.append('--no-sandbox')
@@ -689,6 +744,11 @@ def main():
   run_parser.add_argument(
       '--chromedriver-dir',
       help='directory with chromedriver (default: --electron-dir)')
+  run_parser.add_argument(
+      '--mojojs',
+      help='directory to serve as /gen/, with the MojoJS bindings of the '
+      'Electron build: its out/<config>/gen, or gen/ from the archive '
+      '`mojojs` writes (default: the bindings of Chrome for Testing)')
   run_parser.add_argument('--out',
                           required=True,
                           help='directory to write wptreport files to')
@@ -739,6 +799,15 @@ def main():
                          help='print the /etc/hosts lines the wpt servers need')
   hosts.add_argument('--work', required=True)
   hosts.set_defaults(func=cmd_hosts)
+
+  mojojs = sub.add_parser(
+      'mojojs', help='package the MojoJS bindings of an Electron build')
+  mojojs.add_argument('--gen-dir',
+                      required=True,
+                      help='gen directory of the build, after building '
+                      '//electron:electron_wpt_mojojs')
+  mojojs.add_argument('--out', required=True, help='archive to write')
+  mojojs.set_defaults(func=cmd_mojojs)
 
   args = parser.parse_args()
   args.func(args)
