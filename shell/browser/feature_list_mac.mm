@@ -7,7 +7,7 @@
 #include <string>
 
 #include "base/dcheck_is_on.h"
-#include "content/public/common/content_features.h"
+#include "media/base/media_switches.h"
 
 namespace electron {
 
@@ -33,8 +33,13 @@ std::string EnablePlatformSpecificFeatures() {
 }
 
 std::string DisablePlatformSpecificFeatures() {
-  // TODO(deepak1556): Remove when Aperitif helpers are bundled.
-  std::string disabled_features = features::kAperitifHelpers.name;
+  // Chromium enables this by default on macOS 26.4+, which makes
+  // ThumbnailCapturerMac hand desktopCapturer.getSources() over to the
+  // SCContentSharingPicker delegated source list and drops the TCC screen
+  // capture permission check. Electron only uses the system picker for
+  // session.setDisplayMediaRequestHandler's useSystemPicker option, which
+  // reaches it directly, so keep the feature off to preserve getSources().
+  std::string disabled_features = media::kUseSCContentSharingPicker.name;
   if (@available(macOS 14.4, *)) {
     // Required to stop timing out getDisplayMedia while waiting for
     // the user to select a window with the picker

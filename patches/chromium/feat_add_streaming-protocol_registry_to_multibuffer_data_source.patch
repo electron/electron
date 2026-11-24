@@ -17,7 +17,7 @@ which removed range-requests-supported on non-http protocols. See https://issues
 for more information.
 
 diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
-index efb5aaa6f6aa8074aff4bb11a4cbcc42f20880dd..680a497b0de22f403f08a3d06d0384a174f529f4 100644
+index 388f22f2a762b97d7919089fbea382f3d5b98229..1a1b77f622e1293d0dee3aab379d3873a2687bf0 100644
 --- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
 +++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
 @@ -12,8 +12,10 @@
