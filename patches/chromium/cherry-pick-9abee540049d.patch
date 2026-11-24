@@ -241,7 +241,7 @@ index 1684fa6e85b0d07a5c504d967873c5a497c675c9..04a527a072abe10f31572c58dc27447f
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index e2d129593cb3a4a80a754245aa5dc0b16d8d4bba..bf4845e36422179426aff958b8062ec579be82d1 100644
+index 29a5a37f8eb15a9502a69fc09d9f743a10022447..d96d83d34aef9dfd312d36e54de8d3180ec24a25 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
 @@ -905,7 +905,8 @@ ukm::SourceId GetPageUkmSourceId(FrameTreeNode* frame_tree_node) {

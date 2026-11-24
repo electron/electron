@@ -62,10 +62,10 @@ Cr-Commit-Position: refs/branch-heads/8103@{#1517}
 Cr-Branched-From: e7baefea94b4a90087e3043e4a8effec33c2025f-refs/heads/main@{#1717349}
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 5b88779475cfa0204e66a531f5ad2891782c7718..73621eb37393cc27746a43d714b13ad730686ca0 100644
+index 37fc83dc1431a117cc9e2aa98b04a8e4ad70b8e8..022a20f54b4fed1c47e18ba1aa88e7d1d28e03bf 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -16401,37 +16401,52 @@ bool RenderFrameHostImpl::DidCommitNavigationInternal(
+@@ -16397,37 +16397,52 @@ bool RenderFrameHostImpl::DidCommitNavigationInternal(
      // Guest views currently don't appear to set the origin correctly for
      // synchronous new window commits under MPArch.
      //

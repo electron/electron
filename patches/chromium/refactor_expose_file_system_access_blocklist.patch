@@ -13,7 +13,7 @@ The exposed copy also carries the upstream macOS firmlink handling
 against the blocklist the same way Chrome matches them.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 20784acf0b2787b2e72a13aa6a2f00f17799fade..4549472efb772a48fee53c77aa7148f3afd7fd40 100644
+index 0199df039df41b9f92c96fe4605f5220b627efeb..7f8c34365365c5eb2f926e32a2303f5656e3c4ba 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -91,11 +91,13 @@
@@ -30,7 +30,7 @@ index 20784acf0b2787b2e72a13aa6a2f00f17799fade..4549472efb772a48fee53c77aa7148f3
  #include "components/tabs/public/tab_interface.h"
  #if BUILDFLAG(ENABLE_PLATFORM_APPS)
  #include "extensions/browser/extension_registry.h"  // nogncheck
-@@ -401,321 +403,10 @@ bool IsAllowedWslHomePath(const base::FilePath& path) {
+@@ -401,319 +403,10 @@ bool IsAllowedWslHomePath(const base::FilePath& path) {
  }
  #endif
  
@@ -161,16 +161,14 @@ index 20784acf0b2787b2e72a13aa6a2f00f17799fade..4549472efb772a48fee53c77aa7148f3
 -                                BlockType::kBlockAllChildren),
 -      BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".zlogin"),
 -                                BlockType::kBlockAllChildren),
--      // Block write access to */.git/hooks, see crbug.com/465668234 and
--      // crbug.com/553115714.
--      BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/hooks"),
--                              BlockType::kBlockWrite),
--      // Block write access to the repository config and to submodule git
--      // directories, which have their own hooks and config, see
--      // crbug.com/572269631 and crbug.com/571913154.
--      BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/config"),
--                              BlockType::kBlockWrite),
--      BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/modules"),
+-      // Block write access to */.git by default (covering .git directory and
+-      // gitfile creation, config, hooks, modules, commondir, worktrees, info,
+-      // and arbitrary subdirectories); `ShouldBlockAccessToGitPath()` carves
+-      // out safe repository data, ref, and index paths under an existing .git
+-      // directory so web-based Git clients (e.g. isomorphic-git) continue to
+-      // work. See crbug.com/465668234, crbug.com/553115714,
+-      // crbug.com/571913154, crbug.com/572269631, and crbug.com/577352729.
+-      BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git"),
 -                              BlockType::kBlockWrite),
 -      // Block write access to */.mvn, which holds Maven project and JVM
 -      // configuration (such as jvm.config, maven.config, and extensions.xml),
@@ -356,7 +354,7 @@ index 20784acf0b2787b2e72a13aa6a2f00f17799fade..4549472efb772a48fee53c77aa7148f3
  
  // Returns true if `child_components` is the same as or a descendant of
  // `parent_components`, ignoring case differences.
-@@ -1818,16 +1509,6 @@ struct ChromeFileSystemAccessPermissionContext::OriginState {
+@@ -1925,16 +1618,6 @@ struct ChromeFileSystemAccessPermissionContext::OriginState {
    std::unique_ptr<base::RetainingOneShotTimer> cleanup_timer;
  };
  
@@ -373,7 +371,7 @@ index 20784acf0b2787b2e72a13aa6a2f00f17799fade..4549472efb772a48fee53c77aa7148f3
  ChromeFileSystemAccessPermissionContext::
      ChromeFileSystemAccessPermissionContext(content::BrowserContext* context,
                                              const base::Clock* clock)
-@@ -1846,7 +1527,7 @@ ChromeFileSystemAccessPermissionContext::
+@@ -1953,7 +1636,7 @@ ChromeFileSystemAccessPermissionContext::
  #if BUILDFLAG(IS_ANDROID)
    one_time_permissions_tracker_.Observe(
        OneTimePermissionsTrackerFactory::GetForBrowserContext(context));
@@ -382,7 +380,7 @@ index 20784acf0b2787b2e72a13aa6a2f00f17799fade..4549472efb772a48fee53c77aa7148f3
    auto* provider = web_app::WebAppProvider::GetForWebApps(
        Profile::FromBrowserContext(profile_));
    if (provider) {
-@@ -3330,7 +3011,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
+@@ -3437,7 +3120,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
    one_time_permissions_tracker_.Reset();
  }
  
@@ -391,7 +389,7 @@ index 20784acf0b2787b2e72a13aa6a2f00f17799fade..4549472efb772a48fee53c77aa7148f3
  void ChromeFileSystemAccessPermissionContext::OnWebAppInstalled(
      const webapps::AppId& app_id) {
    if (!base::FeatureList::IsEnabled(
-@@ -3688,11 +3369,7 @@ bool ChromeFileSystemAccessPermissionContext::
+@@ -3795,11 +3478,7 @@ bool ChromeFileSystemAccessPermissionContext::
          HandleType handle_type,
          AccessTrigger access_trigger,
          GrantType grant_type) {
@@ -404,7 +402,7 @@ index 20784acf0b2787b2e72a13aa6a2f00f17799fade..4549472efb772a48fee53c77aa7148f3
    if (!base::FeatureList::IsEnabled(
            features::kFileSystemAccessPersistentPermissions)) {
      return false;
-@@ -3743,6 +3420,7 @@ bool ChromeFileSystemAccessPermissionContext::
+@@ -3850,6 +3529,7 @@ bool ChromeFileSystemAccessPermissionContext::
  
    return false;
  #endif  // BUILDFLAG(IS_ANDROID)
@@ -413,7 +411,7 @@ index 20784acf0b2787b2e72a13aa6a2f00f17799fade..4549472efb772a48fee53c77aa7148f3
  
  std::vector<FileRequestData> ChromeFileSystemAccessPermissionContext::
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 05ee182cf840bc925697a2bfa3d1c281579296c4..214970b4f1e44dd6533c1b7526c2e4674e4ad269 100644
+index 05ee182cf840bc925697a2bfa3d1c281579296c4..adc989c24e451fd33754c082690ce9c99cc40ca8 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -10,10 +10,13 @@
@@ -438,7 +436,7 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..214970b4f1e44dd6533c1b7526c2e467
  #include "components/enterprise/buildflags/buildflags.h"
  #include "components/permissions/features.h"
  #include "components/permissions/object_permission_context_base.h"
-@@ -470,6 +474,330 @@ class ChromeFileSystemAccessPermissionContext
+@@ -470,6 +474,328 @@ class ChromeFileSystemAccessPermissionContext
    bool IsPathInDowngradedReadPathsForTesting(const url::Origin& origin,
                                               const base::FilePath& path) const;
  
@@ -577,16 +575,14 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..214970b4f1e44dd6533c1b7526c2e467
 +                                  BlockType::kBlockAllChildren),
 +        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".zlogin"),
 +                                  BlockType::kBlockAllChildren),
-+        // Block write access to */.git/hooks, see crbug.com/465668234 and
-+        // crbug.com/553115714.
-+        BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/hooks"),
-+                                BlockType::kBlockWrite),
-+        // Block write access to the repository config and to submodule git
-+        // directories, which have their own hooks and config, see
-+        // crbug.com/572269631 and crbug.com/571913154.
-+        BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/config"),
-+                                BlockType::kBlockWrite),
-+        BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/modules"),
++        // Block write access to */.git by default (covering .git directory and
++        // gitfile creation, config, hooks, modules, commondir, worktrees, info,
++        // and arbitrary subdirectories); `ShouldBlockAccessToGitPath()` carves
++        // out safe repository data, ref, and index paths under an existing .git
++        // directory so web-based Git clients (e.g. isomorphic-git) continue to
++        // work. See crbug.com/465668234, crbug.com/553115714,
++        // crbug.com/571913154, crbug.com/572269631, and crbug.com/577352729.
++        BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git"),
 +                                BlockType::kBlockWrite),
 +        // Block write access to */.mvn, which holds Maven project and JVM
 +        // configuration (such as jvm.config, maven.config, and extensions.xml),

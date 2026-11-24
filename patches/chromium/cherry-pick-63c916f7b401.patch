@@ -790,10 +790,10 @@ index a7b1aab90ef4b24116895acbe31464223dd77e79..5e1edc2dfe6828dcb7e866f76a8bb0f7
    virtual bool StopTracing(
        const scoped_refptr<TraceDataEndpoint>& trace_data_endpoint) = 0;
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 61d253342065d92edd880b6c875ab33836b5e09d..f99fd01a27e75648f79b6d0f50bd6adc1c14f002 100644
+index 9ecc90eed5ddeb78702fd1a5775c7f5e42a75751..f3775681e34de2c943d04bd782d3584380661717 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -2012,6 +2012,7 @@ test("content_browsertests") {
+@@ -2013,6 +2013,7 @@ test("content_browsertests") {
      "//third_party/blink/public:blink",
      "//third_party/inspector_protocol:crdtp",
      "//third_party/leveldatabase",
@@ -801,7 +801,7 @@ index 61d253342065d92edd880b6c875ab33836b5e09d..f99fd01a27e75648f79b6d0f50bd6adc
      "//third_party/re2",
      "//third_party/zlib",
      "//third_party/zlib/google:compression_utils",
-@@ -2936,6 +2937,7 @@ test("content_unittests") {
+@@ -2937,6 +2938,7 @@ test("content_unittests") {
      "../browser/storage_partition_impl_map_unittest.cc",
      "../browser/storage_partition_impl_unittest.cc",
      "../browser/tracing/traces_internals/traces_internals_handler_unittest.cc",
