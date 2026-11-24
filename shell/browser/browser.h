@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "base/files/file_path.h"
+#include "base/functional/callback.h"
 #include "base/observer_list.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "base/values.h"
@@ -106,6 +107,10 @@ class Browser : private WindowListObserver {
 
   // Try to close all windows and quit the application.
   void Quit();
+
+  // Called when a quit started by Quit() is cancelled, e.g. by a "before-quit"
+  // handler, a "will-quit" handler, or a window that refuses to close.
+  void SetQuitCancelledCallback(base::RepeatingClosure callback);
 
   // Exit the application immediately and set exit code.
   void Exit(gin::Arguments* args);
@@ -349,6 +354,8 @@ class Browser : private WindowListObserver {
   // Send the will-quit message and then shutdown the application.
   void NotifyAndShutdown();
 
+  void NotifyQuitCancelled();
+
   // Send the before-quit message and start closing windows.
   bool HandleBeforeQuit();
 
@@ -370,6 +377,8 @@ class Browser : private WindowListObserver {
 
   // Whether `app.exit()` has been called
   bool is_exiting_ = false;
+
+  base::RepeatingClosure quit_cancelled_callback_;
 
   // Whether "ready" event has been emitted.
   bool is_ready_ = false;

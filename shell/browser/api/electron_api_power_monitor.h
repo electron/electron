@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_POWER_MONITOR_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_POWER_MONITOR_H_
 
+#include <memory>
+
 #include "base/power_monitor/power_observer.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
@@ -14,8 +16,6 @@
 #endif
 
 #if BUILDFLAG(IS_WIN)
-#include <memory>
-
 #include "base/win/windows_types.h"
 #endif
 
@@ -56,11 +56,8 @@ class PowerMonitor final : public gin::Wrappable<PowerMonitor>,
   PowerMonitor& operator=(const PowerMonitor&) = delete;
 
  private:
-#if BUILDFLAG(IS_LINUX)
-  void SetListeningForShutdown(bool);
-#endif
-
-  // Called by native callers.
+  // Called by native callers when the session starts ending. False means the
+  // app is handling it.
   bool ShouldShutdown();
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
