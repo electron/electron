@@ -2078,6 +2078,14 @@ bool ElectronBrowserClient::ShouldEnableStrictSiteIsolation() {
   return true;
 }
 
+bool ElectronBrowserClient::CanAcceptUntrustedExchangesIfNeeded() {
+  // Like Chrome, only let --ignore-certificate-errors-spki-list apply to
+  // signed exchanges when --user-data-dir is given too, so that the
+  // exemption stays out of the default profile.
+  return base::CommandLine::ForCurrentProcess()->HasSwitch(
+      ::switches::kUserDataDir);
+}
+
 bool ElectronBrowserClient::ShouldEnableSubframeZoom() {
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   return chrome_pdf::features::IsOopifPdfEnabled();

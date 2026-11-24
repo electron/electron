@@ -97,6 +97,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       std::optional<
           content::ContentBrowserClient::SpareProcessRefusedByEmbedderReason>&
           refused_reason) override;
+  bool CanAcceptUntrustedExchangesIfNeeded() override;
   bool ShouldEnableSubframeZoom() override;
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   std::optional<network::CrossOriginEmbedderPolicy>
