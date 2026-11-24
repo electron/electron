@@ -99,7 +99,7 @@ const isBeforeUnload = (event: Event, level: number, message: string) => {
 const getViewportSize = (w: BrowserWindow) =>
   w.webContents.executeJavaScript('[window.innerWidth, window.innerHeight]');
 
-describe('BrowserWindow module', () => {
+describe('BrowserWindow module', { retry: 0 }, () => {
   it('sets the correct class name on the prototype', () => {
     expect(BrowserWindow.prototype.constructor.name).toBe('BrowserWindow');
   });
@@ -4362,11 +4362,16 @@ describe('BrowserWindow module', () => {
             // already reported from that document if it ran there.
             const preloadA = path.join(fixtures, 'module', 'preload-window-open-a.js');
             const preloadB = path.join(fixtures, 'module', 'preload-window-open-b.js');
+            // Partitions are in-memory sessions that outlive the test, so each
+            // attempt (including a retry) gets fresh ones.
+            const attempt = crypto.randomUUID();
             let partitions = 0;
             const collectFilteredPreloads = async (filters: Partial<Electron.PreloadScriptRegistration>) => {
-              const ses = session.fromPartition(`preload-origin-fallback-${sandbox}-${partitions++}`);
-              ses.registerPreloadScript({ type: 'frame', filePath: preloadA, ...filters });
-              ses.registerPreloadScript({ type: 'frame', filePath: preloadB });
+              const ses = session.fromPartition(`preload-origin-fallback-${sandbox}-${attempt}-${partitions++}`);
+              const ids = [
+                ses.registerPreloadScript({ type: 'frame', filePath: preloadA, ...filters }),
+                ses.registerPreloadScript({ type: 'frame', filePath: preloadB })
+              ];
               const reports: Array<{ which: string; href: string }> = [];
               const handler = (_e: any, which: string, href: string) => reports.push({ which, href });
               ipcMain.on('preload-ran', handler);
@@ -4377,6 +4382,7 @@ describe('BrowserWindow module', () => {
                 await waitUntil(() => reports.some((r) => r.which === 'b' && r.href === 'about:blank'));
               } finally {
                 ipcMain.removeListener('preload-ran', handler);
+                ids.forEach((id) => ses.unregisterPreloadScript(id));
               }
               return reports.filter((r) => r.which === 'a').map((r) => r.href);
             };
@@ -7674,6 +7680,14 @@ describe('BrowserWindow module', () => {
         const leaveFullScreen = once(child, 'leave-full-screen');
         child.setFullScreen(false);
         await leaveFullScreen;
+
+        // Leave the parent's fullscreen Space too. Otherwise closing it after
+        // the test runs the exit animation while the next test asks a new
+        // window to enter fullscreen, and AppKit can refuse that request.
+        await setTimeout();
+        const parentLeaveFS = once(parent, 'leave-full-screen');
+        parent.setFullScreen(false);
+        await parentLeaveFS;
       });
 
       it('should be able to load a URL while transitioning to fullscreen', async () => {
