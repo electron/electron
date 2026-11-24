@@ -50,10 +50,6 @@ void SubmenuButton::SetAcceleratorVisibility(bool visible) {
   SchedulePaint();
 }
 
-void SubmenuButton::SetUnderlineColor(SkColor color) {
-  underline_color_ = color;
-}
-
 void SubmenuButton::PaintButtonContents(gfx::Canvas* canvas) {
   views::MenuButton::PaintButtonContents(canvas);
 
@@ -63,7 +59,7 @@ void SubmenuButton::PaintButtonContents(gfx::Canvas* canvas) {
     canvas->DrawSharpLine(
         gfx::PointF(underline_start_ + padding, underline_height),
         gfx::PointF(underline_end_ + padding, underline_height),
-        underline_color_);
+        GetCurrentTextColor());
   }
 }
 
