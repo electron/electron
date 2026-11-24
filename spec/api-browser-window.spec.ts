@@ -7873,29 +7873,27 @@ describe('BrowserWindow module', { retry: 0 }, () => {
         const parentLeaveFS = once(parent, 'leave-full-screen');
         parent.setFullScreen(false);
         await parentLeaveFS;
+
+        // That isn't enough on its own. On CI this test finishes in about
+        // 900ms, while one window entering and leaving fullscreen takes about
+        // 1300ms, so some of the 'leave-full-screen' events above arrive
+        // before the shared fullscreen Space is gone. The next test's window
+        // then asks for fullscreen while it is still going away, and AppKit
+        // drops that request without any callback. Close both windows and
+        // give the Space time to finish before the next test starts.
+        await closeWindow(child, { assertNotWindows: false });
+        await closeWindow(parent, { assertNotWindows: false });
+        await setTimeout(1500);
       });
 
       it('should be able to load a URL while transitioning to fullscreen', async () => {
-        // The window asks AppKit for fullscreen from its constructor, before
-        // it is shown. If the app isn't active at that point, for example
-        // because the previous test's fullscreen Space exit handed activation
-        // to another app, AppKit can drop the request without a will-enter or
-        // did-fail callback, and 'enter-full-screen' never comes. Windows that
-        // go fullscreen after being shown activate the app first, so only
-        // this test needs to take activation itself.
-        //
-        // Budget the waits from this test's timeout, which sanitizer builds
-        // raise, keeping some of it for leaving fullscreen at the end.
-        const budget = getSpecTimeout();
-        const deadline = Date.now() + budget - 5000;
-        await waitUntil(
-          () => {
-            if (app.isActive()) return true;
-            app.focus({ steal: true });
-            return false;
-          },
-          { rate: 100, timeout: Math.min(10000, budget / 3) }
-        );
+        // The window asks AppKit for fullscreen from its constructor. If
+        // AppKit drops that request (no will-enter or did-fail callback),
+        // 'enter-full-screen' never comes, so fail with what did arrive
+        // instead of a bare timeout. Budget the wait from this test's
+        // timeout, which sanitizer builds raise, keeping some of it for
+        // leaving fullscreen at the end.
+        const deadline = Date.now() + getSpecTimeout() - 5000;
 
         const w = new BrowserWindow({ fullscreen: true });
         const fired: string[] = [];
@@ -7903,7 +7901,6 @@ describe('BrowserWindow module', { retry: 0 }, () => {
         const enterFS = once(w, 'enter-full-screen').then(() => fired.push('enter-full-screen'));
         w.loadFile(path.join(fixtures, 'pages', 'c.html'));
 
-        // Fail with what did and didn't arrive instead of a bare test timeout.
         const settled = await Promise.race([
           Promise.all([enterFS, load]).then(() => true),
           setTimeout(Math.max(0, deadline - Date.now()), false)
