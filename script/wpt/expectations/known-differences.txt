@@ -19,6 +19,18 @@
 # the same values Blink does.
 /html/browsers/the-window-object/open-close/*
 
+# Electron does not support the back/forward cache: api::WebContents does not
+# override WebContentsDelegate::IsBackForwardCacheSupported(), which is false
+# unless the embedder opts in (CDP reports BackForwardCacheDisabledForDelegate).
+# Chromium's --enable-bfcache is a headless_shell switch and
+# --enable-features=BackForwardCache changes nothing.
+* | * | *Could have been BFCached but actually wasn't*
+* | * | *BFCache not supported*
+* | * | *Cannot read properties of undefined (reading 'persisted')*
+/html/browsers/browsing-the-web/back-forward-cache/*
+/performance-timeline/not-restored-reasons/*
+/performance-timeline/back-forward-cache-restoration.tentative.html
+
 # No on-device model service: the built-in AI APIs are unavailable.
 /ai/*
 
