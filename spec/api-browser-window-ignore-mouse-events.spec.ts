@@ -231,6 +231,25 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       return w;
     };
 
+    // Shows |w| above every window shown before it. Elsewhere being topmost
+    // does that. Wayland has no always on top, and a window is only stacked
+    // once its first frame reaches the compositor, so two windows shown
+    // back to back can end up in either order: activate it instead, which
+    // Weston's desktop-shell raises, and wait for that.
+    const showOnTop = async (w: BrowserWindow) => {
+      if (!isWayland) {
+        w.setAlwaysOnTop(true);
+        w.showInactive();
+        return;
+      }
+      w.show();
+      try {
+        await waitUntil(() => w.isFocused());
+      } catch {
+        throw new Error('the window was not activated after show()');
+      }
+    };
+
     // The first moves after showing a window, or after its web contents were
     // replaced, do not always arrive (seen on windows-11-arm), so nudge the
     // cursor in the MARGIN until one reaches |page|, then leave it in the
@@ -353,12 +372,16 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       const INSIDE = { x: 75, y: 75 };
       await moveTo(OUTSIDE);
       const below = await createWindow({ acceptFirstMouse: true });
-      below.setAlwaysOnTop(true);
-      below.showInactive();
+      await showOnTop(below);
       const shaped = await createWindow({ transparent: true, acceptFirstMouse: true });
-      shaped.setAlwaysOnTop(true);
-      shaped.showInactive();
+      await showOnTop(shaped);
       shaped.setShape([SHAPE]);
+      // Which window got which click, for the failure messages.
+      const where = async () =>
+        JSON.stringify({
+          shaped: { bounds: shaped.getBounds(), events: await events(shaped) },
+          below: { bounds: below.getBounds(), events: await events(below) }
+        });
 
       // Inside first: a click that falls through activates the window below,
       // which a window manager (Weston's desktop-shell) then raises over the
@@ -371,11 +394,11 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
         );
       }
       await mouse.click();
-      await waitUntilAt(
-        toScreen(inWindow(INSIDE)),
-        'a mousedown inside the shape',
-        async () => (await count(shaped, 'mousedown')) > 0
-      );
+      try {
+        await waitUntil(async () => (await count(shaped, 'mousedown')) > 0);
+      } catch {
+        throw new Error(`no mousedown inside the shape: ${await where()}`);
+      }
       expect(await count(below, 'mousedown')).toBe(0);
 
       await clearEvents(shaped);
@@ -387,11 +410,11 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
         );
       }
       await mouse.click();
-      await waitUntilAt(
-        toScreen(inWindow(TARGET_CENTER)),
-        'a mousedown in the window below',
-        async () => (await count(below, 'mousedown')) > 0
-      );
+      try {
+        await waitUntil(async () => (await count(below, 'mousedown')) > 0);
+      } catch {
+        throw new Error(`no mousedown in the window below, outside the shape: ${await where()}`);
+      }
       expect(await count(shaped, 'mousedown')).toBe(0);
     });
 

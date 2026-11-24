@@ -1,13 +1,14 @@
 import { nativeImage } from 'electron/common';
-import { ClipboardItem, clipboard } from 'electron/main';
+import { BrowserWindow, ClipboardItem, clipboard, screen } from 'electron/main';
 
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { Buffer } from 'node:buffer';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { ifdescribe, ifit } from './lib/spec-helpers.ts';
+import { ifdescribe, ifit, isWayland, waitUntil } from './lib/spec-helpers.ts';
 
 const BOOKMARK_MIME = 'electron application/bookmark';
 const FIND_TEXT_MIME = 'electron application/findtext';
@@ -487,6 +488,29 @@ describe('clipboard module', { tags: ['serial'] }, () => {
   // selection clipboard must not affect the regular system clipboard and
   // vice-versa.
   ifdescribe(process.platform === 'linux')('clipboard.selection (Linux)', () => {
+    // A Wayland client can only set the selection with the serial of an
+    // input event it received. Under a compositor that offers a seat
+    // (the CI leg's Weston with ui-controls) that means a real click first;
+    // without one Chromium keeps the selection in process and needs nothing.
+    let inputWindow: BrowserWindow | undefined;
+    beforeAll(async () => {
+      if (!isWayland || process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS) return;
+      const mouse = createRequire(import.meta.url)('@electron-ci/mouse-input');
+      if (!mouse.getDiagnostics().available) return;
+      // Output sized, so Weston's desktop-shell places it at (0, 0).
+      inputWindow = new BrowserWindow({ ...screen.getPrimaryDisplay().workArea, frame: false, show: false });
+      await inputWindow.loadURL('data:text/html,<script>window.clicked=false;onmousedown=()=>{clicked=true}</script>');
+      inputWindow.show();
+      await waitUntil(async () => {
+        await mouse.move(10, 10);
+        await mouse.click();
+        return inputWindow!.webContents.executeJavaScript('clicked');
+      });
+    });
+    afterAll(() => {
+      inputWindow?.destroy();
+    });
+
     it('exposes a selection namespace mirroring the top-level surface', () => {
       expect(clipboard.selection).toBeTypeOf('object');
       expect(clipboard.selection!.read).toBeTypeOf('function');
