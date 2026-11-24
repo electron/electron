@@ -51,7 +51,6 @@
 
 # Reports are not delivered to the reporting endpoint. Not root-caused.
 /connection-allowlist/tentative/*
-/reporting/* | * | *report*
 
 # test_driver.minimize_window() needs CDP Browser.getWindowForTarget.
 # TODO: remove once https://github.com/electron/electron/pull/55945 lands.
