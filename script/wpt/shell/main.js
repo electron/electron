@@ -69,6 +69,16 @@ app.on('certificate-error', (event, webContents, url, error, certificate, callba
 });
 
 app.on('web-contents-created', (_event, wc) => {
+  // Chrome keeps the Bluetooth device chooser open until the user or the
+  // automation client (CDP DeviceAccess.selectPrompt / cancelPrompt, which is
+  // what WebDriver BiDi bluetooth.handleRequestDevicePrompt maps to) answers
+  // it. Electron cancels requestDevice() right away when nothing listens for
+  // 'select-bluetooth-device', so keep the chooser open and never answer it
+  // from here: the test picks or cancels through the protocol.
+  wc.on('select-bluetooth-device', (event, devices) => {
+    event.preventDefault();
+    log('select-bluetooth-device', JSON.stringify(devices));
+  });
   wc.setWindowOpenHandler(({ features }) => {
     // The size and position a page asks for must reach the new window as they
     // do in Chrome, where width and height are the content size. Popups that
