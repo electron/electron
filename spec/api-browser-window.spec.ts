@@ -7706,6 +7706,14 @@ describe('BrowserWindow module', { retry: 0 }, () => {
         const leaveFullScreen = once(child, 'leave-full-screen');
         child.setFullScreen(false);
         await leaveFullScreen;
+
+        // Leave the parent's fullscreen Space too. Otherwise closing it after
+        // the test runs the exit animation while the next test asks a new
+        // window to enter fullscreen, and AppKit can refuse that request.
+        await setTimeout();
+        const parentLeaveFS = once(parent, 'leave-full-screen');
+        parent.setFullScreen(false);
+        await parentLeaveFS;
       });
 
       it('should be able to load a URL while transitioning to fullscreen', async () => {
