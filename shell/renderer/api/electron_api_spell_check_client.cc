@@ -51,18 +51,21 @@ struct Word {
 class SpellCheckClient::SpellcheckRequest {
  public:
   SpellcheckRequest(
+      int id,
       const std::u16string& text,
       std::unique_ptr<blink::WebTextCheckingCompletion> completion)
-      : text_(text), completion_(std::move(completion)) {}
+      : id_(id), text_(text), completion_(std::move(completion)) {}
   SpellcheckRequest(const SpellcheckRequest&) = delete;
   SpellcheckRequest& operator=(const SpellcheckRequest&) = delete;
   ~SpellcheckRequest() = default;
 
+  [[nodiscard]] int id() const { return id_; }
   [[nodiscard]] const std::u16string& text() const { return text_; }
   blink::WebTextCheckingCompletion* completion() { return completion_.get(); }
   std::vector<Word>& wordlist() { return word_list_; }
 
  private:
+  int id_;
   std::u16string text_;          // Text to be checked in this task.
   std::vector<Word> word_list_;  // List of Words found in text
   // The interface to send the misspelled ranges to Blink.
@@ -106,12 +109,13 @@ void SpellCheckClient::RequestCheckingOfText(
     pending_request_param_->completion()->DidCancelCheckingText();
   }
 
-  pending_request_param_ =
-      std::make_unique<SpellcheckRequest>(text, std::move(completion_callback));
+  const int request_id = ++last_request_id_;
+  pending_request_param_ = std::make_unique<SpellcheckRequest>(
+      request_id, text, std::move(completion_callback));
 
   base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE, base::BindOnce(&SpellCheckClient::SpellCheckText,
-                                weak_factory_.GetWeakPtr()));
+                                weak_factory_.GetWeakPtr(), request_id));
 }
 
 bool SpellCheckClient::IsSpellCheckingEnabled() const {
@@ -122,7 +126,15 @@ bool SpellCheckClient::IsShowingSpellingUI() {
   return false;
 }
 
-void SpellCheckClient::SpellCheckText() {
+bool SpellCheckClient::IsPendingRequest(int request_id) const {
+  return pending_request_param_ && pending_request_param_->id() == request_id;
+}
+
+void SpellCheckClient::SpellCheckText(int request_id) {
+  // Blink may replace a request before this task runs.
+  if (!IsPendingRequest(request_id))
+    return;
+
   const auto& text = pending_request_param_->text();
   if (text.empty() || spell_check_.IsEmpty()) {
     pending_request_param_->completion()->DidCancelCheckingText();
@@ -178,11 +190,16 @@ void SpellCheckClient::SpellCheckText() {
   }
 
   // Send out all the words data to the spellchecker to check
-  SpellCheckWords(scope, words);
+  SpellCheckWords(scope, request_id, words);
 }
 
 void SpellCheckClient::OnSpellCheckDone(
+    int request_id,
     const std::vector<std::u16string>& misspelled_words) {
+  // Ignore callbacks for requests that were superseded or already completed.
+  if (!IsPendingRequest(request_id))
+    return;
+
   const absl::flat_hash_set<std::u16string> misspelled{misspelled_words.begin(),
                                                        misspelled_words.end()};
   std::vector<blink::WebTextCheckingResult> results;
@@ -212,6 +229,7 @@ void SpellCheckClient::OnSpellCheckDone(
 }
 
 void SpellCheckClient::SpellCheckWords(const SpellCheckScope& scope,
+                                       int request_id,
                                        const std::set<std::u16string>& words) {
   DCHECK(!scope.spell_check_.IsEmpty());
 
@@ -221,7 +239,7 @@ void SpellCheckClient::SpellCheckWords(const SpellCheckScope& scope,
 
   v8::Local<v8::FunctionTemplate> templ = gin_helper::CreateFunctionTemplate(
       isolate_, base::BindRepeating(&SpellCheckClient::OnSpellCheckDone,
-                                    weak_factory_.GetWeakPtr()));
+                                    weak_factory_.GetWeakPtr(), request_id));
   v8::Local<v8::Value> args[] = {gin::ConvertToV8(isolate_, words),
                                  templ->GetFunction(context).ToLocalChecked()};
   // Call javascript with the words and the callback function

@@ -68,12 +68,16 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
   // Run through the word iterator and send out requests
   // to the JS API for checking spellings of words in the current
   // request.
-  void SpellCheckText();
+  void SpellCheckText(int request_id);
+
+  // Whether |request_id| identifies the request currently awaiting results.
+  bool IsPendingRequest(int request_id) const;
 
   // Call JavaScript to check spelling a word.
   // The javascript function will callback OnSpellCheckDone
   // with the results of all the misspelled words.
   void SpellCheckWords(const SpellCheckScope& scope,
+                       int request_id,
                        const std::set<std::u16string>& words);
 
   // Returns whether or not the given word is a contraction of valid words
@@ -85,7 +89,8 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
                      std::vector<std::u16string>* contraction_words);
 
   // Callback for the JS API which returns the list of misspelled words.
-  void OnSpellCheckDone(const std::vector<std::u16string>& misspelled_words);
+  void OnSpellCheckDone(int request_id,
+                        const std::vector<std::u16string>& misspelled_words);
 
   // Represents character attributes used for filtering out characters which
   // are not supported by this SpellCheck object.
@@ -103,6 +108,7 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
   // (When Blink sends two or more requests, we cancel the previous
   // requests so we do not have to use vectors.)
   std::unique_ptr<SpellcheckRequest> pending_request_param_;
+  int last_request_id_ = 0;
 
   raw_ptr<v8::Isolate> isolate_;
   v8::Global<v8::Context> context_;
