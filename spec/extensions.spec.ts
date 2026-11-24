@@ -1522,8 +1522,9 @@ describe('chrome extensions', { retry: 0 }, () => {
         return JSON.parse(responseString).message;
       };
 
-      // A reply means the worker has finished registering. Until then the
-      // registration is not protected.
+      // The worker replies once it has activated, which is after its
+      // registration has been stored. Until then clearStorageData() would
+      // delete the registration.
       expect(await messageWorker()).toBe('Hello from background.js');
 
       await customSession.clearStorageData();
