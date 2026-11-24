@@ -29,7 +29,7 @@ is upstream as of 154.0.8023.0.)
 This patch should be submitted upstream.
 
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
-index a62e0154c2cc1de10c6b6902b8b5b124efda8e8e..84e610748eca1922e773c09ad47c5da54ff1b8e7 100644
+index 2642ffc2deb24fb433530360f54d6d9362c43794..f05ea8999f7effd6622e31d297fe8fe524fd1443 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
 @@ -89,6 +89,18 @@ class COMPONENT_EXPORT(GLOBAL_ACCELERATOR_LISTENER) GlobalAcceleratorListener {

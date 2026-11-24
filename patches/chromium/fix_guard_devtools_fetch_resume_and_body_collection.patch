@@ -24,7 +24,7 @@ sent once body EOF, upstream completion and DevTools continuation have all
 happened, in any order. The new invariant CHECKs are NotFatalUntil::M162.
 
 diff --git a/content/browser/devtools/devtools_url_loader_interceptor.cc b/content/browser/devtools/devtools_url_loader_interceptor.cc
-index baaf473771c32e7214f3cac61cd19fdf91fcd368..3d633fe61035c959880f8e0397c0f1907c4cfe76 100644
+index 682bd925e9186e36146a67327a275b36831dabb9..d970fc3257ad5ab59412ce769e2daf1873e8198d 100644
 --- a/content/browser/devtools/devtools_url_loader_interceptor.cc
 +++ b/content/browser/devtools/devtools_url_loader_interceptor.cc
 @@ -208,7 +208,8 @@ class BodyReader : public mojo::DataPipeDrainer::Client {

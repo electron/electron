@@ -925,7 +925,7 @@ index 0000000000000000000000000000000000000000..e67f6ef0bb4d3a9cba58b1243391ea0f
 +  return true;
 +}
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index cf1403688f2867007708db4bda12e10a02c6244a..a3654dc425bcbf3d02cc82593b1375d2d1239a59 100644
+index cde3f42b3caf1986f093b9f2b842d9d2fe48b996..5562d145357f255080e988c0e30f0cf4d10a2980 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -268,488 +268,8 @@ void ShowFileSystemAccessDangerousFileDialogOnUIThread(
