@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Thu, 19 Nov 2026 15:45:41 -0500
+Subject: fix: use ArrayBufferView::GetBuffer() for V8 15.9 and later
+
+V8 removed the deprecated ArrayBufferView::Buffer() in favor of
+GetBuffer(), which returns a Local<ArrayBufferBase>
+(https://crrev.com/c/8794471). TypedArrayContents only needs the
+backing store data pointer, which ArrayBufferBase also provides.
+
+diff --git a/nan_typedarray_contents.h b/nan_typedarray_contents.h
+index f2650edac9b868a5524cca2c2f24e603ade83421..7022854972f3f07324dd1b4b95c83fbfaee45f54 100644
+--- a/nan_typedarray_contents.h
++++ b/nan_typedarray_contents.h
+@@ -28,7 +28,11 @@ class TypedArrayContents {
+ 
+       const size_t    byte_length = array->ByteLength();
+       const ptrdiff_t byte_offset = array->ByteOffset();
++#if (V8_MAJOR_VERSION > 15 || (V8_MAJOR_VERSION == 15 && V8_MINOR_VERSION >= 9))
++      v8::Local<v8::ArrayBufferBase> buffer = array->GetBuffer();
++#else
+       v8::Local<v8::ArrayBuffer> buffer = array->Buffer();
++#endif
+ 
+       length = byte_length / sizeof(T);
+ // Actually it's 7.9 here but this would lead to ABI issues with Node.js 13
