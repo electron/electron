@@ -147,6 +147,13 @@ void Start(const std::string& submit_url,
     electron::ScopedAllowBlockingForElectron allow_blocking;
     ::crash_reporter::InitializeCrashpad(IsBrowserProcess(), process_type);
   }
+  // Crashpad's signal handler now sits in front of any SIGSEGV handler V8
+  // installed for WebAssembly traps, so let V8 look at faults first. Child
+  // processes do the same in ElectronMainDelegate.
+  if (IsBrowserProcess()) {
+    ::crash_reporter::SetFirstChanceExceptionHandler(
+        v8::TryHandleWebAssemblyTrapPosix);
+  }
   if (ignore_system_crash_handler) {
     crashpad::CrashpadInfo::GetCrashpadInfo()
         ->set_system_crash_reporter_forwarding(crashpad::TriState::kDisabled);
