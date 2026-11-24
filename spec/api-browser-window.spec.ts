@@ -42,7 +42,6 @@ import {
   ifdescribe,
   defer,
   focusWebContents,
-  getSpecTimeout,
   listen,
   waitUntil,
   isWayland,
@@ -7737,7 +7736,7 @@ describe('BrowserWindow module', { retry: 0 }, () => {
         //
         // Budget the waits from this test's timeout, which sanitizer builds
         // raise, keeping some of it for leaving fullscreen at the end.
-        const budget = getSpecTimeout();
+        const budget = Number(process.env.ELECTRON_SPEC_TIMEOUT) || 30_000;
         const deadline = Date.now() + budget - 5000;
         await waitUntil(
           () => {
