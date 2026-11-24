@@ -6,6 +6,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_OSR_OSR_PAINT_EVENT_H
 #define ELECTRON_SHELL_BROWSER_OSR_OSR_PAINT_EVENT_H
 
+#include "base/memory/ref_counted.h"
 #include "content/public/common/widget_type.h"
 #include "media/base/video_types.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
@@ -36,13 +37,19 @@ struct OffscreenNativePixmapPlaneInfo {
                                  int fd);
 };
 
-struct OffscreenReleaserHolder {
+// Shared between the in-flight OffscreenSharedTextureValue and the JS texture
+// object's release monitor. JS `release()` can run while the paint event is
+// still being emitted, so the value must not hold a non-owning pointer to it.
+// The frame returns to the capturer's pool once the last reference is gone.
+struct OffscreenReleaserHolder
+    : public base::RefCounted<OffscreenReleaserHolder> {
   OffscreenReleaserHolder() = delete;
-  ~OffscreenReleaserHolder();
   OffscreenReleaserHolder(
       gfx::GpuMemoryBufferHandle gmb_handle,
       mojo::PendingRemote<viz::mojom::FrameSinkVideoConsumerFrameCallbacks>
           releaser);
+  OffscreenReleaserHolder(const OffscreenReleaserHolder&) = delete;
+  OffscreenReleaserHolder& operator=(const OffscreenReleaserHolder&) = delete;
 
   // GpuMemoryBufferHandle, keep the scoped handle alive
   gfx::GpuMemoryBufferHandle gmb_handle;
@@ -50,6 +57,10 @@ struct OffscreenReleaserHolder {
   // Releaser, hold this to prevent FrameSinkVideoCapturer recycle frame
   mojo::PendingRemote<viz::mojom::FrameSinkVideoConsumerFrameCallbacks>
       releaser;
+
+ private:
+  friend class base::RefCounted<OffscreenReleaserHolder>;
+  ~OffscreenReleaserHolder();
 };
 
 struct OffscreenSharedTextureValue {
@@ -90,7 +101,7 @@ struct OffscreenSharedTextureValue {
   int64_t frame_count;
 
   // Releaser holder
-  raw_ptr<OffscreenReleaserHolder> releaser_holder;
+  scoped_refptr<OffscreenReleaserHolder> releaser_holder;
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
   // On Windows it is a HANDLE to the shared D3D11 texture.
