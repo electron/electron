@@ -48,6 +48,8 @@
 # shell/browser/feature_list.cc).
 /infrastructure/assumptions/non-local-ports*
 /fetch/local-network-access/*
+# The same feature gates the WebSocket targetAddressSpace mismatch check.
+/websockets/constructor/target-address-space.any.* | *mismatched targetAddressSpace*
 
 # Reports are not delivered to the reporting endpoint. Not root-caused.
 /connection-allowlist/tentative/*
