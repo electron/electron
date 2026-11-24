@@ -1,14 +1,13 @@
 import { nativeImage } from 'electron/common';
-import { BrowserWindow, ClipboardItem, clipboard, screen } from 'electron/main';
+import { ClipboardItem, clipboard } from 'electron/main';
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { Buffer } from 'node:buffer';
-import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { ifdescribe, ifit, isWayland, waitUntil } from './lib/spec-helpers.ts';
+import { ifdescribe, ifit, isWayland } from './lib/spec-helpers.ts';
 
 const BOOKMARK_MIME = 'electron application/bookmark';
 const FIND_TEXT_MIME = 'electron application/findtext';
@@ -487,54 +486,13 @@ describe('clipboard module', { tags: ['serial'] }, () => {
   // but operates against a *separate* system buffer, so writes to the
   // selection clipboard must not affect the regular system clipboard and
   // vice-versa.
-  ifdescribe(process.platform === 'linux')('clipboard.selection (Linux)', () => {
-    // A Wayland client can only set the selection with the serial of an
-    // input event it received. Under a compositor that offers a seat
-    // (the CI leg's Weston with ui-controls) that means a real click first;
-    // without one Chromium keeps the selection in process and needs nothing.
-    let inputWindow: BrowserWindow | undefined;
-    beforeAll(async () => {
-      if (!isWayland || process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS) return;
-      const mouse = createRequire(import.meta.url)('@electron-ci/mouse-input');
-      if (!mouse.getDiagnostics().available) return;
-      // Output sized, so Weston's desktop-shell places it at (0, 0).
-      inputWindow = new BrowserWindow({
-        ...screen.getPrimaryDisplay().workArea,
-        frame: false,
-        show: false,
-        useContentSize: true
-      });
-      const w = inputWindow;
-      await w.loadURL('data:text/html,<script>window.clicked=false;onmousedown=()=>{clicked=true}</script>');
-      // Wait for the activation, which means the surface is mapped and
-      // stacked, before clicking into it.
-      w.show();
-      await waitUntil(() => w.isFocused());
-      // Vary the position so every move is real motion that repicks the
-      // pointer focus.
-      let offset = 0;
-      try {
-        await waitUntil(async () => {
-          offset = offset === 0 ? 2 : 0;
-          await mouse.move(20 + offset, 20 + offset);
-          await mouse.click();
-          return w.webContents.executeJavaScript('clicked');
-        });
-      } catch {
-        throw new Error(
-          `no mousedown reached the input window: ${JSON.stringify({
-            bounds: w.getBounds(),
-            focused: w.isFocused(),
-            cursor: mouse.getCursorPos(),
-            diagnostics: mouse.getDiagnostics()
-          })}`
-        );
-      }
-    });
-    afterAll(() => {
-      inputWindow?.destroy();
-    });
-
+  //
+  // Weston (the Wayland CI compositor) has no primary selection protocol.
+  // With no seat Chromium falls back to an in process clipboard that keeps a
+  // selection anyway, but the bundled Weston's ui-controls seat makes it use
+  // the real Wayland clipboard, where the selection buffer is unavailable.
+  const hasSelectionBuffer = !(isWayland && process.env.ELECTRON_TEST_WAYLAND_UI_CONTROLS);
+  ifdescribe(process.platform === 'linux' && hasSelectionBuffer)('clipboard.selection (Linux)', () => {
     it('exposes a selection namespace mirroring the top-level surface', () => {
       expect(clipboard.selection).toBeTypeOf('object');
       expect(clipboard.selection!.read).toBeTypeOf('function');

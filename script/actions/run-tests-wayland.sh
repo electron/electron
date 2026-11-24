@@ -36,6 +36,8 @@ printf '[shell]\npanel-position=none\n' >"$WESTON_INI"
 
 if [[ -x "$WESTON_DIR/weston" ]]; then
 	echo "Using bundled weston with ui-controls from $WESTON_DIR"
+	# Tells specs that a real seat (and so the real Wayland clipboard) exists.
+	export ELECTRON_TEST_WAYLAND_UI_CONTROLS=1
 	# Bundled weston loads its modules and helper clients relative to the
 	# working directory (MODULEDIR and LIBEXECDIR are "." in its build).
 	(
