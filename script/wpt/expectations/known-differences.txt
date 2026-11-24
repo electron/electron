@@ -79,3 +79,11 @@
 
 # Transient user activation is not consumed by CloseWatcher. Not root-caused.
 /close-watcher/user-activation/y-preventDefault-consume-transient-activation.html*
+
+# chrome-extension: is registered as a standard scheme without ports
+# (ElectronContentClient::AddAdditionalSchemes, as in Chrome's
+# ChromeContentClient), so chrome-extension://x:0 parses to
+# chrome-extension://x/ with a tuple origin. content_shell and headless_shell
+# do not register the scheme and parse it as a non-special URL, which is what
+# the test data expects.
+/url/* | *<chrome-extension://x:0>*
