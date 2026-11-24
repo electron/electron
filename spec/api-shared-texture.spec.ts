@@ -237,4 +237,33 @@ ifdescribe(!skip)('sharedTexture module', { retry: 0 }, () => {
     it('successfully imported and rendered with managed api, with iframe', (ctx) =>
       runSharedTextureTest(ctx, 'managed', true));
   });
+
+  describe('offscreen shared texture', () => {
+    it('does not crash when release() is called synchronously from the paint handler', async () => {
+      const osr = new BrowserWindow({
+        width: 128,
+        height: 128,
+        show: false,
+        webPreferences: {
+          backgroundThrottling: false,
+          offscreen: { useSharedTexture: true }
+        }
+      });
+
+      const painted = new Promise<boolean>((resolve) => {
+        osr.webContents.once('paint', (event) => {
+          osr.webContents.stopPainting();
+          // Releasing while the paint event is still being emitted used to leave
+          // the native paint value with a dangling pointer to the released frame.
+          event.texture?.release();
+          resolve(!!event.texture);
+        });
+      });
+      await osr.loadFile(osrPath);
+      expect(await painted).toBe(true);
+      // Let the native paint dispatch unwind so any dangling-pointer check would fire.
+      await setTimeout();
+      expect(osr.webContents.isDestroyed()).toBe(false);
+    });
+  });
 });
