@@ -27,7 +27,6 @@ class SubmenuButton : public views::MenuButton {
   SubmenuButton& operator=(const SubmenuButton&) = delete;
 
   void SetAcceleratorVisibility(bool visible);
-  void SetUnderlineColor(SkColor color);
 
   char16_t accelerator() const { return accelerator_; }
 
@@ -50,7 +49,6 @@ class SubmenuButton : public views::MenuButton {
   int underline_end_ = 0;
   int text_width_ = 0;
   int text_height_ = 0;
-  SkColor underline_color_ = SK_ColorBLACK;
   SkColor background_color_;
 };
 
