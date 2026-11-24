@@ -1563,8 +1563,17 @@ describe('BrowserWindow module', { retry: 0 }, () => {
           const refocused = once(w, 'focus');
           w.focus();
           await refocused;
-          expect(child.webContents.isFocused()).toBe(true);
-          expect(w.webContents.isFocused()).toBe(false);
+          // The window can report 'focus' before focus inside it has settled:
+          // on X11 the activation Electron reports and the views focus
+          // restore can land in separate tasks. Wait for the child to get
+          // focus back, then check where focus ended up, so a real failure
+          // still shows which webContents holds it.
+          const focusState = () => ({
+            child: child.webContents.isFocused(),
+            primary: w.webContents.isFocused()
+          });
+          await waitUntil(() => child.webContents.isFocused(), { timeout: 5000 }).catch(() => {});
+          expect(focusState()).toEqual({ child: true, primary: false });
           other.destroy();
         }
       );
@@ -7691,13 +7700,33 @@ describe('BrowserWindow module', { retry: 0 }, () => {
       });
 
       it('should be able to load a URL while transitioning to fullscreen', async () => {
+        // The window asks AppKit for fullscreen from its constructor, before
+        // it is shown. If the app isn't active at that point, for example
+        // because the previous test's fullscreen Space exit handed activation
+        // to another app, AppKit can drop the request without a will-enter or
+        // did-fail callback, and 'enter-full-screen' never comes. Windows that
+        // go fullscreen after being shown activate the app first, so only
+        // this test needs to take activation itself.
+        await waitUntil(
+          () => {
+            if (app.isActive()) return true;
+            app.focus({ steal: true });
+            return false;
+          },
+          { rate: 100 }
+        );
+
         const w = new BrowserWindow({ fullscreen: true });
+        const fired: string[] = [];
+        const load = once(w.webContents, 'did-finish-load').then(() => fired.push('did-finish-load'));
+        const enterFS = once(w, 'enter-full-screen').then(() => fired.push('enter-full-screen'));
         w.loadFile(path.join(fixtures, 'pages', 'c.html'));
 
-        const load = once(w.webContents, 'did-finish-load');
-        const enterFS = once(w, 'enter-full-screen');
-
-        await Promise.all([enterFS, load]);
+        // Fail with what did and didn't arrive instead of a bare test timeout.
+        const settled = await Promise.race([Promise.all([enterFS, load]).then(() => true), setTimeout(15000, false)]);
+        expect({ settled, fired, isFullScreen: w.isFullScreen(), appActive: app.isActive() }).toMatchObject({
+          settled: true
+        });
         expect(w.fullScreen).toBe(true);
 
         await setTimeout();
