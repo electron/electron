@@ -49,6 +49,7 @@ import {
   ifdescribe,
   defer,
   focusWebContents,
+  getSpecTimeout,
   listen,
   waitUntil,
   isWayland,
@@ -7737,13 +7738,18 @@ describe('BrowserWindow module', () => {
         // did-fail callback, and 'enter-full-screen' never comes. Windows that
         // go fullscreen after being shown activate the app first, so only
         // this test needs to take activation itself.
+        //
+        // Budget the waits from this test's timeout, which sanitizer builds
+        // raise, keeping some of it for leaving fullscreen at the end.
+        const budget = getSpecTimeout();
+        const deadline = Date.now() + budget - 5000;
         await waitUntil(
           () => {
             if (app.isActive()) return true;
             app.focus({ steal: true });
             return false;
           },
-          { rate: 100 }
+          { rate: 100, timeout: Math.min(10000, budget / 3) }
         );
 
         const w = new BrowserWindow({ fullscreen: true });
@@ -7753,7 +7759,10 @@ describe('BrowserWindow module', () => {
         w.loadFile(path.join(fixtures, 'pages', 'c.html'));
 
         // Fail with what did and didn't arrive instead of a bare test timeout.
-        const settled = await Promise.race([Promise.all([enterFS, load]).then(() => true), setTimeout(15000, false)]);
+        const settled = await Promise.race([
+          Promise.all([enterFS, load]).then(() => true),
+          setTimeout(Math.max(0, deadline - Date.now()), false)
+        ]);
         expect({ settled, fired, isFullScreen: w.isFullScreen(), appActive: app.isActive() }).toMatchObject({
           settled: true
         });
