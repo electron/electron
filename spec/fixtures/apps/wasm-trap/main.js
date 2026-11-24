@@ -1,7 +1,8 @@
 // Runs a WebAssembly function that reads past the end of its memory, either
 // in the main process or in a renderer, and prints how the trap was reported.
 // Usage: electron main.js <main|sandboxed|unsandboxed>
-const { app, BrowserWindow } = require('electron');
+//        electron main.js main-crash-reporter <crash dumps dir>
+const { app, BrowserWindow, crashReporter } = require('electron');
 
 // (module (memory 1) (func (export "f") (param i32) (result i32)
 //   local.get 0 i32.load))
@@ -23,7 +24,17 @@ function runOutOfBoundsLoad(bytes) {
 const mode = process.argv[2];
 
 app.whenReady().then(async () => {
-  if (mode === 'main') {
+  if (mode === 'main-crash-reporter') {
+    // Crashpad's signal handler goes in front of the one V8 uses for traps.
+    app.setPath('crashDumps', process.argv[3]);
+    crashReporter.start({
+      submitURL: 'http://127.0.0.1',
+      uploadToServer: false,
+      ignoreSystemCrashHandler: true
+    });
+  }
+
+  if (mode === 'main' || mode === 'main-crash-reporter') {
     console.log(`RESULT ${runOutOfBoundsLoad(wasmBytes)}`);
     app.exit(0);
     return;
