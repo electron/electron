@@ -9,17 +9,22 @@
 #include <wtsapi32.h>
 
 #include "base/functional/bind.h"
+#include "gin/persistent.h"
+#include "shell/browser/javascript_environment.h"
 #include "ui/base/win/session_change_observer.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace electron::api {
 
 void PowerMonitor::InitPlatformSpecificMonitors() {
   // Suspend and resume come from base::PowerMonitor; session lock and unlock
   // come from WTS session change notifications delivered on the UI thread.
-  // Destroying the observer cancels the callback, so Unretained is safe.
+  auto& allocation_handle =
+      JavascriptEnvironment::GetIsolate()->GetCppHeap()->GetAllocationHandle();
   session_change_observer_ =
       std::make_unique<ui::SessionChangeObserver>(base::BindRepeating(
-          &PowerMonitor::OnSessionChange, base::Unretained(this)));
+          &PowerMonitor::OnSessionChange,
+          gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle))));
 }
 
 void PowerMonitor::DestroyPlatformSpecificMonitors() {

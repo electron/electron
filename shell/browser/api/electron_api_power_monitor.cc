@@ -132,19 +132,24 @@ void PowerMonitor::OnSpeedLimitChange(int speed_limit) {
       gin::DataObjectBuilder(isolate).Set("limit", speed_limit).Build());
 }
 
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC)
+base::RepeatingCallback<bool()> PowerMonitor::MakeShutdownHandler() {
+  auto& allocation_handle =
+      JavascriptEnvironment::GetIsolate()->GetCppHeap()->GetAllocationHandle();
+  // A weak receiver cannot be bound to a method with a return value, so
+  // unwrap the cell by hand and treat a collected monitor as "don't block".
+  return base::BindRepeating(
+      [](PowerMonitor* monitor) {
+        return monitor && monitor->ShouldShutdown();
+      },
+      gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle)));
+}
+#endif
+
 #if BUILDFLAG(IS_LINUX)
 void PowerMonitor::SetListeningForShutdown(bool is_listening) {
   if (is_listening) {
-    auto& allocation_handle = JavascriptEnvironment::GetIsolate()
-                                  ->GetCppHeap()
-                                  ->GetAllocationHandle();
-    // A weak receiver cannot be bound to a method with a return value, so
-    // unwrap the cell by hand and treat a collected monitor as "don't block".
-    power_observer_linux_.SetShutdownHandler(base::BindRepeating(
-        [](PowerMonitor* monitor) {
-          return monitor && monitor->ShouldShutdown();
-        },
-        gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle))));
+    power_observer_linux_.SetShutdownHandler(MakeShutdownHandler());
   } else {
     power_observer_linux_.SetShutdownHandler(base::RepeatingCallback<bool()>());
   }

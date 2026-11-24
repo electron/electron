@@ -1889,10 +1889,16 @@ v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
         base::BindRepeating(
             &App::DockSetMenu,
             gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle))));
+    // A weak receiver cannot be bound to a method with a return value, so
+    // unwrap the cell by hand and return null if the App has been collected.
     dock_obj.SetMethod(
         "getMenu",
         base::BindRepeating(
-            &App::DockGetMenu,
+            [](App* app, v8::Isolate* isolate) -> v8::Local<v8::Value> {
+              if (!app)
+                return v8::Null(isolate);
+              return app->DockGetMenu(isolate);
+            },
             gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle))));
     dock_obj.SetMethod("setIcon",
                        base::BindRepeating(&Browser::DockSetIcon, browser));

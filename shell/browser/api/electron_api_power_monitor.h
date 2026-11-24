@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_POWER_MONITOR_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_POWER_MONITOR_H_
 
+#include "base/functional/callback_forward.h"
 #include "base/power_monitor/power_observer.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
@@ -64,6 +65,12 @@ class PowerMonitor final : public gin::Wrappable<PowerMonitor>,
 
   // Called by native callers.
   bool ShouldShutdown();
+
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC)
+  // Returns a callback for the platform shutdown handler that calls
+  // ShouldShutdown() through a weak reference to this monitor.
+  base::RepeatingCallback<bool()> MakeShutdownHandler();
+#endif
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   void InitPlatformSpecificMonitors();

@@ -109,8 +109,7 @@ void PowerMonitor::InitPlatformSpecificMonitors() {
   [g_lock_monitor addEmitter:this];
 
   [[AtomApplication sharedApplication]
-      setShutdownHandler:base::BindRepeating(&PowerMonitor::ShouldShutdown,
-                                             base::Unretained(this))];
+      setShutdownHandler:MakeShutdownHandler()];
 }
 
 void PowerMonitor::DestroyPlatformSpecificMonitors() {

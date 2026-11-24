@@ -171,18 +171,22 @@ void SystemPreferences::InitializeWindow() {
   // Wait until app is ready before creating sys color listener
   // Creating this listener before the app is ready causes global shortcuts
   // to not fire
+  auto& allocation_handle =
+      JavascriptEnvironment::GetIsolate()->GetCppHeap()->GetAllocationHandle();
   if (Browser::Get()->is_ready()) {
     hwnd_subscription_ =
         gfx::SingletonHwnd::GetInstance()->RegisterCallback(base::BindRepeating(
-            &SystemPreferences::OnWndProc, base::Unretained(this)));
+            &SystemPreferences::OnWndProc,
+            gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle))));
   } else {
     Browser::Get()->AddObserver(this);
   }
 
   current_color_ = GetAccentColor();
-  accent_color_subscription_ = ui::AccentColorObserver::Get()->Subscribe(
-      base::BindRepeating(&SystemPreferences::OnSystemAccentColorChanged,
-                          base::Unretained(this)));
+  accent_color_subscription_ =
+      ui::AccentColorObserver::Get()->Subscribe(base::BindRepeating(
+          &SystemPreferences::OnSystemAccentColorChanged,
+          gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle))));
 }
 
 void SystemPreferences::OnWndProc(HWND hwnd,
@@ -197,9 +201,12 @@ void SystemPreferences::OnWndProc(HWND hwnd,
 }
 
 void SystemPreferences::OnFinishLaunching(base::DictValue launch_info) {
-  hwnd_subscription_ =
-      gfx::SingletonHwnd::GetInstance()->RegisterCallback(base::BindRepeating(
-          &SystemPreferences::OnWndProc, base::Unretained(this)));
+  hwnd_subscription_ = gfx::SingletonHwnd::GetInstance()->RegisterCallback(
+      base::BindRepeating(&SystemPreferences::OnWndProc,
+                          gin::WrapPersistent(weak_factory_.GetWeakCell(
+                              JavascriptEnvironment::GetIsolate()
+                                  ->GetCppHeap()
+                                  ->GetAllocationHandle()))));
   Browser::Get()->RemoveObserver(this);
 }
 
