@@ -68,5 +68,8 @@
 /css/css-page/crashtests/counter-containment-00[12].html
 /print/crashtests/reload-crash.html
 
+# Electron ships no hyphenation dictionaries, so `hyphens: auto` does nothing.
+/css/css-text/hyphens/lang-tag-case-insensitive.html
+
 # Transient user activation is not consumed by CloseWatcher. Not root-caused.
 /close-watcher/user-activation/y-preventDefault-consume-transient-activation.html*
