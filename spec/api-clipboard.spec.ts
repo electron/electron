@@ -498,14 +498,38 @@ describe('clipboard module', { tags: ['serial'] }, () => {
       const mouse = createRequire(import.meta.url)('@electron-ci/mouse-input');
       if (!mouse.getDiagnostics().available) return;
       // Output sized, so Weston's desktop-shell places it at (0, 0).
-      inputWindow = new BrowserWindow({ ...screen.getPrimaryDisplay().workArea, frame: false, show: false });
-      await inputWindow.loadURL('data:text/html,<script>window.clicked=false;onmousedown=()=>{clicked=true}</script>');
-      inputWindow.show();
-      await waitUntil(async () => {
-        await mouse.move(10, 10);
-        await mouse.click();
-        return inputWindow!.webContents.executeJavaScript('clicked');
+      inputWindow = new BrowserWindow({
+        ...screen.getPrimaryDisplay().workArea,
+        frame: false,
+        show: false,
+        useContentSize: true
       });
+      const w = inputWindow;
+      await w.loadURL('data:text/html,<script>window.clicked=false;onmousedown=()=>{clicked=true}</script>');
+      // Wait for the activation, which means the surface is mapped and
+      // stacked, before clicking into it.
+      w.show();
+      await waitUntil(() => w.isFocused());
+      // Vary the position so every move is real motion that repicks the
+      // pointer focus.
+      let offset = 0;
+      try {
+        await waitUntil(async () => {
+          offset = offset === 0 ? 2 : 0;
+          await mouse.move(20 + offset, 20 + offset);
+          await mouse.click();
+          return w.webContents.executeJavaScript('clicked');
+        });
+      } catch {
+        throw new Error(
+          `no mousedown reached the input window: ${JSON.stringify({
+            bounds: w.getBounds(),
+            focused: w.isFocused(),
+            cursor: mouse.getCursorPos(),
+            diagnostics: mouse.getDiagnostics()
+          })}`
+        );
+      }
     });
     afterAll(() => {
       inputWindow?.destroy();
