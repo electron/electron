@@ -568,6 +568,27 @@ describe('web security', () => {
   });
 });
 
+describe('WebAssembly traps', () => {
+  // The fixture runs the module in a separate app so a regression shows up as
+  // a crashed process rather than taking down the spec runner.
+  const runWasmTrapFixture = async (mode: 'main' | 'sandboxed' | 'unsandboxed') => {
+    const appPath = path.join(fixturesPath, 'apps', 'wasm-trap', 'main.js');
+    const result = await spawnAndWait(process.execPath, [appPath, mode], { timeout: 30000 });
+    const resultLine = result.stdout.split(/\r?\n/).find((line) => line.startsWith('RESULT '));
+    return { ...result, resultLine };
+  };
+
+  for (const mode of ['main', 'sandboxed', 'unsandboxed'] as const) {
+    const where = mode === 'main' ? 'the main process' : `a ${mode} renderer`;
+    it(`throws a catchable RuntimeError for an out-of-bounds access in ${where}`, async () => {
+      const { code, signal, stderr, resultLine } = await runWasmTrapFixture(mode);
+      expect(resultLine, `code ${code} signal ${signal} stderr ${stderr}`).toBe(
+        'RESULT caught RuntimeError: memory access out of bounds'
+      );
+    });
+  }
+});
+
 describe('command line switches', () => {
   let appProcess: ChildProcess.ChildProcessWithoutNullStreams | undefined;
   afterEach(() => {
