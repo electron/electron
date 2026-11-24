@@ -571,15 +571,19 @@ describe('web security', () => {
 describe('WebAssembly traps', () => {
   // The fixture runs the module in a separate app so a regression shows up as
   // a crashed process rather than taking down the spec runner.
-  const runWasmTrapFixture = async (mode: 'main' | 'sandboxed' | 'unsandboxed') => {
+  const runWasmTrapFixture = async (mode: string) => {
     const appPath = path.join(fixturesPath, 'apps', 'wasm-trap', 'main.js');
     const result = await spawnAndWait(process.execPath, [appPath, mode], { timeout: 30000 });
     const resultLine = result.stdout.split(/\r?\n/).find((line) => line.startsWith('RESULT '));
     return { ...result, resultLine };
   };
 
-  for (const mode of ['main', 'sandboxed', 'unsandboxed'] as const) {
-    const where = mode === 'main' ? 'the main process' : `a ${mode} renderer`;
+  const places = {
+    main: 'the main process',
+    sandboxed: 'a sandboxed renderer',
+    unsandboxed: 'an unsandboxed renderer'
+  };
+  for (const [mode, where] of Object.entries(places)) {
     it(`throws a catchable RuntimeError for an out-of-bounds access in ${where}`, async () => {
       const { code, signal, stderr, resultLine } = await runWasmTrapFixture(mode);
       expect(resultLine, `code ${code} signal ${signal} stderr ${stderr}`).toBe(
