@@ -67,6 +67,13 @@
 /css/css-page/crashtests/counter-containment-00[12].html
 /print/crashtests/reload-crash.html
 
+# Electron has no DigitalIdentityProvider (ElectronBrowserClient does not
+# override ContentBrowserClient::CreateDigitalIdentityProvider()), so a Digital
+# Credentials request is rejected with NetworkError at once. content_shell and
+# headless_shell install a provider that leaves the request pending, which is
+# what the tests that abort a running request expect.
+/digital-credentials/* | * | *NetworkError*
+
 # Electron ships no hyphenation dictionaries, so `hyphens: auto` does nothing.
 /css/css-text/hyphens/lang-tag-case-insensitive.html
 
