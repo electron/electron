@@ -69,6 +69,13 @@ v8::Local<v8::Value> SystemPreferences::GetAnimationSettings(
   dict.Set("scrollAnimationsEnabledBySystem",
            gfx::Animation::ScrollAnimationsEnabledBySystem());
   dict.Set("prefersReducedMotion", gfx::Animation::PrefersReducedMotion());
+#if BUILDFLAG(IS_MAC)
+  dict.Set("prefersAnimatedImagesStartPaused",
+           PrefersAnimatedImagesStartPaused());
+#else
+  // Windows and Linux have no equivalent setting.
+  dict.Set("prefersAnimatedImagesStartPaused", false);
+#endif
 
   return dict.GetHandle();
 }

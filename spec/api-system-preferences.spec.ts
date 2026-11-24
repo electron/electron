@@ -311,6 +311,14 @@ describe('systemPreferences module', () => {
       expect(settings).toHaveProperty('shouldRenderRichAnimation', expect.any(Boolean));
       expect(settings).toHaveProperty('scrollAnimationsEnabledBySystem', expect.any(Boolean));
       expect(settings).toHaveProperty('prefersReducedMotion', expect.any(Boolean));
+      expect(settings).toHaveProperty('prefersAnimatedImagesStartPaused', expect.any(Boolean));
     });
+
+    ifit(process.platform !== 'darwin')(
+      'does not report a preference for paused animated images on Windows and Linux',
+      () => {
+        expect(systemPreferences.getAnimationSettings().prefersAnimatedImagesStartPaused).toBe(false);
+      }
+    );
   });
 });
