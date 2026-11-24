@@ -246,7 +246,9 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       try {
         await waitUntil(() => w.isFocused());
       } catch {
-        throw new Error('the window was not activated after show()');
+        const message = `the window was not activated after show(): ${JSON.stringify(w.getBounds())}`;
+        console.log(`[ignore-mouse-events spec] ${message}`);
+        throw new Error(message);
       }
     };
 
@@ -380,8 +382,17 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       const where = async () =>
         JSON.stringify({
           shaped: { bounds: shaped.getBounds(), events: await events(shaped) },
-          below: { bounds: below.getBounds(), events: await events(below) }
+          below: { bounds: below.getBounds(), events: await events(below) },
+          focused: shaped.isFocused() ? 'shaped' : below.isFocused() ? 'below' : 'neither',
+          cursor: mouse.getCursorPos()
         });
+      // vitest reports only a retried test's last attempt, so also print why
+      // an attempt failed.
+      const fail = async (what: string) => {
+        const message = `${what}: ${await where()}`;
+        console.log(`[setShape spec] ${message}`);
+        return new Error(message);
+      };
 
       // Inside first: a click that falls through activates the window below,
       // which a window manager (Weston's desktop-shell) then raises over the
@@ -397,9 +408,11 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       try {
         await waitUntil(async () => (await count(shaped, 'mousedown')) > 0);
       } catch {
-        throw new Error(`no mousedown inside the shape: ${await where()}`);
+        throw await fail('no mousedown inside the shape');
       }
-      expect(await count(below, 'mousedown')).toBe(0);
+      if ((await count(below, 'mousedown')) !== 0) {
+        throw await fail('the inside click also reached the window below');
+      }
 
       await clearEvents(shaped);
       await glide(inWindow(INSIDE), inWindow(TARGET_CENTER));
@@ -413,9 +426,11 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       try {
         await waitUntil(async () => (await count(below, 'mousedown')) > 0);
       } catch {
-        throw new Error(`no mousedown in the window below, outside the shape: ${await where()}`);
+        throw await fail('no mousedown in the window below, outside the shape');
       }
-      expect(await count(shaped, 'mousedown')).toBe(0);
+      if ((await count(shaped, 'mousedown')) !== 0) {
+        throw await fail('the outside click also reached the shaped window');
+      }
     });
 
     ifit(canForward)('forwards mouse moves to the page', async () => {
