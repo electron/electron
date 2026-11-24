@@ -277,7 +277,7 @@ index 856878c33681a73d41016729dabe48b0a6a80589..91a11852d206b65485fe90fd037a0bd1
      if sys.platform == 'win32':
        files = [ x.replace('\\', '/') for x in files ]
 diff --git a/unofficial.gni b/unofficial.gni
-index 5878f079d94e8becff276619d0ca204c329a6675..2443574f3c2aa7a6ec5bd7027f9dac5a1a51a1d7 100644
+index 5878f079d94e8becff276619d0ca204c329a6675..0658bde90c316a0f938927e26cd0f967e4329403 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -158,32 +158,42 @@ template("node_gn_build") {
@@ -326,7 +326,20 @@ index 5878f079d94e8becff276619d0ca204c329a6675..2443574f3c2aa7a6ec5bd7027f9dac5a
        "$target_gen_dir/node_javascript.cc",
      ] + gypi_values.node_sources
  
-@@ -235,6 +245,10 @@ template("node_gn_build") {
+@@ -216,9 +226,11 @@ template("node_gn_build") {
+     if (node_enable_inspector) {
+       deps += [
+         "$node_inspector_protocol_path:crdtp",
+-        "src/inspector:node_protocol_generated_sources",
+         "src/inspector:v8_inspector_compress_protocol_json",
+       ]
++      # The generated protocol headers are listed in sources, which makes them
++      # public headers of this target, so GN requires a public dependency.
++      public_deps += [ "src/inspector:node_protocol_generated_sources" ]
+       include_dirs = [
+         "$target_gen_dir/src",
+         "$target_gen_dir/src/inspector",
+@@ -235,6 +247,10 @@ template("node_gn_build") {
      }
    }
  
@@ -337,7 +350,7 @@ index 5878f079d94e8becff276619d0ca204c329a6675..2443574f3c2aa7a6ec5bd7027f9dac5a
    executable(target_name) {
      forward_variables_from(invoker, "*")
  
-@@ -326,6 +340,7 @@ template("node_gn_build") {
+@@ -326,6 +342,7 @@ template("node_gn_build") {
    }
  
    executable("node_js2c") {
@@ -345,7 +358,7 @@ index 5878f079d94e8becff276619d0ca204c329a6675..2443574f3c2aa7a6ec5bd7027f9dac5a
      deps = [
        "deps/uv",
        "$node_simdutf_path",
-@@ -340,27 +355,77 @@ template("node_gn_build") {
+@@ -340,27 +357,77 @@ template("node_gn_build") {
      ]
      include_dirs = [
        "src",
@@ -432,7 +445,7 @@ index 5878f079d94e8becff276619d0ca204c329a6675..2443574f3c2aa7a6ec5bd7027f9dac5a
      outputs = [ "$target_gen_dir/node_javascript.cc" ]
  
      # Get the path to node_js2c executable of the host toolchain.
-@@ -374,11 +439,11 @@ template("node_gn_build") {
+@@ -374,11 +441,11 @@ template("node_gn_build") {
          get_label_info(":node_js2c($host_toolchain)", "name") +
          host_executable_suffix
  

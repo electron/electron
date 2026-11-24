@@ -586,9 +586,7 @@ source_set("electron_lib") {
   ]
 
   deps = [
-    ":electron_fuses",
     ":electron_generate_node_defines",
-    ":electron_generate_preload_realm_bindings",
     ":electron_js2c",
     ":electron_version_header",
     ":resources",
@@ -695,7 +693,11 @@ source_set("electron_lib") {
     deps += [ ":mksnapshot_checksum_gen" ]
   }
 
+  # These generate headers that are listed in sources, which makes them
+  # public headers of this target, so GN requires them to be public_deps.
   public_deps = [
+    ":electron_fuses",
+    ":electron_generate_preload_realm_bindings",
     "//base",
     "//base:i18n",
     "//build/config/compiler:compiler_buildflags",
