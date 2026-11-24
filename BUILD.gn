@@ -610,6 +610,7 @@ source_set("electron_lib") {
     "//components/cdm/renderer",
     "//components/certificate_transparency",
     "//components/compose:buildflags",
+    "//components/embedder_support",
     "//components/embedder_support:user_agent",
     "//components/input",
     "//components/language/core/browser",
