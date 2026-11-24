@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_POWER_MONITOR_H_
 
 #include "base/power_monitor/power_observer.h"
+#include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 
@@ -41,6 +42,7 @@ class PowerMonitor final : public gin::Wrappable<PowerMonitor>,
 
   // gin::Wrappable
   static const gin::WrapperInfo kWrapperInfo;
+  void Trace(cppgc::Visitor*) const override;
   const gin::WrapperInfo* wrapper_info() const override;
   const char* GetHumanReadableName() const override;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
@@ -89,6 +91,8 @@ class PowerMonitor final : public gin::Wrappable<PowerMonitor>,
 #if BUILDFLAG(IS_LINUX)
   PowerObserverLinux power_observer_linux_{this};
 #endif
+
+  gin::WeakCellFactory<PowerMonitor> weak_factory_{this};
 };
 
 }  // namespace electron::api

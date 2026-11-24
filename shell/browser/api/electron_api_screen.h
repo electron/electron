@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "ui/display/display_observer.h"
@@ -31,6 +32,7 @@ class Screen final : public gin::Wrappable<Screen>,
   static Screen* Create(gin_helper::ErrorThrower error_thrower);
 
   static const gin::WrapperInfo kWrapperInfo;
+  void Trace(cppgc::Visitor*) const override;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const gin::WrapperInfo* wrapper_info() const override;
@@ -61,6 +63,14 @@ class Screen final : public gin::Wrappable<Screen>,
   void OnDisplaysRemoved(const display::Displays& removed_displays) override;
   void OnDisplayMetricsChanged(const display::Display& display,
                                uint32_t changed_metrics) override;
+
+ private:
+  void DelayEmit(std::string_view name, const display::Display& display);
+  void DelayEmitWithMetrics(std::string_view name,
+                            const display::Display& display,
+                            const std::vector<std::string>& metrics);
+
+  gin::WeakCellFactory<Screen> weak_factory_{this};
 };
 
 }  // namespace electron::api

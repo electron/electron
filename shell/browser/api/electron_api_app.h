@@ -19,6 +19,7 @@
 #include "content/public/common/child_process_id.h"
 #include "crypto/crypto_buildflags.h"
 #include "electron/mas.h"
+#include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "net/base/completion_once_callback.h"
 #include "net/base/completion_repeating_callback.h"
@@ -337,6 +338,8 @@ class App final : public gin::Wrappable<App>,
   bool watch_singleton_socket_on_ready_ = false;
 
   std::unique_ptr<content::ScopedAccessibilityMode> scoped_accessibility_mode_;
+
+  gin::WeakCellFactory<App> weak_factory_{this};
 };
 
 }  // namespace api

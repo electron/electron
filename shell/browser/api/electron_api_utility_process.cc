@@ -278,10 +278,9 @@ UtilityProcessWrapper::UtilityProcessWrapper(
       mojo::Connector::SINGLE_THREADED_SEND,
       base::SingleThreadTaskRunner::GetCurrentDefault());
   connector_->set_incoming_receiver(this);
-  // |connector_| is owned by this wrapper and only ever reset, never moved, so
-  // destroying it cancels the handler.
   connector_->set_connection_error_handler(base::BindOnce(
-      &UtilityProcessWrapper::CloseConnectorPort, base::Unretained(this)));
+      &UtilityProcessWrapper::CloseConnectorPort,
+      gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle))));
 
   params->url_loader_factory_params = CreateURLLoaderFactoryParams();
   node_service_remote_->Initialize(std::move(params),

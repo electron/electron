@@ -489,7 +489,9 @@ int WebRequest::HandleOnBeforeSendHeadersResponseEvent(
 
   ResponseCallback response =
       base::BindOnce(&WebRequest::OnBeforeSendHeadersListenerResult,
-                     base::Unretained(this), request_info->id);
+                     gin::WrapPersistent(weak_factory_.GetWeakCell(
+                         isolate->GetCppHeap()->GetAllocationHandle())),
+                     request_info->id);
   info.listener.Run(gin::ConvertToV8(isolate, details), std::move(response));
   return net::ERR_IO_PENDING;
 }
@@ -582,7 +584,9 @@ int WebRequest::HandleOnHeadersReceivedResponseEvent(
 
   ResponseCallback response =
       base::BindOnce(&WebRequest::OnHeadersReceivedListenerResult,
-                     base::Unretained(this), request_info->id);
+                     gin::WrapPersistent(weak_factory_.GetWeakCell(
+                         isolate->GetCppHeap()->GetAllocationHandle())),
+                     request_info->id);
   info.listener.Run(gin::ConvertToV8(isolate, details), std::move(response));
   return net::ERR_IO_PENDING;
 }
@@ -650,9 +654,13 @@ WebRequest::AuthRequiredResponse WebRequest::OnAuthRequired(
   blocked_request.auth_callback = std::move(callback);
   blocked_requests_[request_info->id] = std::move(blocked_request);
 
-  auto login_callback =
-      base::BindOnce(&WebRequest::OnLoginAuthResult, base::Unretained(this),
-                     request_info->id, credentials);
+  auto login_callback = base::BindOnce(
+      &WebRequest::OnLoginAuthResult,
+      gin::WrapPersistent(
+          weak_factory_.GetWeakCell(JavascriptEnvironment::GetIsolate()
+                                        ->GetCppHeap()
+                                        ->GetAllocationHandle())),
+      request_info->id, credentials);
 
   scoped_refptr<net::HttpResponseHeaders> response_headers =
       request_info->response_headers;

@@ -47,6 +47,7 @@
 #include "content/public/common/content_switches.h"
 #include "crypto/crypto_buildflags.h"
 #include "electron/mas.h"
+#include "gin/persistent.h"
 #include "media/audio/audio_manager.h"
 #include "net/dns/public/dns_over_https_config.h"
 #include "net/dns/public/dns_over_https_server_config.h"
@@ -1121,7 +1122,10 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
   // The user_dir may not have been created yet.
   base::CreateDirectoryAndGetError(user_dir, nullptr);
 
-  auto cb = base::BindRepeating(&App::OnSecondInstance, base::Unretained(this));
+  auto cb = base::BindRepeating(
+      &App::OnSecondInstance,
+      gin::WrapPersistent(weak_factory_.GetWeakCell(
+          args->isolate()->GetCppHeap()->GetAllocationHandle())));
 
   blink::CloneableMessage additional_data_message;
   args->GetNext(&additional_data_message);
@@ -1400,7 +1404,11 @@ void App::ImportCertificate(gin_helper::ErrorThrower thrower,
 
   if (!certificate_manager_model_) {
     CertificateManagerModel::Create(base::BindOnce(
-        &App::OnCertificateManagerModelCreated, base::Unretained(this),
+        &App::OnCertificateManagerModelCreated,
+        gin::WrapPersistent(
+            weak_factory_.GetWeakCell(JavascriptEnvironment::GetIsolate()
+                                          ->GetCppHeap()
+                                          ->GetAllocationHandle())),
         std::move(options), std::move(callback)));
     return;
   }
@@ -1875,10 +1883,17 @@ v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
                        base::BindRepeating(&Browser::DockShow, browser));
     dock_obj.SetMethod("isVisible",
                        base::BindRepeating(&Browser::DockIsVisible, browser));
-    dock_obj.SetMethod("setMenu", base::BindRepeating(&App::DockSetMenu,
-                                                      base::Unretained(this)));
-    dock_obj.SetMethod("getMenu", base::BindRepeating(&App::DockGetMenu,
-                                                      base::Unretained(this)));
+    auto& allocation_handle = isolate->GetCppHeap()->GetAllocationHandle();
+    dock_obj.SetMethod(
+        "setMenu",
+        base::BindRepeating(
+            &App::DockSetMenu,
+            gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle))));
+    dock_obj.SetMethod(
+        "getMenu",
+        base::BindRepeating(
+            &App::DockGetMenu,
+            gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle))));
     dock_obj.SetMethod("setIcon",
                        base::BindRepeating(&Browser::DockSetIcon, browser));
 
@@ -1992,6 +2007,7 @@ void App::Trace(cppgc::Visitor* visitor) const {
   visitor->Trace(name_string_);
   visitor->Trace(version_string_);
   visitor->Trace(app_path_value_);
+  visitor->Trace(weak_factory_);
 #if BUILDFLAG(IS_MAC)
   visitor->Trace(dock_);
   visitor->Trace(dock_menu_);
@@ -2095,8 +2111,10 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("setAppUserModelId",
                  base::BindRepeating(&Browser::SetAppUserModelID, browser))
       .SetMethod("setToastActivatorCLSID",
-                 base::BindRepeating(&App::SetToastActivatorCLSID,
-                                     base::Unretained(this)))
+                 base::BindRepeating(
+                     &App::SetToastActivatorCLSID,
+                     gin::WrapPersistent(weak_factory_.GetWeakCell(
+                         isolate->GetCppHeap()->GetAllocationHandle()))))
       .SetProperty("toastActivatorCLSID", &App::GetToastActivatorCLSID)
 #endif
       .SetMethod(

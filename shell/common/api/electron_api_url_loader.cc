@@ -22,6 +22,7 @@
 #include "content/public/common/url_utils.h"
 #include "gin/object_template_builder.h"
 #include "gin/persistent.h"
+#include "gin/weak_cell.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
@@ -207,6 +208,7 @@ class JSChunkedDataPipeGetter final
   void Trace(cppgc::Visitor* visitor) const override {
     gin::Wrappable<JSChunkedDataPipeGetter>::Trace(visitor);
     visitor->Trace(body_func_);
+    visitor->Trace(weak_factory_);
   }
 
   static const gin::WrapperInfo kWrapperInfo;
@@ -298,9 +300,8 @@ class JSChunkedDataPipeGetter final
     data_producer_->Write(
         std::make_unique<BufferDataSource>(buffer),
         base::BindOnce(&JSChunkedDataPipeGetter::OnWriteChunkComplete,
-                       // We're OK to use Unretained here because we own
-                       // |data_producer_|.
-                       base::Unretained(this)));
+                       gin::WrapPersistent(weak_factory_.GetWeakCell(
+                           isolate_->GetCppHeap()->GetAllocationHandle()))));
     return handle;
   }
 
@@ -346,6 +347,7 @@ class JSChunkedDataPipeGetter final
 
   raw_ptr<v8::Isolate> isolate_;
   v8::TracedReference<v8::Function> body_func_;
+  gin::WeakCellFactory<JSChunkedDataPipeGetter> weak_factory_{this};
 };
 
 const gin::WrapperInfo JSChunkedDataPipeGetter::kWrapperInfo =
