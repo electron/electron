@@ -1,0 +1,21 @@
+<html>
+<body>
+<script>
+  const { ipcRenderer, webFrame } = require('electron');
+  const callbacks = [];
+  webFrame.setSpellCheckProvider('en-US', {
+    spellCheck: (words, callback) => {
+      // Hold every callback so that Blink starts a new request while an
+      // earlier one is still waiting for its results.
+      callbacks.push(callback);
+      ipcRenderer.send('spell-check-request', callbacks.length);
+    }
+  });
+  ipcRenderer.on('flush', () => {
+    for (const callback of callbacks.splice(0)) callback([]);
+    ipcRenderer.send('flushed', document.querySelector('input').value);
+  });
+</script>
+<input />
+</body>
+</html>
