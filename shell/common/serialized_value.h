@@ -10,8 +10,13 @@
 
 #include "base/containers/span.h"
 #include "mojo/public/cpp/base/big_buffer.h"
+#include "partition_alloc/partition_alloc_constants.h"
 
 namespace electron {
+
+// Leave room for PartitionAlloc metadata
+inline constexpr size_t kMaxIpcSerializationBufferSize =
+    partition_alloc::MaxAllocationSize() - 1024 * 1024;
 
 // A V8-serialized value held in the buffer it crosses the process boundary in:
 // inline bytes for small values, a shared memory region above
