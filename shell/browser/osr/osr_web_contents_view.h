@@ -14,6 +14,7 @@
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "third_party/blink/public/common/page/drag_operation.h"
 #include "third_party/blink/public/mojom/drag/drag.mojom-forward.h"
+#include "ui/gfx/geometry/size.h"
 
 #if BUILDFLAG(IS_MAC)
 #ifdef __OBJC__
@@ -115,6 +116,8 @@ class OffScreenWebContentsView : public content::WebContentsView,
   OffScreenRenderWidgetHostView* GetView() const;
 
   raw_ptr<NativeWindow> native_window_ = nullptr;
+  // The size of the last window this view was in, kept after it leaves it.
+  gfx::Size last_window_size_;
 
   const bool transparent_;
   const bool offscreen_use_shared_texture_;

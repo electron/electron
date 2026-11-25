@@ -1,5 +1,6 @@
 import type { MediaAccessPermissionRequest } from 'electron';
 import {
+  BaseWindow,
   BrowserWindow,
   type WebContents,
   webFrameMain,
@@ -11,7 +12,8 @@ import {
   protocol,
   webContents,
   dialog,
-  type MessageBoxOptions
+  type MessageBoxOptions,
+  WebContentsView
 } from 'electron/main';
 
 import * as dbus from 'dbus-native';
@@ -2459,7 +2461,7 @@ describe('chromium features', () => {
       // Clicks a new file input with a user gesture and resolves with the
       // name, relative path and text of each file it was given, or null if
       // the pick was cancelled.
-      const pickWithInput = (w: BrowserWindow, attributes: Record<string, string> = {}) =>
+      const pickWithInput = (w: { webContents: WebContents }, attributes: Record<string, string> = {}) =>
         w.webContents.executeJavaScript(
           `new Promise((resolve) => {
             const input = document.createElement('input');
@@ -2502,6 +2504,23 @@ describe('chromium features', () => {
       it('resolves to no files when the pick is cancelled', async () => {
         const w = await loadPage();
         expect(await pickWithInput(w)).toBeNull();
+        expect(await getPortalCalls('OpenFile')).toHaveLength(1);
+      });
+
+      // An offscreen page stays visible once removed, so it can still open
+      // the picker, but it has no window to parent the dialog to. The pick
+      // must go ahead rather than leave the input waiting forever.
+      it('picks for an offscreen WebContentsView that was removed from its window', async () => {
+        const w = new BaseWindow({ show: false });
+        const view = new WebContentsView({
+          webPreferences: { offscreen: true, session: session.fromPartition(`portal-picker-${Math.random()}`) }
+        });
+        defer(() => view.webContents.close());
+        w.contentView.addChildView(view);
+        await view.webContents.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+        w.contentView.removeChildView(view);
+
+        expect(await pickWithInput(view)).toBeNull();
         expect(await getPortalCalls('OpenFile')).toHaveLength(1);
       });
 

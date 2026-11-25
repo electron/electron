@@ -186,6 +186,8 @@ class WebContentsViewHost final : public View::Host,
   void RemoveFromParent();
   void StopObservingWindow();
   void UnregisterDraggableRegionProvider();
+  WebContents* GetDetachedWebContentsOwnedBy(NativeWindow* old_window);
+  void ExitFullscreenAndClearOwner(base::WeakPtr<NativeWindow> old_window);
   void OnContentsBoundsChanging();
   bool HasLivePage();
   void ScheduleWindowControlsOverlayUpdate();
@@ -348,8 +350,8 @@ void WebContentsViewHost::OnViewAddedToWidget(views::View* observed_view) {
   if (!web_contents)
     return;
 
-  // We don't need to call SetOwnerWindow(nullptr) in OnViewRemovedFromWidget
-  // because that's handled in the WebContents dtor called prior.
+  // OnViewRemovedFromWidget() clears this again, so a view that moves to
+  // another window gets that window here.
   web_contents->SetOwnerWindow(native_window);
   RegisterDraggableRegionProvider(native_window);
   StopObservingWindow();
@@ -364,8 +366,73 @@ void WebContentsViewHost::OnViewAddedToWidget(views::View* observed_view) {
 void WebContentsViewHost::OnViewRemovedFromWidget(views::View* observed_view) {
   DCHECK_EQ(observed_view, view());
 
+  // Null when the window is being destroyed: its weak pointers are invalidated
+  // before its widget tears down the view tree, and the owner the webContents
+  // holds reads null by then as well.
+  NativeWindow* old_window = observed_window_.get();
   StopObservingWindow();
   UnregisterDraggableRegionProvider();
+
+  // The page is no longer shown in |old_window|, so dialogs, HTML fullscreen
+  // and focus must stop going to it. Leave the owner alone when it is not
+  // |old_window|, such as when another WebContentsView has adopted the
+  // webContents since.
+  WebContents* web_contents = GetLiveWebContents();
+  if (!old_window || !web_contents || !GetOwnedInspectableView() ||
+      web_contents->owner_window() != old_window) {
+    return;
+  }
+
+  // Check the page's own state rather than WebContents::IsFullscreen(), which
+  // also reads true for every page in the window while another page's HTML
+  // fullscreen transition is under way. A closed window is about to be
+  // destroyed, so there is nothing to restore and no events to emit for it.
+  if (!web_contents->is_html_fullscreen() || old_window->IsClosed()) {
+    web_contents->SetOwnerWindow(nullptr);
+    return;
+  }
+
+  // Exiting HTML fullscreen restores |old_window|, which needs the owner, so
+  // do it before clearing that. It emits events to JavaScript, which must not
+  // run while views is still removing the view and iterating the tree.
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE,
+      base::BindOnce(&WebContentsViewHost::ExitFullscreenAndClearOwner,
+                     weak_factory_.GetWeakPtr(), old_window->GetWeakPtr()));
+}
+
+// Returns the webContents if it is still out of every window and
+// |old_window| still owns it, or null if the view has been added to a window
+// again since, or the webContents has gone or has another owner.
+WebContents* WebContentsViewHost::GetDetachedWebContentsOwnedBy(
+    NativeWindow* old_window) {
+  WebContents* web_contents = GetLiveWebContents();
+  if (!old_window || !web_contents || !GetOwnedInspectableView() ||
+      view()->GetWidget() || web_contents->owner_window() != old_window) {
+    return nullptr;
+  }
+  return web_contents;
+}
+
+void WebContentsViewHost::ExitFullscreenAndClearOwner(
+    base::WeakPtr<NativeWindow> old_window) {
+  WebContents* web_contents = GetDetachedWebContentsOwnedBy(old_window.get());
+  if (!web_contents)
+    return;
+
+  // The view has left the window, so resizing the window won't resize the
+  // page; have it told directly instead. Skip it if the window has closed
+  // since, as it is about to be destroyed.
+  if (web_contents->is_html_fullscreen() && !old_window->IsClosed()) {
+    web_contents->web_contents()->ExitFullscreen(/*will_cause_resize=*/false);
+    // Exiting can spin a nested run loop and emits events to JavaScript, which
+    // may have added the view to a window again, even |old_window|.
+    web_contents = GetDetachedWebContentsOwnedBy(old_window.get());
+    if (!web_contents)
+      return;
+  }
+
+  web_contents->SetOwnerWindow(nullptr);
 }
 
 // Our bounds changed, by a move or a resize, and on a resize the
