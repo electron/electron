@@ -311,7 +311,7 @@ index 946d4795ef794dfca6d8b75e66ef3be37b050a8c..9eca6d5ecd6b73e4897967f5f49f258f
  }
  
 diff --git a/third_party/blink/renderer/core/css/resolver/style_resolver.cc b/third_party/blink/renderer/core/css/resolver/style_resolver.cc
-index ea5ab2f3a9d48c1757c2888de2bb00651b01bcb1..e1d2f5826fa82c651c872e65b80277e8b03e1b27 100644
+index 630f5c962aa550bc6dcc00ce1ca958b409d01e1d..78889d582d20ad2190800104bd6d3a6a9f847ac2 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_resolver.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_resolver.cc
 @@ -586,6 +586,7 @@ static CSSPropertyValueSet* LeftToRightDeclaration() {
