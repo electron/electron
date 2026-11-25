@@ -11,10 +11,10 @@ bars rather than WinUI: Right switches from any depth when the selected item has
 submenu, and Left switches whenever there is no nested submenu to close.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index e0aac21b32ed7ddbf1c1e0fad6d89a364acab4e3..0cb144d166e5db648fed615b6141a9863eb22109 100644
+index 492028cb2f3a590853aef537d62686a544064dca..2d076e418f8cd4d8832f696b75dcb3e613a0936a 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
-@@ -2407,9 +2407,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
+@@ -2550,9 +2550,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
          break;
        }
        if (base::i18n::IsRTL()) {
@@ -26,7 +26,7 @@ index e0aac21b32ed7ddbf1c1e0fad6d89a364acab4e3..0cb144d166e5db648fed615b6141a986
        }
        break;
  
-@@ -2418,9 +2418,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
+@@ -2561,9 +2561,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
          break;
        }
        if (base::i18n::IsRTL()) {
@@ -38,7 +38,7 @@ index e0aac21b32ed7ddbf1c1e0fad6d89a364acab4e3..0cb144d166e5db648fed615b6141a986
        }
        break;
  
-@@ -3946,6 +3946,49 @@ void MenuController::CloseSubmenu() {
+@@ -4093,6 +4093,49 @@ void MenuController::CloseSubmenu() {
    SetSelection(item_to_select, SELECTION_UPDATE_IMMEDIATELY);
  }
  
@@ -89,10 +89,10 @@ index e0aac21b32ed7ddbf1c1e0fad6d89a364acab4e3..0cb144d166e5db648fed615b6141a986
      MenuItemView* parent,
      char16_t key,
 diff --git a/ui/views/controls/menu/menu_controller.h b/ui/views/controls/menu/menu_controller.h
-index 74bcb8fdd8182b607ae2759d2bb2814e0166f43d..7cf5925c7372f87b442e5d45c1c71d01de0f4669 100644
+index 80c7766f9cd7f767db5ded1acbc9e4ac3b2d99c2..718f204caef7c1dd84385a6be342acf4bfbfd971 100644
 --- a/ui/views/controls/menu/menu_controller.h
 +++ b/ui/views/controls/menu/menu_controller.h
-@@ -677,6 +677,15 @@ class VIEWS_EXPORT MenuController final : public gfx::AnimationDelegate,
+@@ -684,6 +684,15 @@ class VIEWS_EXPORT MenuController final : public gfx::AnimationDelegate,
    // If possible, closes the submenu.
    void CloseSubmenu();
  
