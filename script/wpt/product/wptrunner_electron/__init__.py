@@ -6,7 +6,8 @@ Everything is reused from wptrunner's built-in `chrome` product except:
 
   * --app=<shell dir> is added and --headless is never passed (Electron has
   no headless mode); --electron-xvfb gives every browser instance its own
-  X server instead.
+  X server instead. The feature override --headless implies in Chromium
+  (PaintHolding off) is passed explicitly.
   * Experimental web platform features are off unless asked for, either with
   --enable-experimental or by passing the switches through --binary-arg.
   The chrome product turns them on when nothing is said.
@@ -40,6 +41,13 @@ from wptrunner.products import Product
 
 EXPERIMENTAL_FLAGS = ("--enable-experimental-web-platform-features",
                       "--enable-blink-test-features")
+
+# What --headless changes in Chromium besides the window, for the Chrome runs
+# the results are compared with: it turns the PaintHolding feature off
+# (content/public/common/content_switch_dependent_feature_overrides.cc). With
+# the feature on, the compositor commit of the first frame of an http(s) page
+# is deferred, which tests that count paints can observe.
+HEADLESS_EQUIVALENT_ARGS = ("--disable-features=PaintHolding",)
 
 
 def add_arguments(parser):
@@ -120,6 +128,7 @@ def executor_kwargs(logger, test_type, test_environment, run_info_data,
     args = [a for a in args if a not in EXPERIMENTAL_FLAGS or a in requested]
   if kwargs.get("electron_strip_feature_params"):
     args = [_strip_feature_params(a) for a in args]
+  args.extend(HEADLESS_EQUIVALENT_ARGS)
   args.insert(0, f"--app={os.path.abspath(kwargs['electron_app'])}")
   opts["args"] = args
   if "binary_args" in rv:

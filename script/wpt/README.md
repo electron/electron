@@ -88,7 +88,9 @@ fixed set of fonts, `third_party/test_fonts`, and no others, so `pinned` gives
 Electron the same ones through `FONTCONFIG_SYSROOT`, as `run_wpt_tests.py`
 does. What could not be matched for `pinned`: Electron runs in a window under
 Xvfb instead of headless, and a few of the switches are specific to
-`headless_shell` and have no effect on Electron.
+`headless_shell` and have no effect on Electron. `--headless` also turns
+Chromium's `PaintHolding` feature off, so the `electron` product passes
+`--disable-features=PaintHolding` for both revisions.
 
 Chromium does not run every WPT that way. The tests listed in
 `third_party/blink/web_tests/TestLists/content_shell.filter` run in
