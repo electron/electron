@@ -119,42 +119,86 @@ spinning, and the `onload` event was dispatched.
 
 #### Event: 'did-fail-load'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/55388
+    description: "Added `frame` and the other load details to the event object; deprecated the arguments."
+    breaking-changes-header: deprecated-arguments-in-did-fail-load-did-fail-provisional-load-did-frame-finish-load-did-frame-navigate-and-did-navigate-in-page-events-on-webcontents
+```
+-->
+
 Returns:
 
-* `event` Event
-* `errorCode` Integer
-* `errorDescription` string
-* `validatedURL` string
-* `isMainFrame` boolean
-* `frameProcessId` Integer
-* `frameRoutingId` Integer
+* `details` Event\<\>
+  * `errorCode` Integer - The [network error code](https://source.chromium.org/chromium/chromium/src/+/main:net/base/net_error_list.h).
+  * `errorDescription` string - The name of the error, e.g. `ERR_NAME_NOT_RESOLVED`. May be empty.
+  * `url` string - The URL that failed to load.
+  * `isMainFrame` boolean - True if the load failed in a main frame.
+  * `frame` WebFrameMain | null - The frame that failed to load.
+    May be `null` if accessed after the frame has either navigated or been destroyed,
+    or if the load failed without reaching a frame (e.g. `webContents.loadURL()` was
+    passed an invalid URL).
+* `errorCode` Integer _Deprecated_
+* `errorDescription` string _Deprecated_
+* `validatedURL` string _Deprecated_
+* `isMainFrame` boolean _Deprecated_
+* `frameProcessId` Integer _Deprecated_
+* `frameRoutingId` Integer _Deprecated_
 
 This event is like `did-finish-load` but emitted when the load failed.
 The full list of error codes and their meaning is available [here](https://source.chromium.org/chromium/chromium/src/+/main:net/base/net_error_list.h).
 
 #### Event: 'did-fail-provisional-load'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/55388
+    description: "Added `frame` and the other load details to the event object; deprecated the arguments."
+    breaking-changes-header: deprecated-arguments-in-did-fail-load-did-fail-provisional-load-did-frame-finish-load-did-frame-navigate-and-did-navigate-in-page-events-on-webcontents
+```
+-->
+
 Returns:
 
-* `event` Event
-* `errorCode` Integer
-* `errorDescription` string
-* `validatedURL` string
-* `isMainFrame` boolean
-* `frameProcessId` Integer
-* `frameRoutingId` Integer
+* `details` Event\<\>
+  * `errorCode` Integer - The [network error code](https://source.chromium.org/chromium/chromium/src/+/main:net/base/net_error_list.h).
+  * `errorDescription` string - The name of the error, e.g. `ERR_ABORTED`.
+  * `url` string - The URL that failed to load.
+  * `isMainFrame` boolean - True if the load failed in a main frame.
+  * `frame` WebFrameMain | null - The frame that failed to load.
+    May be `null` if accessed after the frame has either navigated or been destroyed.
+* `errorCode` Integer _Deprecated_
+* `errorDescription` string _Deprecated_
+* `validatedURL` string _Deprecated_
+* `isMainFrame` boolean _Deprecated_
+* `frameProcessId` Integer _Deprecated_
+* `frameRoutingId` Integer _Deprecated_
 
 This event is like `did-fail-load` but emitted when the load was cancelled
 (e.g. `window.stop()` was invoked).
 
 #### Event: 'did-frame-finish-load'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/55388
+    description: "Added `frame` and `isMainFrame` to the event object; deprecated the arguments."
+    breaking-changes-header: deprecated-arguments-in-did-fail-load-did-fail-provisional-load-did-frame-finish-load-did-frame-navigate-and-did-navigate-in-page-events-on-webcontents
+```
+-->
+
 Returns:
 
-* `event` Event
-* `isMainFrame` boolean
-* `frameProcessId` Integer
-* `frameRoutingId` Integer
+* `details` Event\<\>
+  * `isMainFrame` boolean - True if the frame is a main frame.
+  * `frame` WebFrameMain | null - The frame that finished loading.
+    May be `null` if accessed after the frame has either navigated or been destroyed.
+* `isMainFrame` boolean _Deprecated_
+* `frameProcessId` Integer _Deprecated_
+* `frameRoutingId` Integer _Deprecated_
 
 Emitted when a frame has done navigation.
 
@@ -416,15 +460,30 @@ this purpose.
 
 #### Event: 'did-frame-navigate'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/55388
+    description: "Added `frame` and the other navigation details to the event object; deprecated the arguments."
+    breaking-changes-header: deprecated-arguments-in-did-fail-load-did-fail-provisional-load-did-frame-finish-load-did-frame-navigate-and-did-navigate-in-page-events-on-webcontents
+```
+-->
+
 Returns:
 
-* `event` Event
-* `url` string
-* `httpResponseCode` Integer - -1 for non HTTP navigations
-* `httpStatusText` string - empty for non HTTP navigations,
-* `isMainFrame` boolean
-* `frameProcessId` Integer
-* `frameRoutingId` Integer
+* `details` Event\<\>
+  * `url` string - The URL the frame navigated to.
+  * `httpResponseCode` Integer - The HTTP response status code, or `-1` for non HTTP navigations.
+  * `httpStatusText` string - The HTTP response status text. Empty for non HTTP navigations.
+  * `isMainFrame` boolean - True if the navigation took place in a main frame.
+  * `frame` WebFrameMain | null - The frame that navigated.
+    May be `null` if accessed after the frame has either navigated or been destroyed.
+* `url` string _Deprecated_
+* `httpResponseCode` Integer _Deprecated_ - -1 for non HTTP navigations
+* `httpStatusText` string _Deprecated_ - empty for non HTTP navigations
+* `isMainFrame` boolean _Deprecated_
+* `frameProcessId` Integer _Deprecated_
+* `frameRoutingId` Integer _Deprecated_
 
 Emitted when any frame navigation is done.
 
@@ -434,13 +493,26 @@ this purpose.
 
 #### Event: 'did-navigate-in-page'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/55388
+    description: "Added `frame` and the other navigation details to the event object; deprecated the arguments."
+    breaking-changes-header: deprecated-arguments-in-did-fail-load-did-fail-provisional-load-did-frame-finish-load-did-frame-navigate-and-did-navigate-in-page-events-on-webcontents
+```
+-->
+
 Returns:
 
-* `event` Event
-* `url` string
-* `isMainFrame` boolean
-* `frameProcessId` Integer
-* `frameRoutingId` Integer
+* `details` Event\<\>
+  * `url` string - The URL the frame navigated to.
+  * `isMainFrame` boolean - True if the navigation took place in a main frame.
+  * `frame` WebFrameMain | null - The frame that navigated.
+    May be `null` if accessed after the frame has either navigated or been destroyed.
+* `url` string _Deprecated_
+* `isMainFrame` boolean _Deprecated_
+* `frameProcessId` Integer _Deprecated_
+* `frameRoutingId` Integer _Deprecated_
 
 Emitted when an in-page navigation happened in any frame.
 
