@@ -174,24 +174,24 @@ std::string GetMenuModelStatus(ElectronMenuModel* model) {
 }  // namespace
 
 GlobalMenuBarX11::GlobalMenuBarX11(gfx::AcceleratedWidget accelerated_widget)
-    : xwindow_(static_cast<x11::Window>(accelerated_widget)) {
+    : window_(accelerated_widget) {
   EnsureMethodsLoaded();
   if (server_new)
-    InitServer(xwindow_);
+    InitServer(window_);
 
-  GlobalMenuBarRegistrarX11::GetInstance()->OnWindowMapped(xwindow_);
+  GlobalMenuBarRegistrarX11::GetInstance()->OnWindowMapped(window_);
 }
 
 GlobalMenuBarX11::~GlobalMenuBarX11() {
   if (IsServerStarted())
     g_object_unref(server_);
 
-  GlobalMenuBarRegistrarX11::GetInstance()->OnWindowUnmapped(xwindow_);
+  GlobalMenuBarRegistrarX11::GetInstance()->OnWindowUnmapped(window_);
 }
 
 // static
-std::string GlobalMenuBarX11::GetPathForWindow(x11::Window window) {
-  return absl::StrFormat("/com/canonical/menu/%X", static_cast<uint>(window));
+std::string GlobalMenuBarX11::GetPathForWindow(gfx::AcceleratedWidget window) {
+  return absl::StrFormat("/com/canonical/menu/%X", window);
 }
 
 void GlobalMenuBarX11::SetMenu(ElectronMenuModel* menu_model) {
@@ -213,17 +213,17 @@ bool GlobalMenuBarX11::IsServerStarted() const {
   return server_;
 }
 
-void GlobalMenuBarX11::InitServer(x11::Window window) {
+void GlobalMenuBarX11::InitServer(gfx::AcceleratedWidget window) {
   std::string path = GetPathForWindow(window);
   server_ = server_new(path.c_str());
 }
 
 void GlobalMenuBarX11::OnWindowMapped() {
-  GlobalMenuBarRegistrarX11::GetInstance()->OnWindowMapped(xwindow_);
+  GlobalMenuBarRegistrarX11::GetInstance()->OnWindowMapped(window_);
 }
 
 void GlobalMenuBarX11::OnWindowUnmapped() {
-  GlobalMenuBarRegistrarX11::GetInstance()->OnWindowUnmapped(xwindow_);
+  GlobalMenuBarRegistrarX11::GetInstance()->OnWindowUnmapped(window_);
 }
 
 void GlobalMenuBarX11::BuildMenuFromModel(ElectronMenuModel* model,
