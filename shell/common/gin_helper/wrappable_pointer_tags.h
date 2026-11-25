@@ -25,6 +25,7 @@ enum ElectronWrappablePointerTag : uint16_t {
   kElectronEvent,                           // gin_helper::internal::Event
   kElectronGlobalShortcut,                  // electron::api::GlobalShortcut
   kElectronExtensions,                      // electron::api::Extensions
+  kElectronFileFetchBody,                   // electron::api::FileFetchBody
   kElectronInAppPurchase,                   // electron::api::InAppPurchase
   kElectronIPCRenderFrame,                  // (anonymous) IPCRenderFrame
   kElectronIPCServiceWorker,                // (anonymous) IPCServiceWorker

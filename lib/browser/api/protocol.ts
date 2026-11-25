@@ -1,3 +1,4 @@
+import { takeUntouchedFileResponse } from '@electron/internal/browser/api/net-fetch';
 import { toByteString } from '@electron/internal/common/api/net-client-request';
 
 import { ProtocolRequest, session } from 'electron/main';
@@ -208,6 +209,13 @@ Protocol.prototype.handle = function (
           statusText: res.statusText,
           mimeType: (res as any).__original_resp?._responseHead?.mimeType
         };
+        // A file Response from net.fetch() that nothing has read is served
+        // from the bytes net.fetch() read, without them going through JS.
+        const fileBody = takeUntouchedFileResponse(res);
+        if (fileBody) {
+          cb({ ...head, fileBody });
+          return;
+        }
         const relay = await relayUntouchedFetch(res);
         if (relay) {
           cb({ ...relay, ...head });
