@@ -30,6 +30,8 @@
   gfx::Point margin_;
   // The default left-top margin.
   gfx::Point default_margin_;
+  // Whether the current margin was explicitly set by the embedder.
+  BOOL has_custom_margin_;
   // Current height of the title bar container.
   float height_;
 
