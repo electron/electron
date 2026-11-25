@@ -63,15 +63,17 @@ struct FileFetchInfo {
 };
 
 // Runs on the thread pool. Returns nothing when the URL loader has to handle
-// the URL: it fails, it is a directory or an asar archive or inside one, the
-// loader would sniff its type from its contents, or the file does not fit in
-// the data pipe the loader fills before anything reads the body. Otherwise
-// reads the file when |read_body|, as the loader does for a file this size
-// before the fetch resolves.
+// the URL: it fails, it is a network path, a directory or an asar archive or
+// inside one, the loader would sniff its type from its contents, or the file
+// does not fit in the data pipe the loader fills before anything reads the
+// body. Otherwise reads the file when |read_body|, as the loader does for a
+// file this size before the fetch resolves.
 std::optional<FileFetchInfo> GetFileFetchInfo(const GURL& url,
                                               const bool read_body) {
   base::FilePath path;
-  if (!net::FileURLToFilePath(url, &path))
+  // A network path, such as the one file:////host/share/ names on Windows,
+  // goes to the loader, which runs onBeforeRequest before it connects.
+  if (!net::FileURLToFilePath(url, &path) || path.IsNetwork())
     return {};
 
   base::FilePath asar_path, relative_path;
