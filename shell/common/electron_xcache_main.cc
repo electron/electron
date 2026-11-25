@@ -258,8 +258,8 @@ bool ParseBlobAt(std::string_view data, size_t offset, BlobInfo* info) {
 }
 
 // Every V8 snapshot blob for `version` in `data`: a bare blob file, or a
-// binary that embeds one (the Node startup snapshot in electron / electron.exe
-// / "Electron Framework").
+// binary that embeds one (the Node startup snapshot in electron /
+// electron_runtime.dll / "Electron Framework").
 std::vector<BlobInfo> FindBlobs(std::string_view data,
                                 const std::string& version) {
   std::vector<BlobInfo> out;
@@ -348,7 +348,8 @@ void Usage() {
          "from: a bare blob\n"
          "                      (v8_context_snapshot[.<arch>].bin) or a binary "
          "embedding one\n"
-         "                      (electron, electron.exe, 'Electron Framework' "
+         "                      (electron, electron_runtime.dll, 'Electron "
+         "Framework' "
          "-> "
          "its Node startup\n"
          "                      snapshot). Any OS/arch; must match this tool's "
@@ -455,8 +456,26 @@ int main(int argc, char* argv[]) {
     std::cerr << "cannot read " << snapshot_path << "\n";
     return 1;
   }
-  const std::string_view container = container_file.view();
-  const std::vector<BlobInfo> blobs = FindBlobs(container, version);
+  std::string_view container = container_file.view();
+  std::vector<BlobInfo> blobs = FindBlobs(container, version);
+#if defined(_WIN32)
+  MappedFile runtime_file;
+  const size_t extension = snapshot_path.find_last_of('.');
+  if (blobs.empty() && extension != std::string::npos &&
+      _stricmp(snapshot_path.c_str() + extension, ".exe") == 0) {
+    const size_t basename = snapshot_path.find_last_of("/\\") + 1;
+    const std::string runtime_path =
+        snapshot_path.substr(0, basename) + "electron_runtime.dll";
+    if (!runtime_file.Open(runtime_path)) {
+      std::cerr << "no V8 " << version << " snapshot blob found in "
+                << snapshot_path << "; cannot read " << runtime_path << "\n";
+      return 1;
+    }
+    snapshot_path = runtime_path;
+    container = runtime_file.view();
+    blobs = FindBlobs(container, version);
+  }
+#endif
   if (list) {
     std::cout << "V8 " << version << "; snapshot blobs in " << snapshot_path
               << ":\n";

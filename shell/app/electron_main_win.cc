@@ -9,14 +9,18 @@
 #include <tchar.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <memory>
 #include <string>
 #include <utility>
 
 #include "base/at_exit.h"
+#include "base/compiler_specific.h"
 #include "base/debug/alias.h"
 #include "base/i18n/icu_util.h"
+#include "base/logging.h"
 #include "base/process/process.h"
 #include "base/strings/cstring_view.h"
 #include "base/win/atl.h"  // ensures that ATL statics like `_AtlWinModule` are initialized (it's an issue in static debug build)
@@ -25,11 +29,12 @@
 #include "components/crash/core/app/crash_switches.h"
 #include "components/crash/core/app/run_as_crashpad_handler_win.h"
 #include "content/public/app/content_main.h"
-#include "content/public/app/sandbox_helper_win.h"
+#include "electron/electron_version.h"
 #include "electron/fuses.h"
 #include "sandbox/win/src/sandbox_types.h"
 #include "shell/app/command_line_args.h"
 #include "shell/app/electron_main_delegate.h"
+#include "shell/app/electron_runtime_win.h"
 #include "shell/app/node_main.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/electron_constants.h"
@@ -51,11 +56,36 @@ const char kNodeService[] = "node.mojom.NodeService";
   return required_size != 0;
 }
 
+[[nodiscard]] bool IsReadableInExecutableImage(const void* address,
+                                               size_t size) {
+  MEMORY_BASIC_INFORMATION region;
+  constexpr DWORD kReadable = PAGE_READONLY | PAGE_READWRITE | PAGE_WRITECOPY |
+                              PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE |
+                              PAGE_EXECUTE_WRITECOPY;
+  if (!::VirtualQuery(address, &region, sizeof(region)) ||
+      region.State != MEM_COMMIT ||
+      region.AllocationBase != ::GetModuleHandle(nullptr) ||
+      !(region.Protect & kReadable) || (region.Protect & PAGE_GUARD)) {
+    return false;
+  }
+
+  // The full range must fit in this readable region.
+  const auto offset = reinterpret_cast<uintptr_t>(address) -
+                      reinterpret_cast<uintptr_t>(region.BaseAddress);
+  return size <= region.RegionSize - offset;
+}
+
 }  // namespace
 
 namespace crash_reporter {
 extern const char kCrashpadProcess[];
 }
+
+extern "C" __declspec(dllexport) int ElectronMain(
+    HINSTANCE instance,
+    electron::InitializeSandboxInfoCallback initialize_sandbox_info,
+    const volatile char* fuse_wire,
+    const char* executable_version);
 
 // In 32-bit builds, the main thread starts with the default (small) stack size.
 // The ARCH_CPU_32_BITS blocks here and below are in support of moving the main
@@ -68,6 +98,9 @@ struct FiberState {
   HINSTANCE instance;
   LPVOID original_fiber;
   int fiber_result;
+  electron::InitializeSandboxInfoCallback initialize_sandbox_info;
+  const volatile char* fuse_wire;
+  const char* executable_version;
 };
 
 // A PFIBER_START_ROUTINE function run on a large-stack fiber that calls the
@@ -75,17 +108,42 @@ struct FiberState {
 // fiber. |params| must be a pointer to a FiberState struct.
 void WINAPI FiberBinder(void* params) {
   auto* fiber_state = static_cast<FiberState*>(params);
-  // Call the wWinMain routine from the fiber. Reusing the entry point minimizes
-  // confusion when examining call stacks in crash reports - seeing wWinMain on
-  // the stack is a handy hint that this is the main thread of the process.
+  // Re-enter the runtime with the larger main-thread stack.
   fiber_state->fiber_result =
-      wWinMain(fiber_state->instance, nullptr, nullptr, 0);
+      ElectronMain(fiber_state->instance, fiber_state->initialize_sandbox_info,
+                   fiber_state->fuse_wire, fiber_state->executable_version);
   // Switch back to the main thread to exit.
   ::SwitchToFiber(fiber_state->original_fiber);
 }
 #endif  // defined(ARCH_CPU_32_BITS)
 
-int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
+extern "C" __declspec(dllexport) int ElectronMain(
+    HINSTANCE instance,
+    electron::InitializeSandboxInfoCallback initialize_sandbox_info,
+    const volatile char* fuse_wire,
+    const char* executable_version) {
+  // Include the terminator to distinguish a version from a longer version
+  // with the same prefix.
+  constexpr size_t kVersionSize = sizeof(ELECTRON_VERSION_STRING);
+  if (!IsReadableInExecutableImage(executable_version, kVersionSize)) {
+    LOG(ERROR) << "Invalid Electron executable version argument";
+    return ERROR_INVALID_DATA;
+  }
+  // SAFETY: The range check above covers all bytes strncmp may read.
+  if (UNSAFE_BUFFERS(std::strncmp(executable_version, ELECTRON_VERSION_STRING,
+                                  kVersionSize)) != 0) {
+    LOG(ERROR) << "Electron executable and runtime DLL versions do not match "
+                  "(runtime version: "
+               << ELECTRON_VERSION_STRING << ")";
+    return ERROR_REVISION_MISMATCH;
+  }
+
+  if (!IsReadableInExecutableImage(const_cast<const char*>(fuse_wire),
+                                   sizeof(electron::fuses::kFuseWire)) ||
+      !electron::fuses::SetFuseWire(fuse_wire)) {
+    LOG(ERROR) << "Invalid Electron fuse configuration";
+    return ERROR_INVALID_DATA;
+  }
 #if defined(ARCH_CPU_32_BITS)
   enum class FiberStatus { kConvertFailed, kCreateFiberFailed, kSuccess };
   FiberStatus fiber_status = FiberStatus::kSuccess;
@@ -99,7 +157,9 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     LPVOID original_fiber =
         ::ConvertThreadToFiberEx(nullptr, FIBER_FLAG_FLOAT_SWITCH);
     if (original_fiber) {
-      FiberState fiber_state = {instance, original_fiber};
+      FiberState fiber_state = {instance,  original_fiber,
+                                0,         initialize_sandbox_info,
+                                fuse_wire, executable_version};
       // Create a fiber with a bigger stack and switch to it. Leak the fiber on
       // exit.
       LPVOID big_stack_fiber = ::CreateFiberEx(
@@ -218,8 +278,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   if (!electron::CheckCommandLineArguments(command_line->argv()))
     return -1;
 
-  sandbox::SandboxInterfaceInfo sandbox_info = {nullptr};
-  content::InitializeSandboxInfo(&sandbox_info);
+  sandbox::SandboxInterfaceInfo sandbox_info = {};
+  initialize_sandbox_info(&sandbox_info);
   electron::ElectronMainDelegate delegate;
 
   content::ContentMainParams params(&delegate);

@@ -28,7 +28,8 @@ enum {
   DIR_SESSION_DATA,             // Where cookies, localStorage are stored.
 
 #if BUILDFLAG(IS_WIN)
-  DIR_RECENT,  // Directory where recent files live
+  DIR_RECENT,       // Directory where recent files live
+  FILE_APP_MODULE,  // Launcher path with an independent app.setPath override.
 #endif
 
 #if BUILDFLAG(IS_LINUX)

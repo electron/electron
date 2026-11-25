@@ -22,7 +22,9 @@ const xcache = path.join(outDir, process.platform === 'win32' ? 'electron_xcache
 const snapshotHolder =
   process.platform === 'darwin'
     ? path.resolve(process.execPath, '../../Frameworks/Electron Framework.framework/Versions/A/Electron Framework')
-    : process.execPath;
+    : process.platform === 'win32'
+      ? path.join(outDir, 'electron_runtime.dll')
+      : process.execPath;
 
 ifdescribe(fs.existsSync(xcache) && !process.env.IS_UBSAN)('electron_xcache', () => {
   let tmp: string;
@@ -68,6 +70,28 @@ ifdescribe(fs.existsSync(xcache) && !process.env.IS_UBSAN)('electron_xcache', ()
     expect(info.header.flagHash).toBe('0x' + own.readUInt32LE(48).toString(16).padStart(8, '0'));
     expect(info.header.roSnapshotChecksum).toBe('0x' + own.readUInt32LE(52).toString(16).padStart(8, '0'));
   });
+
+  if (process.platform === 'win32') {
+    it('finds the runtime snapshot next to a renamed EXE', () => {
+      const directory = path.join(tmp, 'renamed');
+      fs.mkdirSync(directory);
+      const launcher = path.join(directory, 'MyApp.EXE');
+      const runtime = path.join(directory, 'electron_runtime.dll');
+      fs.copyFileSync(process.execPath, launcher);
+      fs.copyFileSync(snapshotHolder, runtime);
+      const { info, cache } = generate('1', '--snapshot', launcher);
+      expect(info.snapshot.file).toBe(runtime);
+      expect(cache).toEqual(generate('1').cache);
+    });
+
+    it('reports a missing runtime DLL next to electron.exe', () => {
+      const launcher = path.join(tmp, 'electron.exe');
+      fs.copyFileSync(process.execPath, launcher);
+      const result = childProcess.spawnSync(xcache, ['--snapshot', launcher, '--list'], { encoding: 'utf8' });
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain(`cannot read ${path.join(tmp, 'electron_runtime.dll')}`);
+    });
+  }
 
   it('reports the complete SHA256 source hash', () => {
     const { info, cache } = generate(
