@@ -9,6 +9,7 @@ import { app } from 'electron/main';
 import { init, runBaseTests, setupEnvironment } from 'vitest/worker';
 
 import { deserialize, serialize, WORKER_READY_MESSAGE } from './ipc-serialization.ts';
+import { takeRendererCoverage } from './renderer-coverage.ts';
 
 if (!process.send) {
   throw new Error('spec/vitest/worker.ts expects to be launched by the vitest Electron pool (no IPC channel)');
@@ -42,7 +43,12 @@ init({
   deserialize,
   teardown: () => {
     process.removeAllListeners('message');
-    setImmediate(() => app.quit());
+    if (process.env.ELECTRON_SPEC_COVERAGE_DIR) {
+      // Whatever renderers are still around go away with the app.
+      takeRendererCoverage().finally(() => setImmediate(() => app.quit()));
+    } else {
+      setImmediate(() => app.quit());
+    }
   },
   runTests: (state, traces) => runBaseTests('run', state, traces),
   collectTests: (state, traces) => runBaseTests('collect', state, traces),

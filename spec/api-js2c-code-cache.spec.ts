@@ -22,10 +22,15 @@ type Status = Record<string, boolean>;
 type Result = { browser: Status; sandbox: Status; renderer: Status; utility: Status; runAsNode: Status };
 
 const APP = path.resolve(import.meta.dirname, 'fixtures/api/js2c-code-cache/app');
+// V8 neither consumes nor rejects code caches under the precise coverage that
+// NODE_V8_COVERAGE (script/spec-runner.js --coverage) turns on, so every cache
+// would read as accepted. Node.js adds it to a child's environment unless that
+// has its own (undefined) entry.
+const env = { ...process.env, NODE_V8_COVERAGE: undefined };
 
 async function runFixtureApp(execPath: string): Promise<Result> {
   const out = await new Promise<string>((resolve, reject) => {
-    const child = childProcess.spawn(execPath, [APP], { stdio: ['ignore', 'pipe', 'inherit'] });
+    const child = childProcess.spawn(execPath, [APP], { env, stdio: ['ignore', 'pipe', 'inherit'] });
     let stdout = '';
     child.stdout.on('data', (d) => {
       stdout += d.toString();

@@ -225,7 +225,7 @@ jobs:
           elif [ "$IS_UBSAN" = true ]; then
             GN_EXTRA_ARGS='is_ubsan=true is_ubsan_no_recover=true'
           elif [ "${{ inputs.is-coverage }}" = true ]; then
-            GN_EXTRA_ARGS='use_clang_coverage=true coverage_instrumentation_input_file="//out/Default/coverage_instrumentation_input.txt"'
+            GN_EXTRA_ARGS='use_clang_coverage=true coverage_instrumentation_input_file="//out/Default/coverage_instrumentation_input.txt" electron_js_sourcemaps=true'
           fi
           echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
       - name: Set GN_EXTRA_ARGS for macOS UBSan
@@ -235,11 +235,11 @@ jobs:
       - name: Set GN_EXTRA_ARGS for macOS Coverage
         if: ${{ inputs.target-platform == 'macos' && inputs.is-coverage }}
         run: |
-          echo 'GN_EXTRA_ARGS=use_clang_coverage=true coverage_instrumentation_input_file="//out/Default/coverage_instrumentation_input.txt"' >> $GITHUB_ENV
+          echo 'GN_EXTRA_ARGS=use_clang_coverage=true coverage_instrumentation_input_file="//out/Default/coverage_instrumentation_input.txt" electron_js_sourcemaps=true' >> $GITHUB_ENV
       - name: Set GN_EXTRA_ARGS for Windows Coverage
         if: ${{ inputs.target-platform == 'win' && inputs.is-coverage }}
         run: |
-          echo 'GN_EXTRA_ARGS=use_clang_coverage=true coverage_instrumentation_input_file="//out/Default/coverage_instrumentation_input.txt"' >> $GITHUB_ENV
+          echo 'GN_EXTRA_ARGS=use_clang_coverage=true coverage_instrumentation_input_file="//out/Default/coverage_instrumentation_input.txt" electron_js_sourcemaps=true' >> $GITHUB_ENV
       - name: Set Chromium Git Cookie
         uses: ./src/electron/.github/actions/set-chromium-cookie
       - name: Install Build Tools

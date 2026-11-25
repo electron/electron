@@ -4,7 +4,8 @@ name: Pipeline Segment - Electron Coverage Report
 # llvm-cov HTML report for Electron's own C++ sources. Chromium sources are
 # deliberately out of scope: only src/electron is checked out here, so there is
 # nothing on disk for llvm-cov to render for them. See
-# //docs/testing/code_coverage.md in the Chromium tree.
+# //docs/testing/code_coverage.md in the Chromium tree. The JavaScript
+# coverage of lib/ from the same run goes in its js/ directory.
 
 on:
   workflow_call:
@@ -151,6 +152,24 @@ jobs:
           -compilation-dir="$ROOT/src/out/Default" \
           "${objects[@]}" \
           "${sources[@]}" > coverage-report/summary.txt
+    # Best effort: the C++ report above is still published without it.
+    - name: Download JS Coverage
+      continue-on-error: true
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: coverage_js_${{ env.ARTIFACT_KEY }}
+        path: js-coverage
+    - name: Generate JS Coverage Report
+      continue-on-error: true
+      run: |
+        cd src/electron
+        node script/yarn.js install --immutable --mode=skip-build
+        # Maps the bundles' coverage back to lib/ through the source maps the
+        # build wrote next to them (electron_js_sourcemaps).
+        node script/lib-coverage-report.mjs \
+          --input ../../js-coverage \
+          --gen-dir ../out/Default/gen \
+          --output ../../coverage-report/js
     - name: Upload Coverage Report
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 #v7.0.2
       with:
