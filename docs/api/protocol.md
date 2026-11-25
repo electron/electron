@@ -170,7 +170,7 @@ app.whenReady().then(() => {
       }
       // NB, this checks for paths that escape the bundle, e.g.
       // app://bundle/../../secret_file.txt
-      const pathToServe = path.resolve(__dirname, pathname)
+      const pathToServe = path.join(__dirname, pathname)
       const relativePath = path.relative(__dirname, pathToServe)
       const isSafe = relativePath && !relativePath.startsWith('..') && !path.isAbsolute(relativePath)
       if (!isSafe) {
