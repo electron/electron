@@ -6,38 +6,23 @@ Follow the guidelines below for building **Electron itself** on Windows, for the
 
 ## Prerequisites
 
-* Windows 10 / Server 2012 R2 or higher
-* Visual Studio 2019 (>=16.0.0) to build, but Visual Studio 2022 (>=17.0.0) is preferred - [download VS 2022 Community Edition for free](https://www.visualstudio.com/vs/)
-  * See [the Chromium build documentation](https://chromium.googlesource.com/chromium/src/+/main/docs/windows_build_instructions.md#visual-studio) for more details on which Visual Studio
-  components are required.
-  * If your Visual Studio is installed in a directory other than the default, you'll need to
-  set a few environment variables to point the toolchains to your installation path.
-    * `vs2022_install = DRIVE:\path\to\Microsoft Visual Studio\2022\Community`, replacing `2022` and `Community` with your installed versions and replacing `DRIVE:` with the drive that Visual Studio is on. Often, this will be `C:`.
-    * `WINDOWSSDKDIR = DRIVE:\path\to\Windows Kits\10`, replacing `DRIVE:` with the drive that Windows Kits is on. Often, this will be `C:`.
-* [Node.js](https://nodejs.org/download/) >= 22.18.0
+* Windows 10 or later
+* [Visual Studio 2026](https://visualstudio.microsoft.com/vs/community/) (>=18.0.0), with the components listed in
+  [the Chromium build documentation](https://chromium.googlesource.com/chromium/src/+/main/docs/windows_build_instructions.md#visual-studio).
+  If it is installed outside the default location, set `vs2026_install` to its path.
+* [Windows 11 SDK](https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/) 10.0.28000.2270 and
+  SDK Debugging Tools 10.0.26100.3323 or later (provides `symstore.exe` for full distributions).
+  See the [Chromium build documentation](https://chromium.googlesource.com/chromium/src/+/main/docs/windows_build_instructions.md) for installation.
+  If the SDK is installed outside the default location, set `WINDOWSSDKDIR`.
+* [Node.js](https://nodejs.org/download/) 22.22.1 or later
 * [Git](https://git-scm.com)
-* Debugging Tools for Windows of Windows SDK 10.0.15063.468 if you plan on
-creating a full distribution since `symstore.exe` is used for creating a symbol
-store from `.pdb` files.
-  * Different versions of the SDK can be installed side by side. To install the
-  SDK, open Visual Studio Installer, select
-  `Modify` → `Individual Components`, scroll down and select the appropriate
-  Windows SDK to install. Another option would be to look at the
-  [Windows SDK and emulator archive](https://developer.microsoft.com/en-us/windows/downloads/sdk-archive/)
-  and download the standalone version of the SDK respectively.
-  * The SDK Debugging Tools must also be installed. If the Windows 10 SDK was installed
-  via the Visual Studio installer, then they can be installed by going to:
-  `Control Panel` → `Programs` → `Programs and Features` → Select the "Windows Software Development Kit" →
-  `Change` → `Change` → Check "Debugging Tools For Windows" → `Change`.
-  Or, you can download the standalone SDK installer and use it to install the Debugging Tools.
 
 If you don't currently have a Windows installation,
 [developer.microsoft.com](https://developer.microsoft.com/en-us/windows/downloads/virtual-machines/)
 has timebombed versions of Windows that you can use to build Electron.
 
-Building Electron is done entirely with command-line scripts and cannot be done
-with Visual Studio. You can develop Electron with any editor but support for
-building with Visual Studio will come in the future.
+Electron is built with GN and command-line tools rather than the Visual Studio
+build system. You can develop Electron with any editor.
 
 > [!NOTE]
 > Even though Visual Studio is not used for building, it's still
@@ -69,11 +54,11 @@ The other building steps are exactly the same.
 
 ## Visual Studio project
 
-To generate a Visual Studio project, you can pass the `--ide=vs2017` parameter
-to `gn gen`:
+To generate a Visual Studio project in the latest format supported by GN, you can
+pass the `--ide=vs` parameter to `gn gen`:
 
 ```powershell
-$ gn gen out/Testing --ide=vs2017
+$ gn gen out\Testing --ide=vs
 ```
 
 ## Troubleshooting
@@ -81,7 +66,7 @@ $ gn gen out/Testing --ide=vs2017
 ### Command xxxx not found
 
 If you encountered an error like `Command xxxx not found`, you may try to use
-the `VS2015 Command Prompt` console to execute the build scripts.
+the `Developer Command Prompt for VS 2026` console to execute the build scripts.
 
 ### Fatal internal compiler error: C1001
 
@@ -102,7 +87,7 @@ $ mkdir ~\AppData\Roaming\npm
 ### node-gyp is not recognized as an internal or external command
 
 You may get this error if you are using Git Bash for building, you should use
-PowerShell or VS2015 Command Prompt instead.
+PowerShell or Developer Command Prompt for VS 2026 instead.
 
 ### cannot create directory at '...': Filename too long
 
