@@ -266,6 +266,20 @@ describe('BrowserView module', () => {
       });
     });
 
+    it('moves y if vertical: true', () => {
+      view = new BrowserView();
+      view.setAutoResize({ vertical: true });
+      w.addBrowserView(view);
+      view.setBounds({ x: 0, y: 200, width: 100, height: 200 });
+      w.setSize(400, 800);
+      expect(view.getBounds()).toEqual({
+        x: 0,
+        y: 400,
+        width: 100,
+        height: 400
+      });
+    });
+
     it('moves x if horizontal: true width: true', () => {
       view = new BrowserView();
       view.setAutoResize({ horizontal: true, width: true });
