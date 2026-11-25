@@ -169,7 +169,7 @@ class NativeWindowViews : public NativeWindow,
   void DecrementChildModals();
 
   void SetTitleBarOverlay(const gin_helper::Dictionary& options,
-                          gin::Arguments* args);
+                          gin::Arguments* args) override;
 
 #if BUILDFLAG(IS_WIN)
   // Catch-all message handling and filtering. Called before
