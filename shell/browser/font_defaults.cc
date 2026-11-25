@@ -10,6 +10,7 @@
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/map_util.h"
 #include "base/strings/cstring_view.h"
+#include "base/strings/strcat.h"
 #include "base/strings/string_split.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/browser_process.h"
@@ -218,7 +219,7 @@ auto MakeDefaultFontCopier() {
   // so splitting on the last '.' gives the family and script: a pref key of
   // "webkit.webprefs.fonts.fixed.Zyyy" splits into family name
   // "webkit.webprefs.fonts.fixed" and script "Zyyy". (Yes, "Zyyy" is real.
-  // See pref_font_script_names-inl.h for the full list :)
+  // See prefs::kWebKitScriptsForFontFamilyMaps for the full list :)
   for (auto [pref_name, resource_id] : kFontDefaults) {
 #if BUILDFLAG(IS_WIN)
     if (pref_name == prefs::kWebKitFixedFontFamily) {
@@ -262,30 +263,17 @@ auto MakeDefaultFontCopier() {
     }
   }
 
-  // Expand the font concatenated with script name so this stays at RO memory
-  // rather than allocated in heap.
-  // clang-format off
-  static const auto kFontFamilyMap = std::to_array<const char *>({
-    #define EXPAND_SCRIPT_FONT(map_name, script_name) map_name "." script_name,
-
-    #include "chrome/common/pref_font_script_names-inl.h"
-    ALL_FONT_SCRIPTS(WEBKIT_WEBPREFS_FONTS_CURSIVE)
-    ALL_FONT_SCRIPTS(WEBKIT_WEBPREFS_FONTS_FIXED)
-    ALL_FONT_SCRIPTS(WEBKIT_WEBPREFS_FONTS_SANSERIF)
-    ALL_FONT_SCRIPTS(WEBKIT_WEBPREFS_FONTS_SERIF)
-    ALL_FONT_SCRIPTS(WEBKIT_WEBPREFS_FONTS_STANDARD)
-
-    #undef EXPAND_SCRIPT_FONT
-  });
-  // clang-format on
-
-  for (const char* const pref_name : kFontFamilyMap) {
-    if (fonts_with_defaults.find(pref_name) == fonts_with_defaults.end()) {
-      // We haven't already set a default value for this font preference, so set
-      // an empty string as the default.
-      const auto [family, script] = *base::RSplitStringOnce(pref_name, '.');
-      if (auto* family_map_ptr = base::FindOrNull(FamilyMapByName, family)) {
-        FamilyMap& family_map = defaults.**family_map_ptr;
+  // Register an empty default for every per-script font pref that has no
+  // explicit default above, e.g. "webkit.webprefs.fonts.serif.Hant".
+  for (const auto [family, family_map_ptr] : FamilyMapByName) {
+    FamilyMap& family_map = defaults.*family_map_ptr;
+    for (const prefs::FontScriptCode& script_arr :
+         prefs::kWebKitScriptsForFontFamilyMaps) {
+      const std::string_view script(script_arr.data());
+      const std::string pref_name = base::StrCat({family, ".", script});
+      if (!fonts_with_defaults.contains(pref_name)) {
+        // We haven't already set a default value for this font preference, so
+        // set an empty string as the default.
         family_map[std::string{script}] = std::u16string();
       }
     }
