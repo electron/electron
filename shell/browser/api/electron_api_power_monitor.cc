@@ -7,9 +7,9 @@
 #include "base/power_monitor/power_monitor.h"
 #include "base/power_monitor/power_observer.h"
 #include "gin/data_object_builder.h"
-#include "gin/persistent.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/weak_persistent.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "ui/base/idle/idle.h"
@@ -134,15 +134,14 @@ void PowerMonitor::OnSpeedLimitChange(int speed_limit) {
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC)
 base::RepeatingCallback<bool()> PowerMonitor::MakeShutdownHandler() {
-  auto& allocation_handle =
-      JavascriptEnvironment::GetIsolate()->GetCppHeap()->GetAllocationHandle();
   // A weak receiver cannot be bound to a method with a return value, so
-  // unwrap the cell by hand and treat a collected monitor as "don't block".
+  // check the persistent by hand and treat a collected monitor as "don't
+  // block".
   return base::BindRepeating(
-      [](PowerMonitor* monitor) {
+      [](const cppgc::WeakPersistent<PowerMonitor>& monitor) {
         return monitor && monitor->ShouldShutdown();
       },
-      gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle)));
+      gin_helper::WrapWeakPersistent(this));
 }
 #endif
 
@@ -176,11 +175,6 @@ gin::ObjectTemplateBuilder PowerMonitor::GetObjectTemplateBuilder(
 
 const gin::WrapperInfo* PowerMonitor::wrapper_info() const {
   return &kWrapperInfo;
-}
-
-void PowerMonitor::Trace(cppgc::Visitor* visitor) const {
-  gin::Wrappable<PowerMonitor>::Trace(visitor);
-  visitor->Trace(weak_factory_);
 }
 
 const char* PowerMonitor::GetHumanReadableName() const {

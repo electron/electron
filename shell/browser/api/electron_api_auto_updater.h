@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "shell/browser/auto_updater.h"
 #include "shell/browser/event_emitter_mixin.h"
@@ -25,7 +24,6 @@ class AutoUpdater final : public gin::Wrappable<AutoUpdater>,
 
   // gin::Wrappable
   static const gin::WrapperInfo kWrapperInfo;
-  void Trace(cppgc::Visitor*) const override;
   const gin::WrapperInfo* wrapper_info() const override;
   const char* GetHumanReadableName() const override;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
@@ -61,8 +59,6 @@ class AutoUpdater final : public gin::Wrappable<AutoUpdater>,
 
   std::string GetFeedURL();
   void QuitAndInstall();
-
-  gin::WeakCellFactory<AutoUpdater> weak_factory_{this};
 };
 
 }  // namespace electron::api

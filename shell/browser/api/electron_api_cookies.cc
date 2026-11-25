@@ -16,7 +16,6 @@
 #include "content/public/browser/storage_partition.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
-#include "gin/persistent.h"
 #include "net/cookies/canonical_cookie.h"
 #include "net/cookies/cookie_change_dispatcher.h"
 #include "net/cookies/cookie_inclusion_status.h"
@@ -29,6 +28,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/weak_persistent.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
@@ -300,21 +300,13 @@ gin::WrapperInfo Cookies::kWrapperInfo =
 
 Cookies::Cookies(ElectronBrowserContext* browser_context)
     : browser_context_{browser_context} {
-  auto& allocation_handle =
-      JavascriptEnvironment::GetIsolate()->GetCppHeap()->GetAllocationHandle();
   cookie_change_subscription_ =
       browser_context_->cookie_change_notifier()->RegisterCookieChangeCallback(
           base::BindRepeating(&Cookies::OnCookieChanged,
-                              gin::WrapPersistent(weak_factory_.GetWeakCell(
-                                  allocation_handle))));
+                              gin_helper::WrapWeakPersistent(this)));
 }
 
 Cookies::~Cookies() = default;
-
-void Cookies::Trace(cppgc::Visitor* visitor) const {
-  gin::Wrappable<Cookies>::Trace(visitor);
-  visitor->Trace(weak_factory_);
-}
 
 v8::Local<v8::Promise> Cookies::Get(v8::Isolate* isolate,
                                     const gin_helper::Dictionary& filter) {

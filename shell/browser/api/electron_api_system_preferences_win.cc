@@ -18,6 +18,7 @@
 #include "gin/persistent.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/color_util.h"
+#include "shell/common/gin_helper/weak_persistent.h"
 #include "shell/common/process_util.h"
 #include "ui/color/win/accent_color_observer.h"
 #include "ui/gfx/win/singleton_hwnd.h"
@@ -171,22 +172,18 @@ void SystemPreferences::InitializeWindow() {
   // Wait until app is ready before creating sys color listener
   // Creating this listener before the app is ready causes global shortcuts
   // to not fire
-  auto& allocation_handle =
-      JavascriptEnvironment::GetIsolate()->GetCppHeap()->GetAllocationHandle();
   if (Browser::Get()->is_ready()) {
-    hwnd_subscription_ =
-        gfx::SingletonHwnd::GetInstance()->RegisterCallback(base::BindRepeating(
-            &SystemPreferences::OnWndProc,
-            gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle))));
+    hwnd_subscription_ = gfx::SingletonHwnd::GetInstance()->RegisterCallback(
+        base::BindRepeating(&SystemPreferences::OnWndProc,
+                            gin_helper::WrapWeakPersistent(this)));
   } else {
     Browser::Get()->AddObserver(this);
   }
 
   current_color_ = GetAccentColor();
-  accent_color_subscription_ =
-      ui::AccentColorObserver::Get()->Subscribe(base::BindRepeating(
-          &SystemPreferences::OnSystemAccentColorChanged,
-          gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle))));
+  accent_color_subscription_ = ui::AccentColorObserver::Get()->Subscribe(
+      base::BindRepeating(&SystemPreferences::OnSystemAccentColorChanged,
+                          gin_helper::WrapWeakPersistent(this)));
 }
 
 void SystemPreferences::OnWndProc(HWND hwnd,
@@ -201,12 +198,9 @@ void SystemPreferences::OnWndProc(HWND hwnd,
 }
 
 void SystemPreferences::OnFinishLaunching(base::DictValue launch_info) {
-  hwnd_subscription_ = gfx::SingletonHwnd::GetInstance()->RegisterCallback(
-      base::BindRepeating(&SystemPreferences::OnWndProc,
-                          gin::WrapPersistent(weak_factory_.GetWeakCell(
-                              JavascriptEnvironment::GetIsolate()
-                                  ->GetCppHeap()
-                                  ->GetAllocationHandle()))));
+  hwnd_subscription_ =
+      gfx::SingletonHwnd::GetInstance()->RegisterCallback(base::BindRepeating(
+          &SystemPreferences::OnWndProc, gin_helper::WrapWeakPersistent(this)));
   Browser::Get()->RemoveObserver(this);
 }
 

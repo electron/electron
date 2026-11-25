@@ -8,14 +8,13 @@
 #include <string_view>
 
 #include "base/functional/bind.h"
-#include "gin/persistent.h"
 #include "shell/browser/browser.h"
-#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/native_window_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/weak_persistent.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "ui/display/display.h"
@@ -79,11 +78,6 @@ Screen::~Screen() {
     screen->RemoveObserver(this);
 }
 
-void Screen::Trace(cppgc::Visitor* visitor) const {
-  gin::Wrappable<Screen>::Trace(visitor);
-  visitor->Trace(weak_factory_);
-}
-
 void Screen::DelayEmit(std::string_view name, const display::Display& display) {
   Emit(name, display);
 }
@@ -145,39 +139,28 @@ static gfx::Rect DIPToScreenRect(electron::NativeWindow* window,
 #endif
 
 void Screen::OnDisplayAdded(const display::Display& new_display) {
-  auto& allocation_handle =
-      JavascriptEnvironment::GetIsolate()->GetCppHeap()->GetAllocationHandle();
   base::SingleThreadTaskRunner::GetCurrentDefault()->PostNonNestableTask(
       FROM_HERE,
-      base::BindOnce(
-          &Screen::DelayEmit,
-          gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle)),
-          "display-added", new_display));
+      base::BindOnce(&Screen::DelayEmit, gin_helper::WrapWeakPersistent(this),
+                     "display-added", new_display));
 }
 
 void Screen::OnDisplaysRemoved(const display::Displays& old_displays) {
-  auto& allocation_handle =
-      JavascriptEnvironment::GetIsolate()->GetCppHeap()->GetAllocationHandle();
   for (const auto& old_display : old_displays) {
     base::SingleThreadTaskRunner::GetCurrentDefault()->PostNonNestableTask(
         FROM_HERE,
-        base::BindOnce(
-            &Screen::DelayEmit,
-            gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle)),
-            "display-removed", old_display));
+        base::BindOnce(&Screen::DelayEmit, gin_helper::WrapWeakPersistent(this),
+                       "display-removed", old_display));
   }
 }
 
 void Screen::OnDisplayMetricsChanged(const display::Display& display,
                                      uint32_t changed_metrics) {
-  auto& allocation_handle =
-      JavascriptEnvironment::GetIsolate()->GetCppHeap()->GetAllocationHandle();
   base::SingleThreadTaskRunner::GetCurrentDefault()->PostNonNestableTask(
-      FROM_HERE,
-      base::BindOnce(
-          &Screen::DelayEmitWithMetrics,
-          gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle)),
-          "display-metrics-changed", display, MetricsToArray(changed_metrics)));
+      FROM_HERE, base::BindOnce(&Screen::DelayEmitWithMetrics,
+                                gin_helper::WrapWeakPersistent(this),
+                                "display-metrics-changed", display,
+                                MetricsToArray(changed_metrics)));
 }
 
 gfx::PointF Screen::ScreenToDIPPoint(const gfx::PointF& point_px) {

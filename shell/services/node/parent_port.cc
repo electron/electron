@@ -11,13 +11,13 @@
 #include "gin/data_object_builder.h"
 #include "gin/object_template_builder.h"
 #include "gin/per_isolate_data.h"
-#include "gin/persistent.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/handle.h"
+#include "shell/common/gin_helper/weak_persistent.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_util.h"
@@ -45,11 +45,6 @@ ParentPort* ParentPort::GetInstance() {
 ParentPort::ParentPort() = default;
 ParentPort::~ParentPort() = default;
 
-void ParentPort::Trace(cppgc::Visitor* visitor) const {
-  gin::Wrappable<ParentPort>::Trace(visitor);
-  visitor->Trace(weak_factory_);
-}
-
 void ParentPort::Initialize(blink::MessagePortDescriptor port) {
   port_ = std::move(port);
   connector_ = std::make_unique<mojo::Connector>(
@@ -58,11 +53,8 @@ void ParentPort::Initialize(blink::MessagePortDescriptor port) {
       base::SingleThreadTaskRunner::GetCurrentDefault());
   connector_->PauseIncomingMethodCallProcessing();
   connector_->set_incoming_receiver(this);
-  connector_->set_connection_error_handler(base::BindOnce(
-      &ParentPort::Close, gin::WrapPersistent(weak_factory_.GetWeakCell(
-                              JavascriptEnvironment::GetIsolate()
-                                  ->GetCppHeap()
-                                  ->GetAllocationHandle()))));
+  connector_->set_connection_error_handler(
+      base::BindOnce(&ParentPort::Close, gin_helper::WrapWeakPersistent(this)));
 }
 
 void ParentPort::PostMessage(gin::Arguments* args) {

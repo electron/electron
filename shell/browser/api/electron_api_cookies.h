@@ -10,7 +10,6 @@
 #include "base/callback_list.h"
 #include "base/memory/raw_ptr.h"
 #include "base/values.h"
-#include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 
@@ -38,7 +37,6 @@ class Cookies final : public gin::Wrappable<Cookies>,
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
-  void Trace(cppgc::Visitor*) const override;
   static const char* GetClassName() { return "Cookies"; }
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
@@ -69,8 +67,6 @@ class Cookies final : public gin::Wrappable<Cookies>,
 
   // Weak reference; ElectronBrowserContext is guaranteed to outlive us.
   raw_ptr<ElectronBrowserContext> browser_context_;
-
-  gin::WeakCellFactory<Cookies> weak_factory_{this};
 };
 
 }  // namespace api

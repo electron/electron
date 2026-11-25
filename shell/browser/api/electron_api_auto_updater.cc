@@ -5,7 +5,6 @@
 #include "shell/browser/api/electron_api_auto_updater.h"
 
 #include "base/time/time.h"
-#include "gin/persistent.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
@@ -14,6 +13,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/weak_persistent.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "v8/include/cppgc/allocation.h"
@@ -101,18 +101,10 @@ void AutoUpdater::OnUpdateDownloaded(const std::string& release_notes,
                                      const std::string& release_name,
                                      const base::Time& release_date,
                                      const std::string& url) {
-  auto& allocation_handle =
-      JavascriptEnvironment::GetIsolate()->GetCppHeap()->GetAllocationHandle();
   Emit("update-downloaded", release_notes, release_name, release_date, url,
        // Keep compatibility with old APIs.
-       base::BindRepeating(
-           &AutoUpdater::QuitAndInstall,
-           gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle))));
-}
-
-void AutoUpdater::Trace(cppgc::Visitor* visitor) const {
-  gin::Wrappable<AutoUpdater>::Trace(visitor);
-  visitor->Trace(weak_factory_);
+       base::BindRepeating(&AutoUpdater::QuitAndInstall,
+                           gin_helper::WrapWeakPersistent(this)));
 }
 
 void AutoUpdater::OnWindowAllClosed() {

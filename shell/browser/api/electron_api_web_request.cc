@@ -41,6 +41,7 @@
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/weak_persistent.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_util.h"
 
@@ -489,9 +490,7 @@ int WebRequest::HandleOnBeforeSendHeadersResponseEvent(
 
   ResponseCallback response =
       base::BindOnce(&WebRequest::OnBeforeSendHeadersListenerResult,
-                     gin::WrapPersistent(weak_factory_.GetWeakCell(
-                         isolate->GetCppHeap()->GetAllocationHandle())),
-                     request_info->id);
+                     gin_helper::WrapWeakPersistent(this), request_info->id);
   info.listener.Run(gin::ConvertToV8(isolate, details), std::move(response));
   return net::ERR_IO_PENDING;
 }
@@ -584,9 +583,7 @@ int WebRequest::HandleOnHeadersReceivedResponseEvent(
 
   ResponseCallback response =
       base::BindOnce(&WebRequest::OnHeadersReceivedListenerResult,
-                     gin::WrapPersistent(weak_factory_.GetWeakCell(
-                         isolate->GetCppHeap()->GetAllocationHandle())),
-                     request_info->id);
+                     gin_helper::WrapWeakPersistent(this), request_info->id);
   info.listener.Run(gin::ConvertToV8(isolate, details), std::move(response));
   return net::ERR_IO_PENDING;
 }
@@ -654,13 +651,9 @@ WebRequest::AuthRequiredResponse WebRequest::OnAuthRequired(
   blocked_request.auth_callback = std::move(callback);
   blocked_requests_[request_info->id] = std::move(blocked_request);
 
-  auto login_callback = base::BindOnce(
-      &WebRequest::OnLoginAuthResult,
-      gin::WrapPersistent(
-          weak_factory_.GetWeakCell(JavascriptEnvironment::GetIsolate()
-                                        ->GetCppHeap()
-                                        ->GetAllocationHandle())),
-      request_info->id, credentials);
+  auto login_callback = base::BindOnce(&WebRequest::OnLoginAuthResult,
+                                       gin_helper::WrapWeakPersistent(this),
+                                       request_info->id, credentials);
 
   scoped_refptr<net::HttpResponseHeaders> response_headers =
       request_info->response_headers;

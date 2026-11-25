@@ -18,8 +18,6 @@
 #include "gin/data_object_builder.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
-#include "gin/persistent.h"
-#include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "net/cert/x509_certificate.h"
 #include "net/cert/x509_util.h"
@@ -40,6 +38,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
+#include "shell/common/gin_helper/weak_persistent.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -336,7 +335,6 @@ class ChunkedDataPipeReadableStream final
   void Trace(cppgc::Visitor* visitor) const override {
     gin::Wrappable<ChunkedDataPipeReadableStream>::Trace(visitor);
     visitor->Trace(buf_);
-    visitor->Trace(weak_factory_);
   }
 
   static const gin::WrapperInfo kWrapperInfo;
@@ -372,13 +370,12 @@ class ChunkedDataPipeReadableStream final
         break;
       }
     }
-    auto& allocation_handle = isolate_->GetCppHeap()->GetAllocationHandle();
-    chunked_data_pipe_getter_.set_disconnect_handler(base::BindOnce(
-        &ChunkedDataPipeReadableStream::OnDataPipeGetterClosed,
-        gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle))));
-    chunked_data_pipe_getter_->GetSize(base::BindOnce(
-        &ChunkedDataPipeReadableStream::OnSizeReceived,
-        gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle))));
+    chunked_data_pipe_getter_.set_disconnect_handler(
+        base::BindOnce(&ChunkedDataPipeReadableStream::OnDataPipeGetterClosed,
+                       gin_helper::WrapWeakPersistent(this)));
+    chunked_data_pipe_getter_->GetSize(
+        base::BindOnce(&ChunkedDataPipeReadableStream::OnSizeReceived,
+                       gin_helper::WrapWeakPersistent(this)));
     mojo::ScopedDataPipeProducerHandle data_pipe_producer;
     mojo::ScopedDataPipeConsumerHandle data_pipe_consumer;
     MojoResult result =
@@ -432,10 +429,8 @@ class ChunkedDataPipeReadableStream final
       handle_watcher_.Watch(
           data_pipe_.get(),
           MOJO_HANDLE_SIGNAL_READABLE | MOJO_HANDLE_SIGNAL_PEER_CLOSED,
-          base::BindRepeating(
-              &ChunkedDataPipeReadableStream::OnHandleReadable,
-              gin::WrapPersistent(weak_factory_.GetWeakCell(
-                  isolate_->GetCppHeap()->GetAllocationHandle()))));
+          base::BindRepeating(&ChunkedDataPipeReadableStream::OnHandleReadable,
+                              gin_helper::WrapWeakPersistent(this)));
     }
 
     size_t num_bytes = buf->ByteLength();
@@ -569,7 +564,6 @@ class ChunkedDataPipeReadableStream final
   v8::TracedReference<v8::ArrayBufferView> buf_;
   gin_helper::Promise<int> promise_;
   gin_helper::SelfKeepAlive<ChunkedDataPipeReadableStream> keep_alive_{this};
-  gin::WeakCellFactory<ChunkedDataPipeReadableStream> weak_factory_{this};
 };
 
 const gin::WrapperInfo ChunkedDataPipeReadableStream::kWrapperInfo =

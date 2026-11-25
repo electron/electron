@@ -761,6 +761,7 @@ filenames = {
     "shell/common/gin_helper/reply_channel.h",
     "shell/common/gin_helper/trackable_object.cc",
     "shell/common/gin_helper/trackable_object.h",
+    "shell/common/gin_helper/weak_persistent.h",
     "shell/common/gin_helper/wrappable.cc",
     "shell/common/gin_helper/wrappable.h",
     "shell/common/gin_helper/wrappable_base.h",

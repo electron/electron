@@ -22,10 +22,10 @@
 #include "net/log/file_net_log_observer.h"
 #include "net/log/net_log_capture_mode.h"
 #include "shell/browser/electron_browser_context.h"
-#include "shell/browser/javascript_environment.h"
 #include "shell/browser/net/system_network_context_manager.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/weak_persistent.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
@@ -147,9 +147,7 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
   network_context->CreateNetLogExporter(
       net_log_exporter_.BindNewPipeAndPassReceiver());
   net_log_exporter_.set_disconnect_handler(base::BindOnce(
-      &NetLog::OnConnectionError,
-      gin::WrapPersistent(weak_factory_.GetWeakCell(
-          args->isolate()->GetCppHeap()->GetAllocationHandle()))));
+      &NetLog::OnConnectionError, gin_helper::WrapWeakPersistent(this)));
 
   file_task_runner_->PostTaskAndReplyWithResult(
       FROM_HERE, base::BindOnce(OpenFileForWriting, log_path),
@@ -184,10 +182,7 @@ void NetLog::StartNetLogAfterCreateFile(net::NetLogCaptureMode capture_mode,
       std::move(output_file), std::move(custom_constants), capture_mode,
       net::NetLogFileFormat::kJson, max_file_size,
       base::BindOnce(&NetLog::NetLogStarted,
-                     gin::WrapPersistent(weak_factory_.GetWeakCell(
-                         JavascriptEnvironment::GetIsolate()
-                             ->GetCppHeap()
-                             ->GetAllocationHandle()))));
+                     gin_helper::WrapWeakPersistent(this)));
 }
 
 void NetLog::NetLogStarted(int32_t error) {

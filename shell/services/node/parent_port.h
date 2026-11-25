@@ -7,7 +7,6 @@
 
 #include <memory>
 
-#include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/connector.h"
 #include "mojo/public/cpp/bindings/message.h"
@@ -58,7 +57,6 @@ class ParentPort final : public gin::Wrappable<ParentPort>,
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
-  void Trace(cppgc::Visitor*) const override;
   const gin::WrapperInfo* wrapper_info() const override;
   const char* GetHumanReadableName() const override;
 
@@ -78,7 +76,6 @@ class ParentPort final : public gin::Wrappable<ParentPort>,
       "process.")
   std::unique_ptr<mojo::Connector> connector_;
   blink::MessagePortDescriptor port_;
-  gin::WeakCellFactory<ParentPort> weak_factory_{this};
 };
 
 }  // namespace electron
