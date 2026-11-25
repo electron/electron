@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/callback_list.h"
 #include "base/files/file_path.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
@@ -55,7 +56,10 @@ class ElectronMenuModel : public ui::MenuModel {
 
   class Item {
    public:
-    virtual ~Item() = default;
+    Item();
+    virtual ~Item();
+    base::CallbackListSubscription AddStateChangedCallback(
+        base::RepeatingClosure callback);
     virtual ItemType GetType() const = 0;
     virtual int GetCommandId() const = 0;
     virtual std::u16string GetLabel() const = 0;
@@ -77,6 +81,13 @@ class ElectronMenuModel : public ui::MenuModel {
     virtual std::optional<SharingItem> GetSharingItem() = 0;
     virtual const Badge* GetBadge() const = 0;
 #endif
+
+   protected:
+    // Call after enabled or visible state changes to update containing models.
+    void NotifyStateChanged();
+
+   private:
+    base::RepeatingClosureList state_changed_callbacks_;
   };
 
   class Delegate {
@@ -106,6 +117,9 @@ class ElectronMenuModel : public ui::MenuModel {
 
   void AddObserver(Observer* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(Observer* obs) { observers_.RemoveObserver(obs); }
+
+  base::CallbackListSubscription AddItemStateChangedCallback(
+      base::RepeatingClosure callback);
 
   // |item| must outlive the model.
   void InsertItemAt(size_t index, Item* item);
@@ -165,7 +179,9 @@ class ElectronMenuModel : public ui::MenuModel {
     // Copied here because views looks items up by scanning these.
     ItemType type;
     int command_id;
+    base::CallbackListSubscription state_subscription;
   };
+  void NotifyItemStateChanged();
   const Item& ItemAt(size_t index) const { return *items_[index].item; }
 
   raw_ptr<Delegate> delegate_;
@@ -174,6 +190,7 @@ class ElectronMenuModel : public ui::MenuModel {
   std::optional<SharingItem> sharing_item_;
 #endif
   base::ObserverList<Observer> observers_;
+  base::RepeatingClosureList item_state_changed_callbacks_;
 
   base::WeakPtrFactory<ElectronMenuModel> weak_factory_{this};
 };

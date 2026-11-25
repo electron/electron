@@ -11,6 +11,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "ui/views/controls/menu/menu_delegate.h"
+#include "ui/views/view_tracker.h"
 
 namespace gfx {
 class FontList;
@@ -70,16 +71,20 @@ class MenuDelegate : public views::MenuDelegate {
                                       views::MenuAnchorPosition* anchor,
                                       bool* has_mnemonics,
                                       views::MenuButton** button) override;
+  bool SwitchToSiblingMenu(bool next) override;
 
  private:
   void CancelSelf();
+  void ScheduleSwitchToButton(views::MenuButton* button);
+
   raw_ptr<MenuBar> menu_bar_;
   int id_ = -1;
   std::unique_ptr<views::MenuDelegate> adapter_;
   std::unique_ptr<views::MenuRunner> menu_runner_;
 
-  // The menu button to switch to.
-  raw_ptr<views::MenuButton> button_to_open_ = nullptr;
+  // The item to select after the current menu closes. Submenu headers open;
+  // command items only receive focus. Cleared if the button is deleted.
+  views::ViewTracker button_to_select_;
   bool hold_first_switch_ = false;
 
   base::ObserverList<Observer>::Unchecked observers_;
