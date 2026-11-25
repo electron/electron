@@ -102,6 +102,34 @@ index 829e4d40843e06c4fa0eaad3ac0783210fe7864d..278d1a0dbcc0936acfc5f2342185c1be
    void DidEvaluateScript(bool success) override;
    void WillInitializeWorkerContext() override;
    void WillDestroyWorkerContext(v8::Local<v8::Context> context) override;
+diff --git a/content/renderer/web_ui_extension.cc b/content/renderer/web_ui_extension.cc
+index 0c0ed5c04357f23da7c882bbbb9449e581bf9316..e4d21e23bbf278ed2d68123e9f268cc9ac86aac5 100644
+--- a/content/renderer/web_ui_extension.cc
++++ b/content/renderer/web_ui_extension.cc
+@@ -140,7 +140,8 @@ void WebUIExtension::DidClearWindowObject() {
+   }
+ }
+ 
+-void WebUIExtension::WillReleaseScriptContext(v8::Local<v8::Context> context,
++void WebUIExtension::WillReleaseScriptContext(v8::Isolate* const isolate,
++                                              v8::Local<v8::Context> context,
+                                               int32_t world_id) {
+   if (world_id == ISOLATED_WORLD_ID_GLOBAL) {
+     weak_ptr_factory_.InvalidateWeakPtrs();
+diff --git a/content/renderer/web_ui_extension.h b/content/renderer/web_ui_extension.h
+index 322e0ebe27c2488a1447993d45b40ba5e100a224..51bff453e39611ab43ce28d932af7325cf0f4a67 100644
+--- a/content/renderer/web_ui_extension.h
++++ b/content/renderer/web_ui_extension.h
+@@ -50,7 +50,8 @@ class WebUIExtension : public RenderFrameObserver,
+ 
+   // RenderFrameObserver:
+   void DidClearWindowObject() override;
+-  void WillReleaseScriptContext(v8::Local<v8::Context> context,
++  void WillReleaseScriptContext(v8::Isolate* const isolate,
++                                v8::Local<v8::Context> context,
+                                 int32_t world_id) override;
+   void OnDestruct() override;
+ 
 diff --git a/extensions/renderer/dispatcher.cc b/extensions/renderer/dispatcher.cc
 index 27280d7b62572a383e13874eee1533e33f10ece4..4ab2eb26c9e8f52922b8cbc6fa57fb728f5fd8e4 100644
 --- a/extensions/renderer/dispatcher.cc
