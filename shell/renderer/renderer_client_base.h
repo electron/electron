@@ -101,10 +101,14 @@ class RendererClientBase : public content::ContentRendererClient
                       v8::Local<v8::Context> context,
                       content::RenderFrame* render_frame) const;
 
+  // Whether the browser chose this frame's current document for Electron's
+  // renderer API: the main frame, any frame when nodeIntegrationInSubFrames
+  // is on, or a subframe that was sent a preload registered with allFrames.
+  static bool IsPreloadFrame(content::RenderFrame* render_frame);
+
   // Whether Electron sets up its renderer API (and runs preload scripts) for
-  // documents in this frame: the main frame, DevTools, or any frame when
-  // nodeIntegrationInSubFrames is on, but never a <webview>'s placeholder
-  // iframe.
+  // documents in this frame: an IsPreloadFrame() or DevTools, but never a
+  // <webview>'s placeholder iframe.
   bool ShouldLoadPreload(v8::Isolate* isolate,
                          v8::Local<v8::Context> context,
                          content::RenderFrame* render_frame) const;

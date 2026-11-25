@@ -30,6 +30,9 @@ struct RendererStartupData {
   // Browser process.env, captured fresh per push.
   map<string, string> environment;
   string helper_exec_path;
+  // Set for a subframe that gets Electron's renderer API only because a
+  // preload registered with allFrames matched its document.
+  bool all_frames;
 };
 
 // A value serialized with electron::SerializeV8Value(), in the buffer it is
