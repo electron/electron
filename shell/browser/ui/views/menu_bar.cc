@@ -25,10 +25,6 @@
 #include "ui/gtk/gtk_util.h"  // nogncheck
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "shell/common/color_util.h"
-#endif
-
 namespace electron {
 
 namespace {
@@ -405,12 +401,6 @@ void MenuBar::UpdateViewColors() {
     button->SetTextColor(views::Button::STATE_DISABLED, disabled_color_);
     button->SetTextColor(views::Button::STATE_PRESSED, enabled_color_);
     button->SetTextColor(views::Button::STATE_HOVERED, textColor);
-    button->SetUnderlineColor(textColor);
-  }
-#elif BUILDFLAG(IS_WIN)
-  for (views::View* child : GetChildrenInZOrder()) {
-    auto* button = static_cast<SubmenuButton*>(child);
-    button->SetUnderlineColor(GetSysSkColor(COLOR_MENUTEXT));
   }
 #endif
 }

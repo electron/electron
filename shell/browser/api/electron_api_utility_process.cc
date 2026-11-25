@@ -43,6 +43,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/weak_persistent.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_util.h"
@@ -278,10 +279,9 @@ UtilityProcessWrapper::UtilityProcessWrapper(
       mojo::Connector::SINGLE_THREADED_SEND,
       base::SingleThreadTaskRunner::GetCurrentDefault());
   connector_->set_incoming_receiver(this);
-  // |connector_| is owned by this wrapper and only ever reset, never moved, so
-  // destroying it cancels the handler.
-  connector_->set_connection_error_handler(base::BindOnce(
-      &UtilityProcessWrapper::CloseConnectorPort, base::Unretained(this)));
+  connector_->set_connection_error_handler(
+      base::BindOnce(&UtilityProcessWrapper::CloseConnectorPort,
+                     gin_helper::WrapWeakPersistent(this)));
 
   params->url_loader_factory_params = CreateURLLoaderFactoryParams();
   node_service_remote_->Initialize(std::move(params),

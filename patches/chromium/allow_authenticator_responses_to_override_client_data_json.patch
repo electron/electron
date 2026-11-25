@@ -15,10 +15,10 @@ When present, authenticator_common_impl uses it in place of the request-
 level client_data_json.
 
 diff --git a/content/browser/webauth/authenticator_common_impl.cc b/content/browser/webauth/authenticator_common_impl.cc
-index c02b76ded5a7ff68d00ec99d3abfc46173f9bfb6..7652c16f3a7d964f32c5063d6060df8ea0664bbb 100644
+index bbf0b4f42bb354e35b3ca2633c11757f6118d767..b6c8681d6540d03cd866095d873da747b18ce687 100644
 --- a/content/browser/webauth/authenticator_common_impl.cc
 +++ b/content/browser/webauth/authenticator_common_impl.cc
-@@ -3141,8 +3141,12 @@ AuthenticatorCommonImpl::CreateMakeCredentialResponse(
+@@ -3146,8 +3146,12 @@ AuthenticatorCommonImpl::CreateMakeCredentialResponse(
      AttestationErasureOption attestation_erasure) {
    auto response = blink::mojom::MakeCredentialAuthenticatorResponse::New();
    auto common_info = blink::mojom::CommonCredentialInfo::New();
@@ -31,9 +31,9 @@ index c02b76ded5a7ff68d00ec99d3abfc46173f9bfb6..7652c16f3a7d964f32c5063d6060df8e
 +                                         req_state_->client_data_json.end());
 +  }
    common_info->raw_id = response_data.attestation_object.GetCredentialId();
-   common_info->id = webauthn::Base64UrlEncodeOmitPadding(common_info->raw_id);
- 
-@@ -3354,8 +3358,12 @@ AuthenticatorCommonImpl::CreateGetAssertionResponse(
+   common_info->id = base::Base64UrlEncode(
+       common_info->raw_id, base::Base64UrlEncodePolicy::OMIT_PADDING);
+@@ -3360,8 +3364,12 @@ AuthenticatorCommonImpl::CreateGetAssertionResponse(
    auto common_info = blink::mojom::CommonCredentialInfo::New();
    auto response_extensions =
        blink::mojom::AuthenticationExtensionsClientOutputs::New();
@@ -46,8 +46,8 @@ index c02b76ded5a7ff68d00ec99d3abfc46173f9bfb6..7652c16f3a7d964f32c5063d6060df8e
 +                                         req_state_->client_data_json.end());
 +  }
    common_info->raw_id = response_data.credential->id;
-   common_info->id = webauthn::Base64UrlEncodeOmitPadding(common_info->raw_id);
-   response->info = std::move(common_info);
+   common_info->id = base::Base64UrlEncode(
+       common_info->raw_id, base::Base64UrlEncodePolicy::OMIT_PADDING);
 diff --git a/device/fido/authenticator_get_assertion_response.h b/device/fido/authenticator_get_assertion_response.h
 index 12958766ba17a1af2e5c20beb74eaa25f09c0dae..bbb9c878f2bd4651ae4f3f2cf40868f1d24b2204 100644
 --- a/device/fido/authenticator_get_assertion_response.h

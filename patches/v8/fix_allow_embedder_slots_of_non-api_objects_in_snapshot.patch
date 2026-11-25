@@ -17,7 +17,7 @@ IterateJSObjectBodyImpl() visits.
 This should be upstreamed.
 
 diff --git a/src/snapshot/serializer.cc b/src/snapshot/serializer.cc
-index 5c92bd357dc813eff61252da557910f80d3bfa2f..0bb62c122e30044b1b7abbb8c9fbb95a9274b6da 100644
+index 656a3febbb7461d7f8e548e925c9d41967ad3503..e67b7640006373001d734780f45eda667545979a 100644
 --- a/src/snapshot/serializer.cc
 +++ b/src/snapshot/serializer.cc
 @@ -23,6 +23,7 @@
@@ -28,14 +28,14 @@ index 5c92bd357dc813eff61252da557910f80d3bfa2f..0bb62c122e30044b1b7abbb8c9fbb95a
  #include "src/objects/map.h"
  #include "src/objects/objects-body-descriptors-inl.h"
  #include "src/objects/slots-inl.h"
-@@ -1318,8 +1319,8 @@ void Serializer::ObjectSerializer::VisitCppHeapPointer(
+@@ -1322,8 +1323,8 @@ void Serializer::ObjectSerializer::VisitCppHeapPointer(
    // We serialize the slot as initialized-but-unused slot.  The actual API
    // wrapper serialization is implemented in
    // `ContextSerializer::SerializeApiWrapperFields()`.
 -  DCHECK(IsJSApiWrapperObjectMap(object_->map()) || IsNativeContext(*object_) ||
--         IsCppGCManagedBase(*object_) ||
+-         IsCppGCManagedBase(*object_));
 +  DCHECK(JSObject::MayHaveEmbedderFields(object_->map()) ||
-+         IsNativeContext(*object_) || IsCppGCManagedBase(*object_) ||
-          IsEmbedderDataArray(*object_));
++         IsNativeContext(*object_) || IsCppGCManagedBase(*object_));
    static_assert(kCppHeapPointerSlotSize % kTaggedSize == 0);
    sink_->Put(
+       FixedRawDataWithSize::Encode(kCppHeapPointerSlotSize >> kTaggedSizeLog2),

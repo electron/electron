@@ -36,6 +36,7 @@ import {
   ifdescribe,
   defer,
   focusWebContents,
+  getSpecTimeout,
   itremote,
   listen,
   spawnAndWait,
@@ -566,6 +567,52 @@ describe('web security', () => {
     const w2 = new BrowserWindow(options);
     w2.loadURL(serverUrl);
   });
+});
+
+describe('WebAssembly traps', () => {
+  // The fixture runs the module in a separate app so a regression shows up as
+  // a crashed process rather than taking down the spec runner.
+  const runWasmTrapFixture = async (mode: string, ...args: string[]) => {
+    const appPath = path.join(fixturesPath, 'apps', 'wasm-trap', 'main.js');
+    const timeout = getSpecTimeout() - 5_000;
+    const result = await spawnAndWait(process.execPath, [appPath, mode, ...args], { timeout });
+    const resultLine = result.stdout.split(/\r?\n/).find((line) => line.startsWith('RESULT '));
+    return { ...result, resultLine };
+  };
+
+  const places = {
+    main: 'the main process',
+    sandboxed: 'a sandboxed renderer',
+    unsandboxed: 'an unsandboxed renderer'
+  };
+  for (const [mode, where] of Object.entries(places)) {
+    it(`throws a catchable RuntimeError for an out-of-bounds access in ${where}`, async () => {
+      const { code, signal, stderr, resultLine } = await runWasmTrapFixture(mode);
+      expect(resultLine, `code ${code} signal ${signal} stderr ${stderr}`).toBe(
+        'RESULT caught RuntimeError: memory access out of bounds'
+      );
+    });
+  }
+
+  ifit(process.platform === 'linux')(
+    'throws a catchable RuntimeError in the main process after crashReporter.start()',
+    async () => {
+      const crashesDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'electron-wasm-trap-'));
+      defer(() => fs.promises.rm(crashesDir, { recursive: true, force: true }));
+      const { code, signal, stderr, resultLine } = await runWasmTrapFixture('main-crash-reporter', crashesDir);
+      // The Crashpad handler is a separate process, so give it a moment to
+      // finish writing a dump if the trap reached it.
+      await setTimeout(1000);
+      const dumps = ['completed', 'new', 'pending'].flatMap((dir) => {
+        const dirPath = path.join(crashesDir, dir);
+        return fs.existsSync(dirPath) ? fs.readdirSync(dirPath).filter((file) => file.endsWith('.dmp')) : [];
+      });
+      expect(resultLine, `code ${code} signal ${signal} stderr ${stderr}`).toBe(
+        'RESULT caught RuntimeError: memory access out of bounds'
+      );
+      expect(dumps).toEqual([]);
+    }
+  );
 });
 
 describe('command line switches', () => {
@@ -2921,6 +2968,24 @@ describe('chromium features', () => {
           new Promise((resolve) => { worker.port.onmessage = e => resolve(e.data); })
         `);
         expect(data).toBe('undefined undefined undefined undefined');
+      });
+
+      it('works with --enable-experimental-web-platform-features', async () => {
+        const appPath = path.join(fixturesPath, 'apps', 'shared-worker-experimental-features');
+        const args = [appPath];
+        if (process.platform === 'darwin') args.push('--use-mock-keychain');
+        appProcess = ChildProcess.spawn(process.execPath, args);
+        defer(() => {
+          if (appProcess?.pid) appProcess.kill();
+        });
+
+        let output = '';
+        appProcess.stdout.on('data', (data) => {
+          output += data;
+        });
+        const [code] = await once(appProcess, 'close');
+        expect(output).toContain('title: hello');
+        expect(code).toBe(0);
       });
     });
   });

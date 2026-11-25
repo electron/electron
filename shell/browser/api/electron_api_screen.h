@@ -61,6 +61,12 @@ class Screen final : public gin::Wrappable<Screen>,
   void OnDisplaysRemoved(const display::Displays& removed_displays) override;
   void OnDisplayMetricsChanged(const display::Display& display,
                                uint32_t changed_metrics) override;
+
+ private:
+  void DelayEmit(std::string_view name, const display::Display& display);
+  void DelayEmitWithMetrics(std::string_view name,
+                            const display::Display& display,
+                            const std::vector<std::string>& metrics);
 };
 
 }  // namespace electron::api

@@ -28,6 +28,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/weak_persistent.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
@@ -302,7 +303,7 @@ Cookies::Cookies(ElectronBrowserContext* browser_context)
   cookie_change_subscription_ =
       browser_context_->cookie_change_notifier()->RegisterCookieChangeCallback(
           base::BindRepeating(&Cookies::OnCookieChanged,
-                              base::Unretained(this)));
+                              gin_helper::WrapWeakPersistent(this)));
 }
 
 Cookies::~Cookies() = default;

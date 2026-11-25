@@ -11,7 +11,7 @@ on:
     inputs:
       target-platform:
         type: string
-        description: 'Platform the coverage build targeted, can be macos or linux'
+        description: 'Platform the coverage build targeted, can be macos, win or linux'
         required: true
       target-arch:
         type: string
@@ -45,9 +45,9 @@ jobs:
         shell: bash
     env:
       ELECTRON_OUT_DIR: Default
-      BUILD_TYPE: ${{ inputs.target-platform == 'macos' && 'darwin' || 'linux' }}
+      BUILD_TYPE: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}
       TARGET_ARCH: ${{ inputs.target-arch }}
-      ARTIFACT_KEY: ${{ inputs.target-platform == 'macos' && 'darwin' || 'linux' }}_${{ inputs.target-arch }}
+      ARTIFACT_KEY: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}_${{ inputs.target-arch }}
     steps:
     - name: Checkout Electron
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -68,7 +68,15 @@ jobs:
         path: ./src_artifacts_${{ env.ARTIFACT_KEY }}
     - name: Restore Generated Artifacts
       run: ./src/electron/script/actions/restore-artifacts.sh
+    - name: Unzip Dist (win)
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: powershell
+      run: |
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        cd src/out/Default
+        Expand-Archive -Force dist.zip -DestinationPath ./
     - name: Unzip Dist
+      if: ${{ inputs.target-platform != 'win' }}
       run: |
         cd src/out/Default
         unzip -:o dist.zip
@@ -81,12 +89,25 @@ jobs:
       env:
         TARGET_PLATFORM: ${{ inputs.target-platform }}
       run: |
-        LLVM_BIN="$PWD/src/third_party/llvm-build/Release+Asserts/bin"
-        chmod +x "$LLVM_BIN/llvm-profdata" "$LLVM_BIN/llvm-cov"
+        if [ "$TARGET_PLATFORM" = "win" ]; then
+          # llvm-cov.exe is a native Windows binary: hand it Windows paths
+          # (pwd -W) rather than MSYS ones.
+          ROOT=$(pwd -W)
+        else
+          ROOT=$PWD
+        fi
+        LLVM_BIN="$ROOT/src/third_party/llvm-build/Release+Asserts/bin"
+        LLVM_PROFDATA="$LLVM_BIN/llvm-profdata"
+        LLVM_COV="$LLVM_BIN/llvm-cov"
+        if [ "$TARGET_PLATFORM" = "win" ]; then
+          LLVM_PROFDATA="$LLVM_BIN/llvm-profdata.exe"
+          LLVM_COV="$LLVM_BIN/llvm-cov.exe"
+        fi
+        chmod +x "$LLVM_PROFDATA" "$LLVM_COV"
 
         # --failure-mode=all tolerates profiles truncated by processes the
         # suite kills, as long as at least one input is readable.
-        "$LLVM_BIN/llvm-profdata" merge -sparse --failure-mode=all \
+        "$LLVM_PROFDATA" merge -sparse --failure-mode=all \
           -o coverage.profdata profraw/*.profraw
 
         if [ "$TARGET_PLATFORM" = "macos" ]; then
@@ -96,6 +117,9 @@ jobs:
             "src/out/Default/Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework"
             -object "src/out/Default/Electron.app/Contents/MacOS/Electron"
           )
+        elif [ "$TARGET_PLATFORM" = "win" ]; then
+          # Electron's own code is all linked into electron.exe.
+          objects=("$ROOT/src/out/Default/electron.exe")
         else
           objects=("src/out/Default/electron")
         fi
@@ -104,19 +128,27 @@ jobs:
         # -compilation-dir is what makes ../../electron/... resolve to the
         # checkout here. The trailing paths restrict the report to Electron's
         # own C++.
-        sources=("$PWD/src/electron/shell" "$PWD/src/electron/chromium_src")
+        sources=("$ROOT/src/electron/shell" "$ROOT/src/electron/chromium_src")
 
-        "$LLVM_BIN/llvm-cov" show \
+        case "$TARGET_PLATFORM" in
+          linux) PLATFORM_NAME=Linux ;;
+          macos) PLATFORM_NAME=macOS ;;
+          win) PLATFORM_NAME=Windows ;;
+          *) PLATFORM_NAME=$TARGET_PLATFORM ;;
+        esac
+
+        "$LLVM_COV" show \
           -format=html \
           -output-dir=coverage-report \
+          -project-title="Electron ($PLATFORM_NAME $TARGET_ARCH)" \
           -instr-profile=coverage.profdata \
-          -compilation-dir="$PWD/src/out/Default" \
+          -compilation-dir="$ROOT/src/out/Default" \
           "${objects[@]}" \
           "${sources[@]}"
 
-        "$LLVM_BIN/llvm-cov" report \
+        "$LLVM_COV" report \
           -instr-profile=coverage.profdata \
-          -compilation-dir="$PWD/src/out/Default" \
+          -compilation-dir="$ROOT/src/out/Default" \
           "${objects[@]}" \
           "${sources[@]}" > coverage-report/summary.txt
     - name: Upload Coverage Report

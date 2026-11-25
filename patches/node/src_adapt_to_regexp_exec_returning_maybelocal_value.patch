@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "electron-claude[bot]"
+ <279139701+electron-claude[bot]@users.noreply.github.com>
+Date: Thu, 19 Nov 2026 08:00:56 +0000
+Subject: src: adapt to RegExp::Exec returning MaybeLocal<Value>
+
+V8 changed `v8::RegExp::Exec()` to return `MaybeLocal<Value>` directly
+(the former `ExecV2()`), so the URLPattern regex provider can no longer
+receive the result in a `Local<Object>`.
+
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/8794471
+
+diff --git a/src/node_url_pattern.cc b/src/node_url_pattern.cc
+index 63f01d58170fe2dd33fcb9bec97b1165e507b7e6..c6a4093baa47728c8d486189d6d15bceddd87396 100644
+--- a/src/node_url_pattern.cc
++++ b/src/node_url_pattern.cc
+@@ -108,14 +108,14 @@ bool URLPatternRegexProvider::regex_match(std::string_view input,
+            .ToLocal(&local_input)) {
+     return false;
+   }
+-  Local<Object> result_object;
++  Local<Value> result;
+   if (!pattern.Get(isolate)
+            ->Exec(env->context(), local_input)
+-           .ToLocal(&result_object)) {
++           .ToLocal(&result)) {
+     return false;
+   }
+   // RegExp::Exec returns null if there is no match.
+-  return !result_object->IsNull();
++  return !result->IsNull();
+ }
+ 
+ std::optional<std::vector<std::optional<std::string>>>
+@@ -129,15 +129,14 @@ URLPatternRegexProvider::regex_search(std::string_view input,
+            .ToLocal(&local_input)) {
+     return std::nullopt;
+   }
+-  Local<Object> exec_result_object;
++  Local<Value> exec_result_value;
+   auto pattern = global_pattern.Get(isolate);
+-  if (!pattern->Exec(env->context(), local_input)
+-           .ToLocal(&exec_result_object) ||
+-      exec_result_object->IsNull()) {
++  if (!pattern->Exec(env->context(), local_input).ToLocal(&exec_result_value) ||
++      exec_result_value->IsNull()) {
+     return std::nullopt;
+   }
+-  DCHECK(exec_result_object->IsArray());
+-  auto exec_result = exec_result_object.As<Array>();
++  DCHECK(exec_result_value->IsArray());
++  auto exec_result = exec_result_value.As<Array>();
+   size_t len = exec_result->Length();
+   std::vector<std::optional<std::string>> result;
+   result.reserve(len);

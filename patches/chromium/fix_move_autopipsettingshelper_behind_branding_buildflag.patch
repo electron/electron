@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index a9459a17146280b01198f95ee6fb9302177d4053..e1cd71cb71a96d0908dd38a63ae5bf2866d9f75b 100644
+index 31dd053e4d96e74813d8387b281cef1afbba05f8..9d82a7687488b3a7619ce8400ea1096f60f5072f 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@
@@ -20,13 +20,14 @@ index a9459a17146280b01198f95ee6fb9302177d4053..e1cd71cb71a96d0908dd38a63ae5bf28
  #include "chrome/browser/picture_in_picture/picture_in_picture_bounds_cache.h"
  #include "chrome/browser/ui/navigator/browser_navigator_params.h"
  #include "content/public/browser/document_picture_in_picture_window_controller.h"
-@@ -28,11 +29,15 @@
+@@ -28,12 +29,16 @@
  #include "base/metrics/histogram_functions.h"
  #include "base/numerics/checked_math.h"
  #include "base/task/sequenced_task_runner.h"
 +#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
  #include "chrome/browser/picture_in_picture/auto_picture_in_picture_tab_helper.h"
  #include "chrome/browser/picture_in_picture/auto_pip_setting_overlay_view.h"
+ #include "chrome/browser/picture_in_picture/document_pip_show_mode.h"
 +#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
  #include "chrome/browser/picture_in_picture/picture_in_picture_occlusion_tracker.h"
  #include "chrome/browser/picture_in_picture/picture_in_picture_window.h"
@@ -36,15 +37,15 @@ index a9459a17146280b01198f95ee6fb9302177d4053..e1cd71cb71a96d0908dd38a63ae5bf28
  #include "components/webapps/isolated_web_apps/scheme.h"
  #include "media/base/media_switches.h"
  #include "ui/views/view.h"
-@@ -70,6 +75,7 @@ constexpr double kMaxWindowSizeRatio = 0.8;
+@@ -71,6 +76,7 @@ constexpr double kMaxWindowSizeRatio = 0.8;
  // `kMaxWindowSizeRatio`.
  constexpr double kMaxSiteRequestedWindowSizeRatio = 0.25;
  
 +#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
- // Returns true if a document picture-in-picture window should be focused upon
- // opening it.
- bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
-@@ -86,6 +92,7 @@ bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
+ // Returns true if a document picture-in-picture window opened by
+ // `source_contents` should be focused upon opening it. Only reliable once the
+ // opener's picture-in-picture state has been updated by
+@@ -88,6 +94,7 @@ bool ShouldFocusPictureInPictureWindow(
    // AutoPictureInPictureTabHelper.
    return !auto_picture_in_picture_tab_helper->IsInAutoPictureInPicture();
  }
@@ -52,7 +53,7 @@ index a9459a17146280b01198f95ee6fb9302177d4053..e1cd71cb71a96d0908dd38a63ae5bf28
  
  // Returns the maximum area in pixels that the site can request a
  // picture-in-picture window to be.
-@@ -246,7 +253,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
+@@ -248,7 +255,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
      return false;
    }
  
@@ -61,7 +62,7 @@ index a9459a17146280b01198f95ee6fb9302177d4053..e1cd71cb71a96d0908dd38a63ae5bf28
    // The user manually closed the pip window, so let the tab helper know in case
    // the auto-pip permission dialog was visible.
    if (auto* tab_helper = AutoPictureInPictureTabHelper::FromWebContents(
-@@ -609,7 +616,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
+@@ -611,7 +618,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
  
  // static
  void PictureInPictureWindowManager::SetWindowParams(NavigateParams& params) {
@@ -69,8 +70,8 @@ index a9459a17146280b01198f95ee6fb9302177d4053..e1cd71cb71a96d0908dd38a63ae5bf28
 +#if !BUILDFLAG(IS_ANDROID) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
    // Always show document picture-in-picture in a new window. When this is
    // not opened via the AutoPictureInPictureTabHelper, focus the window.
-   params.window_action =
-@@ -669,14 +676,14 @@ void PictureInPictureWindowManager::CloseWindowInternal() {
+   // All document picture-in-picture openings must have a source_contents.
+@@ -673,14 +680,14 @@ void PictureInPictureWindowManager::CloseWindowInternal() {
    video_web_contents_observer_.reset();
    document_web_contents_observer_.reset();
  
@@ -87,7 +88,7 @@ index a9459a17146280b01198f95ee6fb9302177d4053..e1cd71cb71a96d0908dd38a63ae5bf28
  
    // Close and reset the picture-in-picture window controller, if it exists.
    if (pip_window_controller_) {
-@@ -719,6 +726,7 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
+@@ -723,6 +730,7 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
  }
  
  #if !BUILDFLAG(IS_ANDROID)
@@ -95,15 +96,15 @@ index a9459a17146280b01198f95ee6fb9302177d4053..e1cd71cb71a96d0908dd38a63ae5bf28
  void PictureInPictureWindowManager::EnterStandaloneDocumentPictureInPicture(
      content::WebContents* parent_web_contents,
      std::unique_ptr<content::WebContents> child_web_contents,
-@@ -770,6 +778,7 @@ void PictureInPictureWindowManager::EnterStandaloneDocumentPictureInPicture(
-   }
+@@ -782,6 +790,7 @@ void PictureInPictureWindowManager::EnterStandaloneDocumentPictureInPicture(
+                                show_mode);
    document_pip_host_ = host->GetWeakPtr();
  }
 +#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
  
  std::unique_ptr<AutoPipSettingOverlayView>
  PictureInPictureWindowManager::GetOverlayView(
-@@ -780,6 +789,7 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -792,6 +801,7 @@ PictureInPictureWindowManager::GetOverlayView(
      return nullptr;
    }
  
@@ -111,7 +112,7 @@ index a9459a17146280b01198f95ee6fb9302177d4053..e1cd71cb71a96d0908dd38a63ae5bf28
    // It would be nice to create this in `EnterPictureInPicture*`, but detecting
    // auto-pip while pip is in the process of opening doesn't work.
    //
-@@ -818,6 +828,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -830,6 +840,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;
@@ -121,7 +122,7 @@ index a9459a17146280b01198f95ee6fb9302177d4053..e1cd71cb71a96d0908dd38a63ae5bf28
  
  PictureInPictureOcclusionTracker*
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
-index 17be7780f9c0a6c594406b5b90c123cc4113cf4c..26e5bd13dec81fd983ed9ff99ff4bfc2e8b8280d 100644
+index 7c391b3c037e891a6c190a283ed06afc7d9c38f6..d84a22bb14a8100182bd6ccc716812bb90ce9b35 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 @@ -13,6 +13,7 @@
@@ -140,15 +141,15 @@ index 17be7780f9c0a6c594406b5b90c123cc4113cf4c..26e5bd13dec81fd983ed9ff99ff4bfc2
    // Shows a standalone Document Picture-in-Picture window using a
    // `DocumentPipHost` instead of a `Browser`. Used when the
    // `kDocumentPipStandaloneWindow` feature is enabled. Takes ownership of the
-@@ -233,6 +235,7 @@ class PictureInPictureWindowManager {
+@@ -235,6 +237,7 @@ class PictureInPictureWindowManager {
        std::unique_ptr<content::WebContents> child_web_contents,
        blink::mojom::PictureInPictureWindowOptions pip_options,
-       bool focus_contents);
+       bool user_gesture);
 +#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
  
    std::unique_ptr<AutoPipSettingOverlayView> GetOverlayView(
        views::View* anchor_view,
-@@ -410,10 +413,12 @@ class PictureInPictureWindowManager {
+@@ -412,10 +415,12 @@ class PictureInPictureWindowManager {
  
    std::unique_ptr<PictureInPictureWindowManagerUmaHelper> uma_helper_;
  
@@ -162,7 +163,7 @@ index 17be7780f9c0a6c594406b5b90c123cc4113cf4c..26e5bd13dec81fd983ed9ff99ff4bfc2
  
    // The display of the opener window, cached during
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 35ce1e97a1260708d8e423c26d1e9a05d4c4a171..4bc00b5ebbbad99b6ed62c1d005dee5aeeff0088 100644
+index b46c56ac49219df7be1fd3b158539683c4a8147e..568bad687e00cfe6ad20a061fd55562cd83a7644 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -118,8 +118,10 @@ constexpr gfx::Size kMinWindowSize(284, 160);

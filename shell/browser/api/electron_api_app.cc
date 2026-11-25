@@ -91,6 +91,7 @@
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/weak_persistent.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/language_util.h"
 #include "shell/common/node_includes.h"
@@ -1121,7 +1122,8 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
   // The user_dir may not have been created yet.
   base::CreateDirectoryAndGetError(user_dir, nullptr);
 
-  auto cb = base::BindRepeating(&App::OnSecondInstance, base::Unretained(this));
+  auto cb = base::BindRepeating(&App::OnSecondInstance,
+                                gin_helper::WrapWeakPersistent(this));
 
   blink::CloneableMessage additional_data_message;
   args->GetNext(&additional_data_message);
@@ -1399,9 +1401,10 @@ void App::ImportCertificate(gin_helper::ErrorThrower thrower,
   }
 
   if (!certificate_manager_model_) {
-    CertificateManagerModel::Create(base::BindOnce(
-        &App::OnCertificateManagerModelCreated, base::Unretained(this),
-        std::move(options), std::move(callback)));
+    CertificateManagerModel::Create(
+        base::BindOnce(&App::OnCertificateManagerModelCreated,
+                       gin_helper::WrapWeakPersistent(this), std::move(options),
+                       std::move(callback)));
     return;
   }
 
@@ -1875,10 +1878,21 @@ v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
                        base::BindRepeating(&Browser::DockShow, browser));
     dock_obj.SetMethod("isVisible",
                        base::BindRepeating(&Browser::DockIsVisible, browser));
-    dock_obj.SetMethod("setMenu", base::BindRepeating(&App::DockSetMenu,
-                                                      base::Unretained(this)));
-    dock_obj.SetMethod("getMenu", base::BindRepeating(&App::DockGetMenu,
-                                                      base::Unretained(this)));
+    dock_obj.SetMethod(
+        "setMenu", base::BindRepeating(&App::DockSetMenu,
+                                       gin_helper::WrapWeakPersistent(this)));
+    // A weak receiver cannot be bound to a method with a return value, so
+    // check the persistent by hand and return null if the App has been
+    // collected.
+    dock_obj.SetMethod("getMenu",
+                       base::BindRepeating(
+                           [](const cppgc::WeakPersistent<App>& app,
+                              v8::Isolate* isolate) -> v8::Local<v8::Value> {
+                             if (!app)
+                               return v8::Null(isolate);
+                             return app->DockGetMenu(isolate);
+                           },
+                           gin_helper::WrapWeakPersistent(this)));
     dock_obj.SetMethod("setIcon",
                        base::BindRepeating(&Browser::DockSetIcon, browser));
 
@@ -2094,9 +2108,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
 #else
       .SetMethod("setAppUserModelId",
                  base::BindRepeating(&Browser::SetAppUserModelID, browser))
-      .SetMethod("setToastActivatorCLSID",
-                 base::BindRepeating(&App::SetToastActivatorCLSID,
-                                     base::Unretained(this)))
+      .SetMethod("setToastActivatorCLSID", &App::SetToastActivatorCLSID)
       .SetProperty("toastActivatorCLSID", &App::GetToastActivatorCLSID)
 #endif
       .SetMethod(

@@ -62,10 +62,10 @@ index fb3d79edb6cfe24b73f3522dd3c9113c16d532c7..9b4ae2f4e7c213edb9eb7d232177a3af
  void Compositor::SetSeamlessRefreshRates(
      const std::vector<float>& seamless_refresh_rates) {
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 7327ea9e5595ea5198085f03910716c25bd934f8..79a10c67af9cf2e964848df9e290fc880309abb8 100644
+index 7c3297062f4a0f255d21f0372de57c940a48905b..e84490feb57db48de69e9339544471e720a789a4 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -499,6 +499,10 @@ class COMPOSITOR_EXPORT Compositor
+@@ -509,6 +509,10 @@ class COMPOSITOR_EXPORT Compositor
  
    const cc::LayerTreeSettings& GetLayerTreeSettings() const;
  
@@ -76,7 +76,7 @@ index 7327ea9e5595ea5198085f03910716c25bd934f8..79a10c67af9cf2e964848df9e290fc88
    size_t saved_events_metrics_count_for_testing() const {
      return host_->saved_events_metrics_count_for_testing();
    }
-@@ -712,6 +716,12 @@ class COMPOSITOR_EXPORT Compositor
+@@ -722,6 +726,12 @@ class COMPOSITOR_EXPORT Compositor
    // See go/report-ux-metrics-at-painting for details.
    bool animation_started_ = false;
  

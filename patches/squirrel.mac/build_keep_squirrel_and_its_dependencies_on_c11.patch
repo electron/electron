@@ -1,0 +1,97 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 24 Nov 2026 23:45:16 +0000
+Subject: build: keep Squirrel and its dependencies on C11
+
+Chromium now builds C and Objective-C as C23, where an empty parameter
+list means the function or block takes no arguments. ReactiveObjC's
+RACReduceBlock is declared as `id (^)()` and relies on the pre-C23
+meaning, so Squirrel's reduce blocks with parameters no longer convert
+to it. Build these targets as C11, as they were before.
+
+This can be dropped once ReactiveObjC and Squirrel build as C23.
+
+diff --git a/BUILD.gn b/BUILD.gn
+index 58b416793776f90f88fab94b5f9e36ec7f92bfca..03eaac9105945ae47b3d20211193a2b01f961a91 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -4,6 +4,19 @@ import("//build/config/mac/rules.gni")
+ import("//build_overrides/build.gni")
+ import("filenames.gni")
+ 
++# Chromium builds C and Objective-C as C23, where an empty parameter list
++# declares a function or block that takes no arguments. ReactiveObjC's
++# RACReduceBlock (`id (^)()`) relies on the pre-C23 meaning, an unprototyped
++# block that can take any arguments, and Squirrel passes blocks with
++# parameters for it. Keep these targets on C11, as they were before Chromium
++# moved to C23. Applied as a config so it lands after Chromium's default
++# compiler config and its -std flag takes precedence. That config copies
++# cflags_c into cflags_objc itself, so set both here.
++config("c11") {
++  cflags_c = [ "-std=c11" ]
++  cflags_objc = [ "-std=c11" ]
++}
++
+ bundle_data("mantle_headers") {
+   sources = []
+   public_deps = []
+@@ -29,7 +42,10 @@ mac_framework_bundle("mantle_framework") {
+     "//build/config/gcc:symbol_visibility_hidden",
+   ]
+ 
+-  configs += [ "//build/config/compiler:no_chromium_code" ]
++  configs += [
++    "//build/config/compiler:no_chromium_code",
++    ":c11",
++  ]
+   public_deps = [ ":mantle_headers" ]
+   deps = []
+   frameworks = [
+@@ -108,7 +124,10 @@ mac_framework_bundle("reactiveobjc_framework") {
+     "//build/config/compiler:chromium_code",
+     "//build/config/gcc:symbol_visibility_hidden",
+   ]
+-  configs += [ "//build/config/compiler:no_chromium_code" ]
++  configs += [
++    "//build/config/compiler:no_chromium_code",
++    ":c11",
++  ]
+   deps = [
+     ":reactiveobjc_dtrace_RACCompoundDisposableProvider",
+     ":reactiveobjc_dtrace_RACSignalProvider",
+@@ -144,7 +163,10 @@ mac_framework_bundle("reactiveobjc_framework") {
+ executable("squirrel_shipit") {
+   output_name = "ShipIt"
+   configs -= [ "//build/config/compiler:chromium_code" ]
+-  configs += [ "//build/config/compiler:no_chromium_code" ]
++  configs += [
++    "//build/config/compiler:no_chromium_code",
++    ":c11",
++  ]
+   sources = [
+     "Squirrel/NSBundle+SQRLVersionExtensions.h",
+     "Squirrel/NSBundle+SQRLVersionExtensions.m",
+@@ -221,7 +243,10 @@ source_set("sparkle_binary_delta") {
+     "//build/config/compiler:chromium_code",
+     "//build/config/gcc:symbol_visibility_hidden",
+   ]
+-  configs += [ "//build/config/compiler:no_chromium_code" ]
++  configs += [
++    "//build/config/compiler:no_chromium_code",
++    ":c11",
++  ]
+   cflags = [
+     "-w",
+     "-include",
+@@ -248,7 +273,10 @@ mac_framework_bundle("squirrel_framework") {
+     "//build/config/compiler:chromium_code",
+     "//build/config/gcc:symbol_visibility_hidden",
+   ]
+-  configs += [ "//build/config/compiler:no_chromium_code" ]
++  configs += [
++    "//build/config/compiler:no_chromium_code",
++    ":c11",
++  ]
+   public_deps = [
+     ":squirrel_framework_headers",
+     ":squirrel_framework_shipit",

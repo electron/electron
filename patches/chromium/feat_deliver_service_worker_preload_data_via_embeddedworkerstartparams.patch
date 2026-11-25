@@ -16,10 +16,10 @@ WebServiceWorkerContextProxy::ElectronPreloadData() getter backed by
 WorkerGlobalScope.
 
 diff --git a/content/browser/service_worker/service_worker_version.cc b/content/browser/service_worker/service_worker_version.cc
-index 8a3e12a048975346d03ac6d6eb0536c3d2c45bb8..c71d11cb04f2320a50d26cae5b75d48f7f9ad254 100644
+index e29aa6d8c6ebbc23fdea6bd9a4d0a9d62989dd5e..5e6f5cf9e4062f2e91071f3e42eae46e2d5faec9 100644
 --- a/content/browser/service_worker/service_worker_version.cc
 +++ b/content/browser/service_worker/service_worker_version.cc
-@@ -2915,6 +2915,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
+@@ -2927,6 +2927,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
    params->ukm_source_id = ukm_source_id_;
    params->storage_key = key_;
  
@@ -33,10 +33,10 @@ index 8a3e12a048975346d03ac6d6eb0536c3d2c45bb8..c71d11cb04f2320a50d26cae5b75d48f
    if (policy_container_host_) {
      params->policy_container =
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 2a741acfe600db92c5ffc48778ad9e543006eed7..427dc6ce9fc598f0483cd9a139a4ebc1ad4cb2d5 100644
+index 30a6151f9092f9b190a3b1dbffb25e79891dbe79..67639f4e78f76e1cdbcaa74276f7d87d68c5c1d5 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -859,6 +859,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
+@@ -857,6 +857,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
    return std::nullopt;
  }
  
@@ -51,7 +51,7 @@ index 2a741acfe600db92c5ffc48778ad9e543006eed7..427dc6ce9fc598f0483cd9a139a4ebc1
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index a74fb8a2cdbfd28931b7e7b59d84f8614e8156a4..1a6380a83aaf5dfbcbf776675283d25624b10b3c 100644
+index 1fb6e139821da1b0419820c2e41fa02cdea87673..3ea10e578f8b211ff748aa9918b8d07e7fb75162 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -1340,6 +1340,17 @@ class CONTENT_EXPORT ContentBrowserClient {
@@ -169,18 +169,18 @@ index a3bfdd9c15d3cfc5053c2a36767ea7964f2740fd..d9d608ea5b01cff08654b11e455fd7af
        WebFetchClientSettingsObject outside_fetch_client_settings_object)
        : wait_for_debugger_mode(kDontWaitForDebugger),
 diff --git a/third_party/blink/renderer/core/workers/global_scope_creation_params.h b/third_party/blink/renderer/core/workers/global_scope_creation_params.h
-index 676e95ed3fc6f783a8518e4bc677d2ee4523133a..e374b48a23442e2de10f641b223dff11914cb95d 100644
+index 212bf9d25d5b2eca81fbc20fae5027bf651d7706..5786aef98a5c00a00c47c8ffdb91092a72614404 100644
 --- a/third_party/blink/renderer/core/workers/global_scope_creation_params.h
 +++ b/third_party/blink/renderer/core/workers/global_scope_creation_params.h
-@@ -11,6 +11,7 @@
- #include "base/memory/raw_ptr.h"
+@@ -12,6 +12,7 @@
  #include "base/task/single_thread_task_runner.h"
+ #include "base/time/time.h"
  #include "base/unguessable_token.h"
 +#include "mojo/public/cpp/base/big_buffer.h"
  #include "mojo/public/cpp/bindings/pending_remote.h"
  #include "net/storage_access_api/status.h"
  #include "services/metrics/public/cpp/ukm_source_id.h"
-@@ -270,6 +271,11 @@ struct CORE_EXPORT GlobalScopeCreationParams final {
+@@ -276,6 +277,11 @@ struct CORE_EXPORT GlobalScopeCreationParams final {
    // Shared and service worker scripts have no ResourceTiming entry.
    KURL dedicated_worker_script_initiator_url;
  
@@ -193,10 +193,10 @@ index 676e95ed3fc6f783a8518e4bc677d2ee4523133a..e374b48a23442e2de10f641b223dff11
    const net::StorageAccessApiStatus parent_storage_access_api_status;
  
 diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.cc b/third_party/blink/renderer/core/workers/worker_global_scope.cc
-index 87fab3e38097e8e3c99b3066857c8858bf65e362..88c425af88e58e8cf95501988386891511758306 100644
+index 22c02e5d2672db7928e490946187e01d4234a29f..3139f0ae82590012618264c9a2aeef20811e1d79 100644
 --- a/third_party/blink/renderer/core/workers/worker_global_scope.cc
 +++ b/third_party/blink/renderer/core/workers/worker_global_scope.cc
-@@ -943,6 +943,9 @@ WorkerGlobalScope::WorkerGlobalScope(
+@@ -945,6 +945,9 @@ WorkerGlobalScope::WorkerGlobalScope(
            std::move(creation_params->top_level_frame_security_origin)) {
    // Workers should always maintain the default world of an isolate.
    CHECK(creation_params->is_default_world_of_isolate);
@@ -242,10 +242,10 @@ index ec5b41f1a3ac7680edda1b9bf28135d6b8e6cb89..4b4fc824059e0b2ed58f9311ca473a3b
    // DevTools agents being configured while waiting for debugger) till the main
    // script has completed loading. This is so that VT does not run while script
 diff --git a/third_party/blink/renderer/modules/exported/web_embedded_worker_impl.cc b/third_party/blink/renderer/modules/exported/web_embedded_worker_impl.cc
-index e43859ccd78ec553ccdab98b0fee6a4de5f6d453..d861170b314feb30902574c1972df0473783a9ae 100644
+index dadaf91eb85ea14107346e1833abe4a8603c572f..59341748ee16e0aa37017b63247f0d80e91ffa02 100644
 --- a/third_party/blink/renderer/modules/exported/web_embedded_worker_impl.cc
 +++ b/third_party/blink/renderer/modules/exported/web_embedded_worker_impl.cc
-@@ -251,6 +251,9 @@ void WebEmbeddedWorkerImpl::StartWorkerThread(
+@@ -252,6 +252,9 @@ void WebEmbeddedWorkerImpl::StartWorkerThread(
        /*origin_to_use=*/nullptr, std::move(coep_reporting_observer),
        std::move(dip_reporting_observer));
  

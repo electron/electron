@@ -50,6 +50,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
+#include "shell/common/gin_helper/weak_persistent.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/process_util.h"
@@ -298,9 +299,7 @@ class JSChunkedDataPipeGetter final
     data_producer_->Write(
         std::make_unique<BufferDataSource>(buffer),
         base::BindOnce(&JSChunkedDataPipeGetter::OnWriteChunkComplete,
-                       // We're OK to use Unretained here because we own
-                       // |data_producer_|.
-                       base::Unretained(this)));
+                       gin_helper::WrapWeakPersistent(this)));
     return handle;
   }
 

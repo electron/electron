@@ -284,7 +284,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
           handshake_client,
       WebSocketOptions options) override;
-  bool WillInterceptWebSocket(content::RenderFrameHost*) override;
+  bool WillInterceptWebSocket(
+      content::RenderFrameHost* frame,
+      content::BrowserContext* browser_context) override;
   bool HasWebRequestAPIProxy(content::BrowserContext* browser_context) override;
   void WillCreateURLLoaderFactory(
       content::BrowserContext* browser_context,

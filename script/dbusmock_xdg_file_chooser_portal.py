@@ -28,6 +28,13 @@ REQUEST_IFACE = 'org.freedesktop.portal.Request'
 RESPONSE_SUCCESS = 0
 RESPONSE_USER_CANCELLED = 1
 
+# Chromium treats an accept that arrives less than 500ms after it made the
+# request (kFileDialogMinDisplayDuration) as a cancellation, since no user
+# could have seen the dialog by then. Answer well after that.
+RESPONSE_DELAY_MS = 1000
+# Interval at which an unacknowledged Response is repeated.
+RESPONSE_REPEAT_MS = 200
+
 
 def load(mock, parameters):
     """Set up the FileChooser interface on the mock object."""
@@ -74,8 +81,9 @@ def handle_file_chooser_call(self, _parent_window, _title, _options):
     request.response_pending = True
 
     # Emit the Response on a delay so the client has re-subscribed to the
-    # returned request path, and repeat it until the client acknowledges by
-    # closing the request (a slow subscriber cannot miss it).
+    # returned request path and will accept it, and repeat it until the
+    # client acknowledges by closing the request (a slow subscriber cannot
+    # miss it).
     state = {'remaining': 25}
 
     def emit_response():
@@ -87,6 +95,11 @@ def handle_file_chooser_call(self, _parent_window, _title, _options):
         state['remaining'] -= 1
         return state['remaining'] > 0
 
-    GLib.timeout_add(200, emit_response)
+    def start_responding():
+        if emit_response():
+            GLib.timeout_add(RESPONSE_REPEAT_MS, emit_response)
+        return False
+
+    GLib.timeout_add(RESPONSE_DELAY_MS, start_responding)
 
     return dbus.ObjectPath(request_path)
