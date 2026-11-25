@@ -8,6 +8,7 @@
 
 #include "base/functional/bind.h"
 #include "base/functional/callback.h"
+#include "base/memory/raw_ptr_exclusion.h"
 #import "shell/browser/mac/electron_application.h"
 #include "shell/common/gc_plugin.h"
 
@@ -16,8 +17,11 @@
 
 @interface MacLockMonitor : NSObject {
  @private
+  // PowerMonitor is garbage collected, so raw_ptr<T> (which is for
+  // PartitionAlloc memory) does not apply to it. Each monitor removes itself
+  // in DestroyPlatformSpecificMonitors().
   GC_PLUGIN_IGNORE("ObjC class cannot participate in cppgc tracing")
-  std::vector<electron::api::PowerMonitor*> emitters;
+  RAW_PTR_EXCLUSION std::vector<electron::api::PowerMonitor*> emitters;
 }
 
 - (void)addEmitter:(electron::api::PowerMonitor*)monitor_;
