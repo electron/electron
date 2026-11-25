@@ -42,6 +42,11 @@ declare_args() {
   # same mechanism that makes V8's mksnapshot cross-arch correct. Cross-OS is
   # untested and stays off.
   electron_generate_js2c_code_cache = host_os == target_os
+
+  # Overrides for the default fuse states in build/fuses/fuses.json5, as a
+  # list of "<fuse>=<state>" strings. build/args/testing.gn uses this to keep
+  # fuses on that the test suite relies on; release builds ship the defaults.
+  electron_fuse_overrides = []
 }
 
 if (is_mac) {
@@ -457,7 +462,7 @@ action("electron_fuses") {
     "$target_gen_dir/fuses.cc",
   ]
 
-  args = rebase_path(outputs)
+  args = rebase_path(outputs) + electron_fuse_overrides
 }
 
 action("electron_generate_node_defines") {

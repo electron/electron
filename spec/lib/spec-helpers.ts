@@ -130,7 +130,11 @@ class RemoteControlApp {
   };
 }
 
-export async function startRemoteControlApp(extraArgs: string[] = [], options?: childProcess.SpawnOptionsWithoutStdio) {
+export async function startRemoteControlApp(
+  extraArgs: string[] = [],
+  options?: childProcess.SpawnOptionsWithoutStdio,
+  execPath = process.execPath
+) {
   const appPath = path.join(import.meta.dirname, '..', 'fixtures', 'apps', 'remote-control');
   // The app quits by itself after --remote-app-timeout (30s unless given) in
   // case nothing stops it. A test can run for longer than that (sanitizer
@@ -141,11 +145,7 @@ export async function startRemoteControlApp(extraArgs: string[] = [], options?: 
   const timeoutArgs = extraArgs.some((arg) => arg.startsWith('--remote-app-timeout='))
     ? []
     : [`--remote-app-timeout=${getSpecTimeout()}`];
-  const appProcess = childProcess.spawn(
-    process.execPath,
-    [appPath, ...ciGpuArgs, ...timeoutArgs, ...extraArgs],
-    options
-  );
+  const appProcess = childProcess.spawn(execPath, [appPath, ...ciGpuArgs, ...timeoutArgs, ...extraArgs], options);
   // Register cleanup before awaiting the port so a stalled startup that trips
   // the test's timeout doesn't leak the child into the in-job retry.
   defer(() => {

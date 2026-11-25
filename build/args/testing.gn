@@ -5,3 +5,12 @@ is_component_ffmpeg = true
 is_official_build = false
 dcheck_always_on = true
 symbol_level = 1
+
+# Release builds ship with the run_as_node and node_options fuses off (see
+# build/fuses/fuses.json5). The test suite forks child processes and runs
+# Electron as Node.js, so keep both on here; spec/fuses.spec.ts checks the
+# shipped defaults on a copy of the app.
+electron_fuse_overrides = [
+  "run_as_node=1",
+  "node_options=1",
+]
