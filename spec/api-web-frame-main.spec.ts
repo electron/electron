@@ -4,6 +4,7 @@ import {
   webFrameMain,
   ipcMain,
   app,
+  session,
   type WebContents,
   clipboard
 } from 'electron/main';
@@ -234,6 +235,82 @@ describe('webFrameMain module', () => {
       expect(webFrame).toHaveProperty('processId', expect.any(Number));
       expect(webFrame).toHaveProperty('routingId', expect.any(Number));
       expect(webFrame).toHaveProperty('frameToken', expect.any(String));
+      expect(webFrame).toHaveProperty('documentId', expect.any(String));
+    });
+  });
+
+  describe('WebFrame.documentId', () => {
+    let server: Server;
+
+    beforeAll(async () => {
+      server = await createServer();
+    });
+    afterAll(() => {
+      server.server.close();
+    });
+
+    it('is a non-empty string that is stable for the life of a document', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL(server.url);
+      const { mainFrame } = w.webContents;
+      const { documentId } = mainFrame;
+      expect(documentId).toMatch(/^[0-9A-F]{32}$/);
+      expect(mainFrame.documentId).toBe(documentId);
+
+      // A same-document navigation keeps the document.
+      const navigatedInPage = once(w.webContents, 'did-navigate-in-page');
+      await mainFrame.executeJavaScript("location.hash = 'fragment'");
+      await navigatedInPage;
+      expect(mainFrame.documentId).toBe(documentId);
+    });
+
+    it('differs between a main frame and a subframe', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(subframesPath, 'frame-with-frame.html'));
+      const { mainFrame } = w.webContents;
+      const [subframe] = mainFrame.frames;
+      expect(subframe.documentId).toMatch(/^[0-9A-F]{32}$/);
+      expect(subframe.documentId).not.toBe(mainFrame.documentId);
+    });
+
+    it('changes after a cross-document navigation', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL(server.url);
+      const { mainFrame } = w.webContents;
+      const first = mainFrame.documentId;
+
+      await w.loadURL(`${server.url}?same-origin`);
+      const second = mainFrame.documentId;
+      expect(second).not.toBe(first);
+
+      await w.loadURL(server.crossOriginUrl);
+      expect(w.webContents.mainFrame).toBe(mainFrame);
+      expect(mainFrame.documentId).not.toBe(first);
+      expect(mainFrame.documentId).not.toBe(second);
+    });
+
+    it('throws when the frame is disposed', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL(server.url);
+      const { mainFrame } = w.webContents;
+      w.destroy();
+      await waitUntil(() => mainFrame.isDestroyed());
+      expect(() => mainFrame.documentId).toThrow(/Render frame was disposed/);
+    });
+
+    it('matches sender.documentId of an extension message sent from the frame', async () => {
+      const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'lazy-background-page'));
+      // The fixture's content script reports the background page's reply over
+      // ipcRenderer, which it reaches through the page's require().
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { session: customSession, nodeIntegration: true, contextIsolation: false }
+      });
+      const response = once(ipcMain, 'bg-page-message-response');
+      await w.loadURL(server.url);
+      const [, { sender }] = await response;
+      expect(sender.documentId).toBe(w.webContents.mainFrame.documentId);
     });
   });
 
