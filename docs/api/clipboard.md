@@ -35,7 +35,10 @@ custom formats Electron exposes are:
   `getType('electron application/bookmark')` resolves to
   `{ title: string, url: string }`.
 * `electron application/findtext` (_macOS_) — the contents of the
-  active app's find pasteboard.
+  system find pasteboard, which macOS apps use to share the current
+  search text (e.g. for "Use Selection for Find"). It is separate from
+  the general clipboard, so writing it does not replace the clipboard's
+  other contents. See [Supporting "Use Selection for Find"](../tutorial/application-menu.md#supporting-use-selection-for-find-macos).
 * `electron application/osclipboard;format="<name>"` — a raw payload
   for a platform-specific clipboard format. The `<name>` is the
   platform format (e.g. `HTML Format` on Windows or
