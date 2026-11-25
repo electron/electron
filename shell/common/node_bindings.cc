@@ -583,6 +583,8 @@ void NodeBindings::StopPolling() {
   // Wait for it to exit.
   uv_thread_join(&embed_thread_);
 
+  weak_factory_.InvalidateWeakPtrs();
+
   // Drain any leftover semaphore posts so the next embed thread starts
   // in a clean lock-step state. A stale count can occur if UvRunOnce
   // posted sem_post concurrently with our StopPolling sem_post — the
