@@ -21,8 +21,6 @@ register_product there), so `wpt run electron ...` works without changes to
 wpt.
 """
 
-import ctypes
-import ctypes.util
 import json
 import os
 import subprocess
@@ -198,8 +196,6 @@ class ElectronBrowser(ChromeBrowser):
       # pylint: disable-next=attribute-defined-outside-init
       self.env = dict(self.env, DISPLAY=f":{display}")
       self.logger.info(f"Electron: private Xvfb on DISPLAY=:{display}")
-      if not _park_pointer(f":{display}"):
-        self.logger.warning("Electron: could not move the X pointer")
     super().start(group_metadata, **kwargs)
 
   def cleanup(self):
@@ -215,40 +211,6 @@ class ElectronBrowser(ChromeBrowser):
     if self._explicit_port:
       cmd = [a for a in cmd if a != "--ignore-explicit-port"]
     return cmd
-
-
-def _park_pointer(display):
-  """Moves the X pointer to the bottom right corner of the screen.
-
-  Xvfb starts with the pointer in the middle of the screen, which is inside
-  every window Electron opens. Aura then mixes mouse events at that position
-  into the ones a test sends through WebDriver, so an element a test hovers
-  gets a pointerout a few milliseconds later. Headless Chromium has no native
-  pointer.
-  """
-  name = ctypes.util.find_library("X11")
-  if not name:
-    return False
-  try:
-    x11 = ctypes.CDLL(name)
-  except OSError:
-    return False
-  x11.XOpenDisplay.restype = ctypes.c_void_p
-  x11.XDefaultRootWindow.argtypes = [ctypes.c_void_p]
-  x11.XDefaultRootWindow.restype = ctypes.c_ulong
-  x11.XWarpPointer.argtypes = [
-      ctypes.c_void_p, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_int,
-      ctypes.c_int, ctypes.c_uint, ctypes.c_uint, ctypes.c_int, ctypes.c_int
-  ]
-  x11.XCloseDisplay.argtypes = [ctypes.c_void_p]
-  handle = x11.XOpenDisplay(display.encode())
-  if not handle:
-    return False
-  # Coordinates past the edge are clamped to the screen.
-  x11.XWarpPointer(handle, 0, x11.XDefaultRootWindow(handle), 0, 0, 0, 0,
-                   32767, 32767)
-  x11.XCloseDisplay(handle)
-  return True
 
 
 class ElectronRefTestExecutor(ChromeDriverRefTestExecutor):

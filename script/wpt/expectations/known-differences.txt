@@ -55,6 +55,11 @@
 # either.
 /speculation-rules/speculation-measurement/performance-speculations-navigations-pointerdown.tentative.https.html
 
+# Electron runs in a window under Xvfb, where the native X pointer sits inside
+# the window and its mouse events cancel the hover the test sends through
+# WebDriver. Headless Chromium has no native pointer.
+/speculation-rules/speculation-tags/prefetch-eagerness-pointer-hover.https.html
+
 # screen.orientation.lock() has no ScreenOrientationDelegate.
 /screen-orientation/*
 
