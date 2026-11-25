@@ -13,7 +13,7 @@ messages in the legacy window handle layer.
 These conditions are regularly hit with WCO-enabled windows on Windows.
 
 diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.cc b/content/browser/renderer_host/legacy_render_widget_host_win.cc
-index 7056c25ad01486c9889cbfa1943543cddc7ab641..42fb9bfa84556fc5895712a9228a8c692007d6a6 100644
+index 493e342e714296ed4114e3354242fb4444cd4b99..f33c6a991fe3f4cf21987ab39ec091cdd0a2d720 100644
 --- a/content/browser/renderer_host/legacy_render_widget_host_win.cc
 +++ b/content/browser/renderer_host/legacy_render_widget_host_win.cc
 @@ -465,12 +465,12 @@ LRESULT LegacyRenderWidgetHostHWND::OnKeyboardRange(UINT message,
@@ -44,10 +44,10 @@ index 7056c25ad01486c9889cbfa1943543cddc7ab641..42fb9bfa84556fc5895712a9228a8c69
      // modal loop is entered and the tab is closed). See crbug.com/503793153.
      if (ref) {
 diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.h b/content/browser/renderer_host/legacy_render_widget_host_win.h
-index 0feb0801f995afd476c01654541d7a3a55ed776d..d3841b42a398ce818c75c9d7eaf902ae210414be 100644
+index 144ce84b449a913078c554ae50a4851eacf6a48e..2d193e6f178e18086a8e92aad32be336945a21f7 100644
 --- a/content/browser/renderer_host/legacy_render_widget_host_win.h
 +++ b/content/browser/renderer_host/legacy_render_widget_host_win.h
-@@ -101,6 +101,7 @@ class CONTENT_EXPORT LegacyRenderWidgetHostHWND
+@@ -103,6 +103,7 @@ class CONTENT_EXPORT LegacyRenderWidgetHostHWND
      CR_MESSAGE_HANDLER_EX(WM_NCHITTEST, OnNCHitTest)
      CR_MESSAGE_RANGE_HANDLER_EX(WM_NCMOUSEMOVE, WM_NCXBUTTONDBLCLK,
                                  OnMouseRange)
