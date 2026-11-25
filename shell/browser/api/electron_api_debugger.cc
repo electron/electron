@@ -13,6 +13,7 @@
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
 #include "base/memory/raw_ptr.h"
+#include "base/strings/string_number_conversions.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -29,6 +30,94 @@
 using content::DevToolsAgentHost;
 
 namespace electron::api {
+
+namespace {
+
+// Extracts the command id from a protocol message that failed to parse.
+// The message cannot be read as JSON, so this scans only its shallow
+// structure: it skips strings and nested containers and looks for a
+// top-level integer "id" key. Returns std::nullopt when there is no such
+// id, in which case the message is dropped as before.
+std::optional<int> FindTopLevelId(std::string_view message) {
+  enum class Token { Value, Key };
+  size_t depth = 0;
+  Token token = Token::Value;
+  bool in_string = false;
+  bool escaped = false;
+  size_t key_begin = 0;
+  bool key_is_id = false;
+
+  for (size_t i = 0; i < message.size(); ++i) {
+    const char c = message[i];
+    if (in_string) {
+      if (escaped) {
+        escaped = false;
+      } else if (c == '\\') {
+        escaped = true;
+      } else if (c == '"') {
+        in_string = false;
+        if (depth == 1 && token == Token::Key)
+          key_is_id = message.substr(key_begin, i - key_begin) == "id";
+      }
+      continue;
+    }
+
+    switch (c) {
+      case '"':
+        in_string = true;
+        key_begin = i + 1;
+        continue;
+      case '{':
+      case '[':
+        ++depth;
+        token = c == '{' ? Token::Key : Token::Value;
+        continue;
+      case '}':
+      case ']':
+        if (depth > 0)
+          --depth;
+        token = Token::Value;
+        continue;
+      case ',':
+        if (depth == 1)
+          token = Token::Key;
+        continue;
+      case ':': {
+        if (depth != 1 || !key_is_id)
+          continue;
+        // Read the integer that follows and require the value to end at the
+        // next key or at the end of the object. Anything else, for example a
+        // float or a string, is not a command id.
+        size_t j = i + 1;
+        while (j < message.size() && (message[j] == ' ' || message[j] == '\t' ||
+                                      message[j] == '\n' || message[j] == '\r'))
+          ++j;
+        const size_t digits_begin = j;
+        if (j < message.size() && message[j] == '-')
+          ++j;
+        while (j < message.size() && message[j] >= '0' && message[j] <= '9')
+          ++j;
+        const std::string_view number =
+            message.substr(digits_begin, j - digits_begin);
+        while (j < message.size() && (message[j] == ' ' || message[j] == '\t' ||
+                                      message[j] == '\n' || message[j] == '\r'))
+          ++j;
+        if (number.empty() || j >= message.size() ||
+            (message[j] != ',' && message[j] != '}'))
+          return std::nullopt;
+        int id = 0;
+        if (!base::StringToInt(number, &id))
+          return std::nullopt;
+        return id;
+      }
+      default:
+        continue;
+    }
+  }
+  return std::nullopt;
+}
+
+}  // namespace
 
 gin::WrapperInfo Debugger::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronDebugger);
@@ -89,7 +178,24 @@ class Debugger::AgentHostLifecycle final
     const std::string_view message_str = base::as_string_view(message);
     std::optional<base::Value> parsed_message = base::JSONReader::Read(
         message_str, base::JSON_REPLACE_INVALID_CHARACTERS);
-    if (!parsed_message || !parsed_message->is_dict())
+    if (!parsed_message) {
+      // Chromium's JSON parser refuses to read anything nested more than 200
+      // levels deep, and real protocol payloads like sampling heap profiles
+      // can be deeper. A reply that fails to parse used to be dropped, which
+      // left the sendCommand() promise for it unsettled forever, so find the
+      // command id from the shallow prefix of the message and reject it.
+      if (std::optional<int> id = FindTopLevelId(message_str)) {
+        auto it = pending_requests_.find(*id);
+        if (it != pending_requests_.end()) {
+          gin_helper::Promise<base::DictValue> promise = std::move(it->second);
+          pending_requests_.erase(it);
+          promise.RejectWithErrorMessage(
+              "Failed to parse the protocol message");
+        }
+      }
+      return;
+    }
+    if (!parsed_message->is_dict())
       return;
     base::DictValue& dict = parsed_message->GetDict();
     std::optional<int> id = dict.FindInt("id");
