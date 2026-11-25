@@ -1,0 +1,7 @@
+[
+  {
+    "id": 1,
+    "action": { "type": "block" },
+    "condition": { "urlFilter": "blocked-by-disabled-ruleset" }
+  }
+]
