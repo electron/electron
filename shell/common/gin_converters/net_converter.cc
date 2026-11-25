@@ -38,6 +38,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
+#include "shell/common/gin_helper/weak_persistent.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -371,10 +372,10 @@ class ChunkedDataPipeReadableStream final
     }
     chunked_data_pipe_getter_.set_disconnect_handler(
         base::BindOnce(&ChunkedDataPipeReadableStream::OnDataPipeGetterClosed,
-                       base::Unretained(this)));
+                       gin_helper::WrapWeakPersistent(this)));
     chunked_data_pipe_getter_->GetSize(
         base::BindOnce(&ChunkedDataPipeReadableStream::OnSizeReceived,
-                       base::Unretained(this)));
+                       gin_helper::WrapWeakPersistent(this)));
     mojo::ScopedDataPipeProducerHandle data_pipe_producer;
     mojo::ScopedDataPipeConsumerHandle data_pipe_consumer;
     MojoResult result =
@@ -429,7 +430,7 @@ class ChunkedDataPipeReadableStream final
           data_pipe_.get(),
           MOJO_HANDLE_SIGNAL_READABLE | MOJO_HANDLE_SIGNAL_PEER_CLOSED,
           base::BindRepeating(&ChunkedDataPipeReadableStream::OnHandleReadable,
-                              base::Unretained(this)));
+                              gin_helper::WrapWeakPersistent(this)));
     }
 
     size_t num_bytes = buf->ByteLength();

@@ -31,7 +31,7 @@ index b16268e2f727749fdc95f63c5c9fb2f75d30214f..989eadee623e240cc61ac98bbe940897
        const GURL& origin,
        const GURL& document_url,
 diff --git a/content/browser/notifications/blink_notification_service_impl.cc b/content/browser/notifications/blink_notification_service_impl.cc
-index 3de4730b6a74675744a2c9395d677d759bf21990..56aa24b551e27f3a933d0205adadaee77d3939b0 100644
+index 8fe6fb1bfc44cc4eca6a63f11fbce07418daf10f..1df24d03f9ec3375b66f0de0216123b4b22bc378 100644
 --- a/content/browser/notifications/blink_notification_service_impl.cc
 +++ b/content/browser/notifications/blink_notification_service_impl.cc
 @@ -90,12 +90,14 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
@@ -82,10 +82,10 @@ index 89edc47028e80170bcc0f11a0f27d30067d1ef6c..3655e3167bf91d8397251e20b7890968
  
    scoped_refptr<ServiceWorkerContextWrapper> service_worker_context_;
 diff --git a/content/browser/notifications/blink_notification_service_impl_unittest.cc b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-index f13671026a58b01a0a3c658937b3714dc6aa21c4..85510ddc2bad714853d8c8445454a895e068d450 100644
+index e1f05bc7f4f43e4284dc951ed920ac2ac690470d..acf9b1006dd0bfec5c1e38e8e6366156dddd8729 100644
 --- a/content/browser/notifications/blink_notification_service_impl_unittest.cc
 +++ b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-@@ -137,7 +137,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
+@@ -191,7 +191,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
      notification_service_ = std::make_unique<BlinkNotificationServiceImpl>(
          notification_context_.get(), &browser_context_,
          embedded_worker_helper_->context_wrapper(), &render_process_host_,
@@ -160,10 +160,10 @@ index ff376678fd3f13d30c285022c1da2749cda729f0..7503445b52239bd9f66077175ac10b03
        const GURL& origin,
        const GURL& document_url,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 7141f19f7875c6e29a94e8cf9aecaac44e37323e..6f336daf3703df925d1f9a025b50aef9a92da730 100644
+index 55dc704e7016f036769c09620a912cef38e0e670..7e318c7304a955f16937ea9745a42e35dfd7a419 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2575,7 +2575,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2594,7 +2594,7 @@ void RenderProcessHostImpl::CreateNotificationService(
      case RenderProcessHost::NotificationServiceCreatorType::kSharedWorker:
      case RenderProcessHost::NotificationServiceCreatorType::kDedicatedWorker: {
        storage_partition_impl_->GetPlatformNotificationContext()->CreateService(
@@ -172,7 +172,7 @@ index 7141f19f7875c6e29a94e8cf9aecaac44e37323e..6f336daf3703df925d1f9a025b50aef9
            creator_type, std::move(receiver));
        break;
      }
-@@ -2583,7 +2583,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2602,7 +2602,7 @@ void RenderProcessHostImpl::CreateNotificationService(
        CHECK(rfh);
  
        storage_partition_impl_->GetPlatformNotificationContext()->CreateService(

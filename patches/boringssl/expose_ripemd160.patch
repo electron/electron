@@ -82,10 +82,10 @@ index 584b1390a841cc1b1dcb69e16d8242a88e4bb9cb..637aeccb8de8d793eabc38e32bef6834
  
  void EVP_MD_do_all(void (*callback)(const EVP_MD *md, const char *name,
 diff --git a/include/openssl/digest.h b/include/openssl/digest.h
-index 2ce07382db807f254061bdb006fb40d91bbcea2b..ac8c10ba4da4a70d16a60044a1d65069cc370cc7 100644
+index 93d8e857e9fd30e8862c4eb8f36a36afa6742da0..76ab09d11a133a8cfc58e693e3d5f1dc9e4bcc5d 100644
 --- a/include/openssl/digest.h
 +++ b/include/openssl/digest.h
-@@ -75,6 +75,9 @@ OPENSSL_EXPORT const EVP_MD *EVP_shake256(void);
+@@ -78,6 +78,9 @@ OPENSSL_EXPORT const EVP_MD *EVP_shake256(void);
  
  // Digest lookup functions.
  

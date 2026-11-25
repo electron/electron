@@ -9,6 +9,7 @@
 #include <wtsapi32.h>
 
 #include "base/functional/bind.h"
+#include "shell/common/gin_helper/weak_persistent.h"
 #include "ui/base/win/session_change_observer.h"
 
 namespace electron::api {
@@ -16,10 +17,9 @@ namespace electron::api {
 void PowerMonitor::InitPlatformSpecificMonitors() {
   // Suspend and resume come from base::PowerMonitor; session lock and unlock
   // come from WTS session change notifications delivered on the UI thread.
-  // Destroying the observer cancels the callback, so Unretained is safe.
-  session_change_observer_ =
-      std::make_unique<ui::SessionChangeObserver>(base::BindRepeating(
-          &PowerMonitor::OnSessionChange, base::Unretained(this)));
+  session_change_observer_ = std::make_unique<ui::SessionChangeObserver>(
+      base::BindRepeating(&PowerMonitor::OnSessionChange,
+                          gin_helper::WrapWeakPersistent(this)));
 }
 
 void PowerMonitor::DestroyPlatformSpecificMonitors() {

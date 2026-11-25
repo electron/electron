@@ -25,6 +25,7 @@
 #include "shell/browser/net/system_network_context_manager.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/weak_persistent.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
@@ -145,8 +146,8 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
 
   network_context->CreateNetLogExporter(
       net_log_exporter_.BindNewPipeAndPassReceiver());
-  net_log_exporter_.set_disconnect_handler(
-      base::BindOnce(&NetLog::OnConnectionError, base::Unretained(this)));
+  net_log_exporter_.set_disconnect_handler(base::BindOnce(
+      &NetLog::OnConnectionError, gin_helper::WrapWeakPersistent(this)));
 
   file_task_runner_->PostTaskAndReplyWithResult(
       FROM_HERE, base::BindOnce(OpenFileForWriting, log_path),
@@ -180,7 +181,8 @@ void NetLog::StartNetLogAfterCreateFile(net::NetLogCaptureMode capture_mode,
   net_log_exporter_->Start(
       std::move(output_file), std::move(custom_constants), capture_mode,
       net::NetLogFileFormat::kJson, max_file_size,
-      base::BindOnce(&NetLog::NetLogStarted, base::Unretained(this)));
+      base::BindOnce(&NetLog::NetLogStarted,
+                     gin_helper::WrapWeakPersistent(this)));
 }
 
 void NetLog::NetLogStarted(int32_t error) {

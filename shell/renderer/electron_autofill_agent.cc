@@ -112,16 +112,14 @@ void AutofillAgent::TextFieldValueChangedImpl(
   ShowSuggestions(element, {.requires_caret_at_end = true});
 }
 
-bool AutofillAgent::DidReceiveKeyDown(const blink::WebElement& element,
-                                      const blink::WebKeyboardEvent& event) {
-  if (auto input_element = element.DynamicTo<blink::WebInputElement>();
-      input_element && input_element.IsTextField() &&
-      (event.windows_key_code == ui::VKEY_DOWN ||
-       event.windows_key_code == ui::VKEY_UP)) {
+void AutofillAgent::TextFieldDidReceiveKeyDown(
+    const blink::WebInputElement& input_element,
+    const blink::WebKeyboardEvent& event) {
+  if (input_element.IsTextField() && (event.windows_key_code == ui::VKEY_DOWN ||
+                                      event.windows_key_code == ui::VKEY_UP)) {
     ShowSuggestions(input_element, {.autofill_on_empty_values = true,
                                     .requires_caret_at_end = true});
   }
-  return false;
 }
 
 void AutofillAgent::OpenTextDataListChooser(

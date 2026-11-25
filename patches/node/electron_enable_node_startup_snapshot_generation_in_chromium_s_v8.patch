@@ -291,7 +291,7 @@ index 0842cba257d0ca36e07c97736e5b24cc77f2a053..0ee1bd02a03b6d303861cd0f8353db6c
        node::InitializeOncePerProcess(
            std::vector<std::string>(argv, argv + argc),
 diff --git a/unofficial.gni b/unofficial.gni
-index 1fad56169f5c813dd6f6216b6a1278e5415a5972..0a8455bdd06a6d4d53d19bf49687772a87cc5340 100644
+index 49abd004e74c6e6efe558d1790ab72a42f0fce4b..8acde602108642527b0576e01032802965449618 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -42,7 +42,22 @@ template("node_gn_build") {
@@ -330,7 +330,7 @@ index 1fad56169f5c813dd6f6216b6a1278e5415a5972..0a8455bdd06a6d4d53d19bf49687772a
        "$root_gen_dir/electron_natives.cc",
        "$target_gen_dir/node_javascript.cc",
      ] + gypi_values.node_sources
-@@ -286,20 +304,12 @@ template("node_gn_build") {
+@@ -288,20 +306,12 @@ template("node_gn_build") {
      sources = [ "src/node_main.cc" ]
      deps = [
        ":libnode",
@@ -355,7 +355,7 @@ index 1fad56169f5c813dd6f6216b6a1278e5415a5972..0a8455bdd06a6d4d53d19bf49687772a
      output_name = "node"
  
      if (is_apple) {
-@@ -315,12 +325,36 @@ template("node_gn_build") {
+@@ -317,12 +327,36 @@ template("node_gn_build") {
    if (node_use_node_snapshot) {
      if (current_toolchain == v8_snapshot_toolchain) {
        executable("node_mksnapshot") {
@@ -397,7 +397,7 @@ index 1fad56169f5c813dd6f6216b6a1278e5415a5972..0a8455bdd06a6d4d53d19bf49687772a
        }
  
        # This config disables a link time optimization "ICF", which may merge
-@@ -335,26 +369,144 @@ template("node_gn_build") {
+@@ -337,26 +371,144 @@ template("node_gn_build") {
            ldflags = [ "/OPT:NOICF" ]  # link.exe, but also lld-link.exe.
          } else if (is_apple && !use_lld) {
            ldflags = [ "-Wl,-no_deduplicate" ]  # ld64.

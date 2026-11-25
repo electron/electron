@@ -14,6 +14,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/weak_persistent.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "ui/display/display.h"
@@ -54,19 +55,6 @@ std::vector<std::string> MetricsToArray(uint32_t metrics) {
   return array;
 }
 
-void DelayEmit(Screen* screen,
-               const std::string_view name,
-               const display::Display& display) {
-  screen->Emit(name, display);
-}
-
-void DelayEmitWithMetrics(Screen* screen,
-                          const std::string_view name,
-                          const display::Display& display,
-                          const std::vector<std::string>& metrics) {
-  screen->Emit(name, display, metrics);
-}
-
 // Calls the one-liner `display::Screen::Get()` to get ui's global screen.
 // NOTE: during shutdown, that screen can be destroyed before us. This means:
 // 1. Call this instead of keeping a possibly-dangling raw_ptr in api::Screen.
@@ -88,6 +76,16 @@ Screen::Screen() {
 Screen::~Screen() {
   if (auto* screen = GetDisplayScreen())
     screen->RemoveObserver(this);
+}
+
+void Screen::DelayEmit(std::string_view name, const display::Display& display) {
+  Emit(name, display);
+}
+
+void Screen::DelayEmitWithMetrics(std::string_view name,
+                                  const display::Display& display,
+                                  const std::vector<std::string>& metrics) {
+  Emit(name, display, metrics);
 }
 
 gfx::Point Screen::GetCursorScreenPoint(v8::Isolate* isolate) {
@@ -142,22 +140,25 @@ static gfx::Rect DIPToScreenRect(electron::NativeWindow* window,
 
 void Screen::OnDisplayAdded(const display::Display& new_display) {
   base::SingleThreadTaskRunner::GetCurrentDefault()->PostNonNestableTask(
-      FROM_HERE, base::BindOnce(&DelayEmit, base::Unretained(this),
-                                "display-added", new_display));
+      FROM_HERE,
+      base::BindOnce(&Screen::DelayEmit, gin_helper::WrapWeakPersistent(this),
+                     "display-added", new_display));
 }
 
 void Screen::OnDisplaysRemoved(const display::Displays& old_displays) {
   for (const auto& old_display : old_displays) {
     base::SingleThreadTaskRunner::GetCurrentDefault()->PostNonNestableTask(
-        FROM_HERE, base::BindOnce(&DelayEmit, base::Unretained(this),
-                                  "display-removed", old_display));
+        FROM_HERE,
+        base::BindOnce(&Screen::DelayEmit, gin_helper::WrapWeakPersistent(this),
+                       "display-removed", old_display));
   }
 }
 
 void Screen::OnDisplayMetricsChanged(const display::Display& display,
                                      uint32_t changed_metrics) {
   base::SingleThreadTaskRunner::GetCurrentDefault()->PostNonNestableTask(
-      FROM_HERE, base::BindOnce(&DelayEmitWithMetrics, base::Unretained(this),
+      FROM_HERE, base::BindOnce(&Screen::DelayEmitWithMetrics,
+                                gin_helper::WrapWeakPersistent(this),
                                 "display-metrics-changed", display,
                                 MetricsToArray(changed_metrics)));
 }

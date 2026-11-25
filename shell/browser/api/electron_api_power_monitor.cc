@@ -9,6 +9,7 @@
 #include "gin/data_object_builder.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/weak_persistent.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "ui/base/idle/idle.h"
@@ -131,12 +132,23 @@ void PowerMonitor::OnSpeedLimitChange(int speed_limit) {
       gin::DataObjectBuilder(isolate).Set("limit", speed_limit).Build());
 }
 
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC)
+base::RepeatingCallback<bool()> PowerMonitor::MakeShutdownHandler() {
+  // A weak receiver cannot be bound to a method with a return value, so
+  // check the persistent by hand and treat a collected monitor as "don't
+  // block".
+  return base::BindRepeating(
+      [](const cppgc::WeakPersistent<PowerMonitor>& monitor) {
+        return monitor && monitor->ShouldShutdown();
+      },
+      gin_helper::WrapWeakPersistent(this));
+}
+#endif
+
 #if BUILDFLAG(IS_LINUX)
 void PowerMonitor::SetListeningForShutdown(bool is_listening) {
   if (is_listening) {
-    // unretained is OK because we own power_observer_linux_
-    power_observer_linux_.SetShutdownHandler(base::BindRepeating(
-        &PowerMonitor::ShouldShutdown, base::Unretained(this)));
+    power_observer_linux_.SetShutdownHandler(MakeShutdownHandler());
   } else {
     power_observer_linux_.SetShutdownHandler(base::RepeatingCallback<bool()>());
   }

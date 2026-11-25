@@ -1670,13 +1670,13 @@ bool ElectronBrowserClient::HasWebRequestAPIProxy(
 }
 
 bool ElectronBrowserClient::WillInterceptWebSocket(
-    content::RenderFrameHost* frame) {
+    content::RenderFrameHost* frame,
+    content::BrowserContext* browser_context) {
   if (!frame)
     return false;
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
-  auto* browser_context = frame->GetProcess()->GetBrowserContext();
   auto* web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
 
   // NOTE: Some unit test environments do not initialize
