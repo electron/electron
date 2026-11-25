@@ -44,6 +44,12 @@ class InspectableWebContents
  public:
   static void RegisterPrefs(PrefRegistrySimple* pref_registry);
 
+  // Returns the InspectableWebContents that shows |devtools_web_contents| as
+  // its own DevTools frontend, or nullptr. An external frontend set with
+  // SetDevToolsWebContents() is hosted by its own window, so it has none.
+  static InspectableWebContents* FromDevToolsWebContents(
+      content::WebContents* devtools_web_contents);
+
   InspectableWebContents(std::unique_ptr<content::WebContents> web_contents,
                          PrefService* pref_service,
                          bool is_guest);

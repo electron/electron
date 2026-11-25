@@ -743,8 +743,73 @@ describe('command line switches', () => {
         NodeJS.ReadableStream
       ];
       const pipe = new PipeTransport(stdio[3], stdio[4]);
+      const response = new Promise((resolve) => {
+        pipe.onmessage = resolve;
+      });
+      const exited = once(appProcess, 'exit');
+      // 'close' comes after the pipes have been drained, so a reply that was
+      // written is seen first.
+      const closed = once(appProcess, 'close').then(() => null);
       pipe.send({ id: 1, method: 'Browser.close', params: {} });
-      await once(appProcess, 'exit');
+      // As in Chrome, the reply is best-effort: the pipe can be shut down
+      // before it has been written, and then the client only sees EOF.
+      const reply = await Promise.race([response, closed]);
+      if (reply !== null) expect(reply).toEqual({ id: 1, result: {} });
+      await exited;
+    });
+    it('should handle Browser window commands for a target', async () => {
+      const rc = await startRemoteControlApp(['--remote-debugging-pipe'], {
+        stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe']
+      });
+      const stdio = rc.process.stdio as unknown as [
+        NodeJS.WritableStream,
+        NodeJS.ReadableStream,
+        NodeJS.ReadableStream,
+        NodeJS.WritableStream,
+        NodeJS.ReadableStream
+      ];
+      const pipe = new PipeTransport(stdio[3], stdio[4]);
+      const pending = new Map<number, (message: any) => void>();
+      pipe.onmessage = (message: any) => {
+        pending.get(message.id)?.(message);
+        pending.delete(message.id);
+      };
+      let lastId = 0;
+      const send = (method: string, params: object = {}) =>
+        new Promise<any>((resolve) => {
+          const id = ++lastId;
+          pending.set(id, resolve);
+          pipe.send({ id, method, params });
+        });
+
+      const windowId = await rc.remotely(async () => {
+        const { BrowserWindow } = require('electron');
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL('about:blank');
+        return w.id;
+      });
+
+      // This session is attached to the browser target, which has no window.
+      const { error } = await send('Browser.getWindowForTarget');
+      expect(error.message).toBe('No web contents in the target');
+
+      // ChromeDriver passes the page's targetId instead.
+      const { targetInfos } = (await send('Target.getTargets')).result;
+      const page = targetInfos.find((info: any) => info.type === 'page');
+      const { result } = await send('Browser.getWindowForTarget', { targetId: page.targetId });
+      expect(result.windowId).toBe(windowId);
+
+      const setBounds = await send('Browser.setWindowBounds', { windowId, bounds: { width: 320, height: 240 } });
+      expect(setBounds.result).toEqual({});
+      const size = await rc.remotely((id: number) => {
+        return require('electron').BrowserWindow.fromId(id).getSize();
+      }, windowId);
+      expect(size).toEqual([320, 240]);
+      const { bounds } = (await send('Browser.getWindowBounds', { windowId })).result;
+      expect(bounds).toMatchObject({ width: 320, height: 240, windowState: 'normal' });
+
+      const notFound = await send('Browser.getWindowBounds', { windowId: windowId + 1000 });
+      expect(notFound.error.message).toBe('Browser window not found');
     });
   });
 
@@ -945,6 +1010,74 @@ describe('command line switches', () => {
       const sessionB = await clientB.attachToPage();
       await waitUntil(async () => (await innerSize(clientB, sessionB)) === originalSize);
       clientB.socket.close();
+    });
+
+    it('should handle Browser window commands', async () => {
+      const appPath = path.join(fixturesPath, 'apps', 'remote-debugging-emulation');
+      appProcess = ChildProcess.spawn(process.execPath, [appPath, '--remote-debugging-port=0']);
+
+      let stderr = '';
+      const browserWsUrl = await new Promise<string>((resolve, reject) => {
+        appProcess!.stderr.on('data', (data: Buffer) => {
+          stderr += data.toString();
+          const m = /DevTools listening on (ws:\/\/\S+)/.exec(stderr);
+          if (m) {
+            appProcess!.stderr.removeAllListeners('data');
+            resolve(m[1]);
+          }
+        });
+        appProcess!.on('exit', () =>
+          reject(new Error(`Process exited before DevTools URL was found. stderr: ${stderr}`))
+        );
+      });
+
+      const socket = new WebSocket(browserWsUrl);
+      await once(socket, 'open');
+      defer(() => socket.close());
+      let nextId = 1;
+      const pending = new Map<number, (message: any) => void>();
+      socket.on('message', (data) => {
+        const message = JSON.parse(data.toString());
+        pending.get(message.id)?.(message);
+        pending.delete(message.id);
+      });
+      const send = (method: string, params: unknown = {}, sessionId?: string) =>
+        new Promise<any>((resolve) => {
+          const id = nextId++;
+          pending.set(id, resolve);
+          socket.send(JSON.stringify({ id, method, params, sessionId }));
+        });
+
+      // The window may not exist yet when the DevTools server comes up.
+      let page: any;
+      await waitUntil(async () => {
+        const { targetInfos } = (await send('Target.getTargets')).result;
+        page = targetInfos.find((target: any) => target.type === 'page');
+        return page !== undefined;
+      });
+      const { sessionId } = (await send('Target.attachToTarget', { targetId: page.targetId, flatten: true })).result;
+
+      // Without a targetId, the command applies to the session's own target.
+      const forTarget = await send('Browser.getWindowForTarget', {}, sessionId);
+      expect(forTarget.sessionId).toBe(sessionId);
+      const { windowId } = forTarget.result;
+      expect(forTarget.result.bounds).toMatchObject({ windowState: 'normal' });
+
+      const unknownTarget = await send('Browser.getWindowForTarget', { targetId: 'unknown' });
+      expect(unknownTarget.error.message).toBe('No target with given id');
+
+      const setBounds = await send('Browser.setWindowBounds', { windowId, bounds: { width: 500, height: 300 } });
+      expect(setBounds.result).toEqual({});
+      const { bounds } = (await send('Browser.getWindowBounds', { windowId })).result;
+      expect(bounds).toMatchObject({ width: 500, height: 300, windowState: 'normal' });
+
+      const combined = await send('Browser.setWindowBounds', {
+        windowId,
+        bounds: { width: 500, windowState: 'maximized' }
+      });
+      expect(combined.error.message).toBe(
+        "The 'minimized', 'maximized' and 'fullscreen' states cannot be combined with 'left', 'top', 'width' or 'height'"
+      );
     });
   });
 
