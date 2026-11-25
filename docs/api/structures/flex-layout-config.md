@@ -2,7 +2,7 @@
 
 FlexLayout is a native layout manager implemented in Chromium.
 
-For more documentation on Layout Managers, see the [Chromium docs]
+For more documentation on Layout Managers, see the [Chromium docs](https://chromium.googlesource.com/chromium/src/+/master/docs/ui/views/overview.md#layout-layout-managers).
 
 * `orientation` string (optional) - How the layout is oriented. Defaults to `horizontal`. One of the following:
   * `horizontal` - Lay out child views along a horizontal axis
