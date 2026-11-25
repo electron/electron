@@ -16,10 +16,10 @@ WebServiceWorkerContextProxy::ElectronPreloadData() getter backed by
 WorkerGlobalScope.
 
 diff --git a/content/browser/service_worker/service_worker_version.cc b/content/browser/service_worker/service_worker_version.cc
-index e29aa6d8c6ebbc23fdea6bd9a4d0a9d62989dd5e..5e6f5cf9e4062f2e91071f3e42eae46e2d5faec9 100644
+index 69b988ae84dc724ab5beec4a04b53a76ed0c9c6f..83c98382bbddde6f5f7713894301448904b62e72 100644
 --- a/content/browser/service_worker/service_worker_version.cc
 +++ b/content/browser/service_worker/service_worker_version.cc
-@@ -2927,6 +2927,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
+@@ -2946,6 +2946,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
    params->ukm_source_id = ukm_source_id_;
    params->storage_key = key_;
  
@@ -51,10 +51,10 @@ index 30a6151f9092f9b190a3b1dbffb25e79891dbe79..67639f4e78f76e1cdbcaa74276f7d87d
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 1fb6e139821da1b0419820c2e41fa02cdea87673..3ea10e578f8b211ff748aa9918b8d07e7fb75162 100644
+index 179aad013020814477d825497c52fdc16c3de8df..5cdb0a15a9adfcc3f4d5efa8b906ccbf620d11b1 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -1340,6 +1340,17 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1337,6 +1337,17 @@ class CONTENT_EXPORT ContentBrowserClient {
        RenderFrameHost* new_window_main_frame,
        const GURL& target_url);
  

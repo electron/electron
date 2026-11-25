@@ -13,7 +13,7 @@ arg that turns grit's markers on) only permits android and win.
 The Linux half is https://chromium-review.googlesource.com/c/chromium/src/+/8360559.
 
 diff --git a/build/toolchain/gcc_toolchain.gni b/build/toolchain/gcc_toolchain.gni
-index fd68d8b18cbdb6ea1c8e488b8b9f4830c8d48cba..747bb03f96703868ccf6db92ea1fb01d16867a7a 100644
+index 2a4cba1e44818369df09c2c9734ebde1ba88c038..3e6143c786273d9ec72ae9609fe7fc8c9f6b0246 100644
 --- a/build/toolchain/gcc_toolchain.gni
 +++ b/build/toolchain/gcc_toolchain.gni
 @@ -42,7 +42,8 @@ if (enable_resource_allowlist_generation) {

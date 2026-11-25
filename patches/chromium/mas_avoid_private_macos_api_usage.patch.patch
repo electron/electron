@@ -58,7 +58,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index be52f0a5a571f3eb7a25a11bdcbcd088f5fba196..42672bebdfe153c66abed0d10ae2940edc3d7345 100644
+index 7b8d874af52db5df576479bfefd3ea4fda9b1611..4bfa33a100eae57215471cfc366b67331119db8e 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1172,6 +1172,7 @@ component("base") {
@@ -908,10 +908,10 @@ index e8ae750358dfc4e18b2b2644eb1e7df7d1f1d79a..5669df7c5cce10443909114fdc326368
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 9f7515d0ea18739b2a6ceff2c0bca88fe543593f..a0440645e8204f2482d0eae80a453f021e14ab2b 100644
+index 9a368a27ee3d111530d60a006537f967f3bf38b4..ce248b65216c09a10b579db387f12745ae56483d 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -392,6 +392,7 @@ viz_component("service") {
+@@ -390,6 +390,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mojo_mac.h",
        ]
      }
@@ -919,7 +919,7 @@ index 9f7515d0ea18739b2a6ceff2c0bca88fe543593f..a0440645e8204f2482d0eae80a453f02
    }
  
    if (is_ios) {
-@@ -754,6 +755,7 @@ viz_source_set("unit_tests") {
+@@ -751,6 +752,7 @@ viz_source_set("unit_tests") {
        "frame_sinks/external_begin_frame_source_mac_unittest.cc",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -1013,7 +1013,7 @@ index 5b2d4c2531a37e0b99bc31dffb46e8d3ff94a0b0..2d5c9e1e8ab5e6eace41ee66bb6c9d6c
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index e6491bc3a0ec54e74cc48e39ba65f57fcc461ce4..753de3047a3e6a78bd992ec79f1a8d1c2ca289b0 100644
+index 9cdea557cd2e69aa72a85934f4f8c65a9d08c8c5..352fd2c8c89a902c80c4025901ce6979b8e430e9 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -394,6 +394,7 @@ source_set("browser") {
@@ -1146,10 +1146,10 @@ index ad25062f3512eea90694daa08f0345c98836c55f..4f4d180f1ee3db91526ccf35fb916099
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 3b955f573c910d3d42f2e23998c02e82dde22947..ac76f87f1952f3b0ee4309a86c15a7a11f0e9b8f 100644
+index 2128bcfe25d32e8c23afc4800b0dc6795559f5bf..78d916a94d6baffc2d2acc12e77bcd704c7b5f08 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -318,6 +318,7 @@ target(link_target_type, "renderer") {
+@@ -316,6 +316,7 @@ target(link_target_type, "renderer") {
      "//ui/strings:auto_image_annotation_strings_grit",
      "//url",
      "//v8",
@@ -1228,7 +1228,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index b1a322ec12c4cf5d91ae77a91511c383f91f3b06..5591141af573af7e7a9f56e054ca0bc9c25fb62b 100644
+index 8512a9bb6e3791ccea4d412a4e8f7b357c2b4afc..490a57faff0bc8931c30105220ad51ecb0318c36 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -649,6 +649,7 @@ static_library("test_support") {
@@ -1256,7 +1256,7 @@ index b1a322ec12c4cf5d91ae77a91511c383f91f3b06..5591141af573af7e7a9f56e054ca0bc9
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3484,6 +3488,7 @@ test("content_unittests") {
+@@ -3485,6 +3489,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1825,7 +1825,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index a8936adfb02348b3a2d95189dd92d0f64b2b3e14..7d2a9e60200205b0336cc43308f153571dea0d05 100644
+index 4fe9dcea03d3df9c2a44bd8c1261da8677cffaf4..851a48bae36247475fef6a86a6dc91afffc19c98 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -447,6 +447,7 @@ component("core") {
@@ -2292,7 +2292,7 @@ index 93e90c4eba9bc9b93d68e834eb6baabeb2d0ecf0..1b90f41d05f847a94adf2f4da827b1d0
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 95b8b7802ebfd3f55330dc5c69c8b592279620cc..680409b9b1983b2ca0e3f0de0792647e53180d86 100644
+index 5c5ed9503abd20b8879323615b49670403714581..a367d93cd7faafc85d9cf45dfc8fe4611aea1c55 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -139,6 +139,12 @@ component("display") {
@@ -2466,7 +2466,7 @@ index 84060d2c442e2786e12d9837e0128bc4536d7d0b..933f2020ae89a02a39e21a7115b5f651
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index e5877b9ccd632fb934bfdc0caa4c22f8426a9f9b..cd9b2d288e8a5257110b187288b7b449cd996b62 100644
+index 409bbe5eb8ec4d7c5524ce1ee5e2002da4a45d63..471273e289b97805dab792732d21234992ba9bd2 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -801,6 +801,8 @@ component("views") {

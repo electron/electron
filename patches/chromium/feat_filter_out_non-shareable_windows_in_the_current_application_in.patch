@@ -21,10 +21,10 @@ protecting a window during an active capture will not take effect until the
 next filter update or stream restart.
 
 diff --git a/content/browser/media/capture/native_screen_capture_picker_mac.mm b/content/browser/media/capture/native_screen_capture_picker_mac.mm
-index 7a1f9d162942c8260acf67a4c84a962b0efea044..d1da388c2dc6b6a5abda078d7d7b4b4920150dce 100644
+index 77a699e1e32f7ac2ec95e480abf5aeef4d869f95..842e066fa1b440c0ed6a5948901d7683c409dd32 100644
 --- a/content/browser/media/capture/native_screen_capture_picker_mac.mm
 +++ b/content/browser/media/capture/native_screen_capture_picker_mac.mm
-@@ -478,7 +478,8 @@ void API_AVAILABLE(macos(14.0))
+@@ -492,7 +492,8 @@ void API_AVAILABLE(macos(14.0))
      }
      NSMutableArray<NSNumber*>* excluded_window_ids = [NSMutableArray array];
      for (NSWindow* window in [NSApp windows]) {

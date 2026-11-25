@@ -51,10 +51,10 @@ index c6352ee820b08c51eeb695f5abfe0c98cb87b3be..91534f8d4316b963c12a6a6fba3687f3
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index e11e0435e9f5e8c31f813299e8a0b8365a524ed5..0416cbddcc424f20e84a6b193dbdb0d23b78dcde 100644
+index beaf15a504af095c1c10ce389b6d6a9db58ef0ab..70358d41aff71d100b19cf938b7d6e99dc929580 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -739,8 +739,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
+@@ -746,8 +746,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
    // OnShowWithPageVisibility will not call NotifyHostAndDelegateOnWasShown,
    // which updates `visibility_`, unless the host is hidden. Make sure no update
    // is needed.

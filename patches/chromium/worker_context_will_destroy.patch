@@ -26,10 +26,10 @@ index 6f5ac6b22e249eb9dd6fc16c39e263a8e6d3d626..fb843b3d995da5d3e13baa00413add2e
    // An empty URL is returned if the URL is not overriden.
    virtual GURL OverrideFlashEmbedWithHTML(const GURL& url);
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index 391a7ca9a9cc47193afd7e2973a7a071b6a0a0fd..b83c69dafc63f9dec212b76c0f8dac33a8684f1f 100644
+index a7a1fca94ced5910e064e9f919e69f5c56d704f1..7b4d0efbb7ae1f7a1f3332eb38be23e5c1ceba42 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
-@@ -955,6 +955,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
+@@ -974,6 +974,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
    WorkerThreadRegistry::Instance()->WillStopCurrentWorkerThread();
  }
  
@@ -43,10 +43,10 @@ index 391a7ca9a9cc47193afd7e2973a7a071b6a0a0fd..b83c69dafc63f9dec212b76c0f8dac33
      const v8::Local<v8::Context>& worker) {
    GetContentClient()->renderer()->DidInitializeWorkerContextOnWorkerThread(
 diff --git a/content/renderer/renderer_blink_platform_impl.h b/content/renderer/renderer_blink_platform_impl.h
-index 8f1a739a30ab8f51acca9b42c93a59e962dd1fdd..3bffc7377fec25f71112e22e5de0f50dc40ce9a9 100644
+index 7b0af0dd509bdbbe6ae4b7b905137cd9513df418..b875faa5bb37a407940c0b131e4687b005673d0f 100644
 --- a/content/renderer/renderer_blink_platform_impl.h
 +++ b/content/renderer/renderer_blink_platform_impl.h
-@@ -219,6 +219,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
+@@ -220,6 +220,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
    void DidStartWorkerThread() override;
    void WillStopWorkerThread() override;
    void WorkerContextCreated(const v8::Local<v8::Context>& worker) override;
@@ -55,10 +55,10 @@ index 8f1a739a30ab8f51acca9b42c93a59e962dd1fdd..3bffc7377fec25f71112e22e5de0f50d
        const blink::WebSecurityOrigin& origin) override;
    bool OriginCanAccessServiceWorkers(const GURL& url) override;
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index 4098dea614dfc0091c33d8e18a3f56eb1d7183fa..697833fa82706a957bb1b8a3320f3949ec7763f4 100644
+index b22069b55f46d3c1eff1c26c1f6f4edb70fe4902..133c3802fbf65c33b18d224eb6215174944fc53c 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
-@@ -704,6 +704,7 @@ class BLINK_PLATFORM_EXPORT Platform {
+@@ -709,6 +709,7 @@ class BLINK_PLATFORM_EXPORT Platform {
    virtual void DidStartWorkerThread() {}
    virtual void WillStopWorkerThread() {}
    virtual void WorkerContextCreated(const v8::Local<v8::Context>& worker) {}

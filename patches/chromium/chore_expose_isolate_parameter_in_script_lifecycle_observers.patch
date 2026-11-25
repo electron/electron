@@ -20,10 +20,10 @@ index 6d7d041f3ecd7a9a2fa16f2188462ee7f4282d19..db698a9a9adfd9bd2dfc8dd29932b3e4
        int64_t service_worker_version_id,
        const GURL& service_worker_scope,
 diff --git a/content/public/renderer/render_frame_observer.h b/content/public/renderer/render_frame_observer.h
-index c09e18a50b351dc0b6139fb75f06eea7e6d15ec5..1639c61c53da53ba892a68c5ea7df825e446280d 100644
+index 5afcb7d7bca550bad9399d63cb577375c0eeefe6..13fb2e97df35738f5bbce8053de920fa11c4d6c5 100644
 --- a/content/public/renderer/render_frame_observer.h
 +++ b/content/public/renderer/render_frame_observer.h
-@@ -127,7 +127,8 @@ class CONTENT_EXPORT RenderFrameObserver {
+@@ -119,7 +119,8 @@ class CONTENT_EXPORT RenderFrameObserver {
                                        int32_t world_id) {}
    virtual void DidInstallConditionalFeatures(v8::Local<v8::Context> context,
                                               int32_t world_id) {}
@@ -34,10 +34,10 @@ index c09e18a50b351dc0b6139fb75f06eea7e6d15ec5..1639c61c53da53ba892a68c5ea7df825
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset(blink::mojom::ScrollType) {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 677d1bd160fa548d7f150457def0a8748ecf4776..08490a7cecab12c2496405460607ec33139c62f8 100644
+index 42de3c5c1c5ae46a1471539ef0ee3e58394a3509..efcf0f75351185e52c8d52d9453aa7e8206224e2 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4773,10 +4773,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4628,10 +4628,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
    }
  }
  
@@ -52,10 +52,10 @@ index 677d1bd160fa548d7f150457def0a8748ecf4776..08490a7cecab12c2496405460607ec33
  }
  
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index 878e7e0a46c90c486d5ae0640ff470bc507c1a95..06e55edc5747578458e7c5c202c34c4bc986b407 100644
+index 5198b760ebea35c403166ef32634b2fca77cb033..08e4bccc0d270c12fed011d0e6607c827f07617a 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
-@@ -573,7 +573,8 @@ class CONTENT_EXPORT RenderFrameImpl
+@@ -565,7 +565,8 @@ class CONTENT_EXPORT RenderFrameImpl
                                int world_id) override;
    void DidInstallConditionalFeatures(v8::Local<v8::Context> context,
                                       int world_id) override;
@@ -167,10 +167,10 @@ index 0a3ea97d48c4d0d4c234dc88b321480a55df85c8..150ba24a544a88ab99d51b8a30af545a
    // Called when initial script evaluation finished for the main script.
    // |success| is true if the evaluation completed with no uncaught exception.
 diff --git a/third_party/blink/public/web/web_local_frame_client.h b/third_party/blink/public/web/web_local_frame_client.h
-index 782367d318511b548a6eb722962cb65275a2d297..0e23665df51317f87a45508ce1953fd1e2a3e338 100644
+index 2ac19360e7cf15cce1c232a0ff71c062fbd16c1e..a61223b32e4bc1d298e863c043c6886559cc38c2 100644
 --- a/third_party/blink/public/web/web_local_frame_client.h
 +++ b/third_party/blink/public/web/web_local_frame_client.h
-@@ -578,7 +578,8 @@ class BLINK_EXPORT WebLocalFrameClient {
+@@ -541,7 +541,8 @@ class BLINK_EXPORT WebLocalFrameClient {
                                               int32_t world_id) {}
  
    // WebKit is about to release its reference to a v8 context for a frame.
@@ -214,10 +214,10 @@ index c4c2f3823cd6605fe23885db7f0cc9ace61577c3..dc0aaccda8490582b11fd6d728fe87d4
  
    virtual void DidChangeScrollOffset(mojom::blink::ScrollType) {}
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-index 3e71ef4f5807ee22751ff56c8d78da49cb8a4515..93e118c34e921fc2b3a2dc109bb923bc37be1ae8 100644
+index 23be534ae3456ef47a2d4050d0c5d002f50a0fe0..aee6290d8796f0f9f84981abac22993104416f9f 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-@@ -310,10 +310,11 @@ void LocalFrameClientImpl::DidInstallConditionalFeatures(
+@@ -309,10 +309,11 @@ void LocalFrameClientImpl::DidInstallConditionalFeatures(
  }
  
  void LocalFrameClientImpl::WillReleaseScriptContext(

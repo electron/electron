@@ -13,7 +13,7 @@ https://github.com/electron/electron/pull/48675#issuecomment-3452781711
 for more info.
 
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-index 87f41f04d2da881da3ff17e67492aa5747b47dc5..a850af1a7626c7cb62593c424058993829e45e9e 100644
+index 3f363b42f64b965b52a6f697424615684c13cffe..62df60a6ea945dcf62e047c02142b619abab2048 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 @@ -141,8 +141,9 @@ int NextServiceId() {
@@ -50,7 +50,7 @@ index 87f41f04d2da881da3ff17e67492aa5747b47dc5..a850af1a7626c7cb62593c4240589938
    CHECK_CURRENTLY_ON(content::BrowserThread::UI, base::NotFatalUntil::M162);
    if (bus_) {
      CheckStatusNotifierWatcherHasOwner();
-@@ -495,7 +498,8 @@ void StatusIconLinuxDbus::OnHostRegisteredResponse(
+@@ -499,7 +502,8 @@ void StatusIconLinuxDbus::OnHostRegisteredResponse(
    SetProperty<"s">(kPropertyAttentionIconName, "", false);
    SetProperty<"s">(kPropertyAttentionMovieName, "", false);
    SetProperty<"s">(kPropertyCategory, kPropertyValueCategory, false);
