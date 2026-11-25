@@ -282,6 +282,57 @@ signAsync({
 })
 ```
 
+
+#### Child (helper) entitlements: sandbox vs. hardened-runtime keys
+
+When using the App Sandbox together with the hardened runtime (required for
+MAS), helper processes need care with **two different kinds** of entitlements.
+Confusing them is a common cause of helpers crashing at startup with
+`EXC_BREAKPOINT` on macOS.
+
+- **Sandbox-resource entitlements** (`com.apple.security.network.*`,
+  `com.apple.security.files.*`, `com.apple.security.automation.*`, ...) belong
+  to the App Sandbox layer. Helpers signed with `com.apple.security.inherit`
+  **inherit** these from the main app. Do **not** re-declare them on the
+  helper — duplicating them makes the helper crash in
+  `_libsecinit_appsandbox` during early `dyld` startup.
+
+- **Hardened-runtime (code-signing) entitlements** — most importantly the V8
+  JIT triple `com.apple.security.cs.allow-jit`,
+  `com.apple.security.cs.allow-unsigned-executable-memory`, and
+  `com.apple.security.cs.disable-library-validation` — are **per-process and
+  are NOT inherited** through sandbox `inherit`. Any helper that runs V8
+  (Electron's renderer/GPU/utility helpers) must carry these itself, or it
+  crashes in `v8::Isolate::Initialize`.
+
+A minimal child (helper) entitlements file for a MAS build therefore looks
+like:
+
+```xml title='child-entitlements.plist'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+    <key>com.apple.security.inherit</key>
+    <true/>
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+  </dict>
+</plist>
+```
+
+> Symptom guide: a helper crashing in `_libsecinit_appsandbox` usually means a
+> duplicated sandbox-resource key; a helper crashing in
+> `v8::Isolate::Initialize` usually means a missing hardened-runtime JIT key.
+> Symbolicate the report with `@electron/symbolicate-mac` to confirm before
+> changing entitlements.
+
 #### Network access
 
 Enable outgoing network connections to allow your app to connect to a server:
