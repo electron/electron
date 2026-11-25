@@ -5,3 +5,5 @@ chrome.runtime.onMessage.addListener((_message, sender, reply) => {
     senderTabId: sender.tab && sender.tab.id
   });
 });
+
+console.log('CUSTOM PROTOCOL BACKGROUND READY');

@@ -7,6 +7,7 @@
 #define ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "base/containers/flat_map.h"
@@ -55,6 +56,11 @@ class InspectableWebContents
   InspectableWebContentsView* GetView() const;
   content::WebContents* GetWebContents() const;
   content::WebContents* GetDevToolsWebContents() const;
+  // The built-in DevTools frontend, or null when none is open or an app
+  // frontend was assigned by SetDevToolsWebContents().
+  [[nodiscard]] content::WebContents* managed_devtools_web_contents() const {
+    return managed_devtools_web_contents_.get();
+  }
 
   void SetDelegate(InspectableWebContentsDelegate* delegate);
   [[nodiscard]] bool is_guest() const { return is_guest_; }
@@ -107,7 +113,8 @@ class InspectableWebContents
                            const std::string& headers,
                            int stream_id) override;
   void SetIsDocked(DispatchCallback callback, bool is_docked) override;
-  void OpenInNewTab(const std::string& url) override;
+  void OpenInNewTab(const std::string& url,
+                    const std::optional<std::string>& initiator_id) override;
   void OpenSearchResultsInNewTab(const std::string& query) override;
   void ShowItemInFolder(const std::string& file_system_path) override;
   void SaveToFile(const std::string& url,
@@ -224,8 +231,6 @@ class InspectableWebContents
   void OnWebContentsFocused(
       content::RenderWidgetHost* render_widget_host) override;
   void ReadyToCommitNavigation(
-      content::NavigationHandle* navigation_handle) override;
-  void DidFinishNavigation(
       content::NavigationHandle* navigation_handle) override;
 
   // content::WebContentsDelegate:

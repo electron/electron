@@ -1,0 +1,342 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 17 Nov 2026 05:46:14 +0000
+Subject: build: declare the files esbuild reads and writes in bundle steps
+
+The esbuild bundle steps read and write files that are not declared in
+GN, so they only work when run in the source tree, and they can't run on
+a remote worker (e.g. Siso with remote execution), where only declared
+inputs are present and only declared outputs come back:
+
+* esbuild reads the package.json and tsconfig.json files (and the
+  tsconfig.json "extends" chain) above each file it bundles. Without
+  front_end/tsconfig.json and config/typescript/tsconfig.base.json
+  ("strict": true), iife bundles lose their "use strict" prefix. The
+  package.json files of third_party packages set "type" and
+  "sideEffects", and csp_evaluator's tsconfig.json sets its own target.
+* source-map-scopes-codec's .ts sources import "./codec.js" etc. esbuild
+  bundles the prebuilt package/src/*.js files next to them, which are not
+  declared; without them it falls back to the .ts files and produces a
+  different bundle.
+* With --sourcemap esbuild follows the sourceMappingURL of bundled
+  third_party .js files, reads their .js.map files and, when a map has no
+  sourcesContent (puppeteer, wasmparser), the original sources it points
+  at. Without them the output .js.map points at the .js files instead.
+* --sourcemap writes <outfile>.map, which is not a declared output.
+
+Declare them: the repo-wide config files in the bundle template, the
+<outfile>.map output when sourcemaps are on, and the per-package files as
+inputs of each third_party package target, which bundles inherit through
+the package's _sources group. inspector_overlay declares its own
+tsconfig.json.
+
+This should be upstreamed.
+
+diff --git a/front_end/third_party/acorn/BUILD.gn b/front_end/third_party/acorn/BUILD.gn
+index 07a231b6da6d177e112d79409300d8434c03b054..10862c619b31372383549a1584c810e7a9e4f7c4 100644
+--- a/front_end/third_party/acorn/BUILD.gn
++++ b/front_end/third_party/acorn/BUILD.gn
+@@ -17,6 +17,10 @@ devtools_pre_built("acorn") {
+     "package/dist/acorn.mjs.d.ts",
+     "package/dist/acorn.mjs.map",
+   ]
++
++  # esbuild reads the package.json (and tsconfig.json) above each file it
++  # bundles; declare them so the bundle step has them under remote execution.
++  inputs = [ "package/package.json" ]
+ }
+ 
+ devtools_pre_built("estree") {
+diff --git a/front_end/third_party/codemirror/BUILD.gn b/front_end/third_party/codemirror/BUILD.gn
+index 849ea0ce7460648af5efe5001f5c7964f2e7674b..e4ba8324333a0e226b100e11150fe7411afdf391 100644
+--- a/front_end/third_party/codemirror/BUILD.gn
++++ b/front_end/third_party/codemirror/BUILD.gn
+@@ -20,6 +20,10 @@ devtools_pre_built("codemirror") {
+     "package/mode/xml/xml.d.mts",
+     "package/mode/xml/xml.mjs",
+   ]
++
++  # esbuild reads the package.json (and tsconfig.json) above each file it
++  # bundles; declare them so the bundle step has them under remote execution.
++  inputs = [ "package/package.json" ]
+ }
+ 
+ devtools_pre_built("codemirror-legacy-types") {
+diff --git a/front_end/third_party/csp_evaluator/package/BUILD.gn b/front_end/third_party/csp_evaluator/package/BUILD.gn
+index 8bce23d57dcc6fe52154953d6c7b7c76c523028d..b730f6db977a2ad70a1d98cebcc1ff90da390e91 100644
+--- a/front_end/third_party/csp_evaluator/package/BUILD.gn
++++ b/front_end/third_party/csp_evaluator/package/BUILD.gn
+@@ -21,5 +21,12 @@ devtools_module("csp_evaluator") {
+     "utils.ts",
+   ]
+ 
++  # esbuild reads the package.json (and tsconfig.json) above each file it
++  # bundles; declare them so the bundle step has them under remote execution.
++  inputs = [
++    "package.json",
++    "tsconfig.json",
++  ]
++
+   visibility = [ "../*" ]
+ }
+diff --git a/front_end/third_party/intl-messageformat/BUILD.gn b/front_end/third_party/intl-messageformat/BUILD.gn
+index afb535969797db786b607f6e0bccce2c74e1ba9c..71dd9bab65fbf487c3c8816ebc151bb3cf3b1df2 100644
+--- a/front_end/third_party/intl-messageformat/BUILD.gn
++++ b/front_end/third_party/intl-messageformat/BUILD.gn
+@@ -20,6 +20,10 @@ devtools_pre_built("intl-messageformat") {
+     "package/src/icu-messageformat-parser/parser.d.ts",
+     "package/src/icu-messageformat-parser/types.d.ts",
+   ]
++
++  # esbuild reads the package.json (and tsconfig.json) above each file it
++  # bundles; declare them so the bundle step has them under remote execution.
++  inputs = [ "package/package.json" ]
+ }
+ 
+ devtools_entrypoint("bundle") {
+diff --git a/front_end/third_party/json5/BUILD.gn b/front_end/third_party/json5/BUILD.gn
+index 88a2ae37d6e1c72c881cf9c4cdd59215b9de0549..dc1764e2d837b24b436d718d791eaa0f1799a859 100644
+--- a/front_end/third_party/json5/BUILD.gn
++++ b/front_end/third_party/json5/BUILD.gn
+@@ -17,6 +17,10 @@ devtools_pre_built("json5") {
+     "package/lib/parse.d.ts",
+     "package/lib/stringify.d.ts",
+   ]
++
++  # esbuild reads the package.json (and tsconfig.json) above each file it
++  # bundles; declare them so the bundle step has them under remote execution.
++  inputs = [ "package.json" ]
+ }
+ 
+ devtools_entrypoint("bundle") {
+diff --git a/front_end/third_party/legacy-javascript/BUILD.gn b/front_end/third_party/legacy-javascript/BUILD.gn
+index acb7ca889d1f121cccd62f82c374959deb659d02..a8bb46f76db9812b18fc75c721ea231235768f07 100644
+--- a/front_end/third_party/legacy-javascript/BUILD.gn
++++ b/front_end/third_party/legacy-javascript/BUILD.gn
+@@ -13,6 +13,10 @@ devtools_pre_built("legacy-javascript") {
+     "lib/legacy-javascript.d.ts",
+     "lib/legacy-javascript.js",
+   ]
++
++  # esbuild reads the package.json (and tsconfig.json) above each file it
++  # bundles; declare them so the bundle step has them under remote execution.
++  inputs = [ "package.json" ]
+ }
+ 
+ devtools_entrypoint("bundle") {
+diff --git a/front_end/third_party/lit/BUILD.gn b/front_end/third_party/lit/BUILD.gn
+index 51461ceb32a47a272f7ff109728afbe0274e6ca5..734bbe57082fd9e9051f88955dfd441f61e3cb86 100644
+--- a/front_end/third_party/lit/BUILD.gn
++++ b/front_end/third_party/lit/BUILD.gn
+@@ -29,6 +29,10 @@ devtools_pre_built("lit") {
+     "lib/static-html.js",
+     "lib/static-html.js.map",
+   ]
++
++  # esbuild reads the package.json (and tsconfig.json) above each file it
++  # bundles; declare them so the bundle step has them under remote execution.
++  inputs = [ "package.json" ]
+ }
+ 
+ devtools_entrypoint("bundle") {
+diff --git a/front_end/third_party/marked/BUILD.gn b/front_end/third_party/marked/BUILD.gn
+index d70027fae5059122b92954ff45a8aa16dd90ecee..337c336d31b3fa0fa998b35b8094d90bdb1867c4 100644
+--- a/front_end/third_party/marked/BUILD.gn
++++ b/front_end/third_party/marked/BUILD.gn
+@@ -14,6 +14,10 @@ devtools_pre_built("marked") {
+     "package/lib/marked.esm.js",
+     "package/lib/marked.esm.js.map",
+   ]
++
++  # esbuild reads the package.json (and tsconfig.json) above each file it
++  # bundles; declare them so the bundle step has them under remote execution.
++  inputs = [ "package/package.json" ]
+ }
+ 
+ devtools_entrypoint("bundle") {
+diff --git a/front_end/third_party/puppeteer-replay/BUILD.gn b/front_end/third_party/puppeteer-replay/BUILD.gn
+index 4aaf15dfb50b6de9ef3356d35ae927f39dc2fb87..7de75eb27a34870c204b3151007ef7db43857354 100644
+--- a/front_end/third_party/puppeteer-replay/BUILD.gn
++++ b/front_end/third_party/puppeteer-replay/BUILD.gn
+@@ -23,6 +23,16 @@ devtools_pre_built("puppeteer-replay") {
+ 
+   sources = filter_exclude(SOURCES, EXCLUDED_SOURCES)
+ 
++  # esbuild reads the package.json (and tsconfig.json) above each file it
++  # bundles; declare them so the bundle step has them under remote execution.
++  # With --sourcemap esbuild follows the sourceMappingURL of these files and
++  # reads the source maps, and the original sources they point at when the
++  # maps have no sourcesContent.
++  inputs = [
++    "package/lib/main.js.map",
++    "package/package.json",
++  ]
++
+   # `package/lib/main.d.ts` imports types from the vendored puppeteer copy.
+   ts_deps = [ "../puppeteer:bundle" ]
+ }
+diff --git a/front_end/third_party/puppeteer/BUILD.gn b/front_end/third_party/puppeteer/BUILD.gn
+index 9db33b19aaa3fd7373f854c5e0c4c6efa00c2018..076fa822e64eb0dd4d137943a7bffdecec594189 100644
+--- a/front_end/third_party/puppeteer/BUILD.gn
++++ b/front_end/third_party/puppeteer/BUILD.gn
+@@ -407,6 +407,22 @@ devtools_pre_built("puppeteer") {
+   sources_are_release = false
+ 
+   sources = filter_exclude(SOURCES, EXCLUDED_SOURCES)
++
++  # esbuild reads the package.json (and tsconfig.json) above each file it
++  # bundles; declare them so the bundle step has them under remote execution.
++  # With --sourcemap esbuild follows the sourceMappingURL of these files and
++  # reads the source maps, and the original sources they point at when the
++  # maps have no sourcesContent.
++  inputs = [ "package/package.json" ]
++  foreach(_js, filter_include(sources, [ "package/lib/puppeteer/*.js" ])) {
++    _dir = get_path_info(_js, "dir")
++    _name = get_path_info(_js, "name")
++    inputs += [
++      "$_js.map",
++      string_replace(_dir, "package/lib/puppeteer", "package/src", 1) +
++          "/$_name.ts",
++    ]
++  }
+ }
+ 
+ devtools_entrypoint("bundle") {
+diff --git a/front_end/third_party/source-map-scopes-codec/BUILD.gn b/front_end/third_party/source-map-scopes-codec/BUILD.gn
+index 7af972559d066cd2f11cdbd8a49406edbca7b517..210c5d2ae8a5c8cf8f5ed07c54a2e39633fe7e78 100644
+--- a/front_end/third_party/source-map-scopes-codec/BUILD.gn
++++ b/front_end/third_party/source-map-scopes-codec/BUILD.gn
+@@ -18,6 +18,35 @@ devtools_foundation_module("source-map-scopes-codec") {
+     "package/src/util.ts",
+     "package/src/vlq.ts",
+   ]
++
++  # The sources import "./codec.js" etc. tsc resolves those to the .ts
++  # files, but esbuild bundles the prebuilt .js files that sit next to them
++  # (and with --sourcemap reads their source maps).
++  # It also reads the package.json (and tsconfig.json) above each file it
++  # bundles; declare them so the bundle step has them under remote execution.
++  inputs = [
++    "package/src/builder/builder.js",
++    "package/src/builder/builder.js.map",
++    "package/src/builder/safe_builder.js",
++    "package/src/builder/safe_builder.js.map",
++    "package/src/codec.js",
++    "package/src/codec.js.map",
++    "package/src/decode/decode.js",
++    "package/src/decode/decode.js.map",
++    "package/src/encode/encode.js",
++    "package/src/encode/encode.js.map",
++    "package/src/encode/encoder.js",
++    "package/src/encode/encoder.js.map",
++    "package/src/mod.js",
++    "package/src/mod.js.map",
++    "package/src/scopes.js",
++    "package/src/scopes.js.map",
++    "package/src/util.js",
++    "package/src/util.js.map",
++    "package/src/vlq.js",
++    "package/src/vlq.js.map",
++    "package/package.json",
++  ]
+ }
+ 
+ devtools_entrypoint("bundle") {
+diff --git a/front_end/third_party/third-party-web/BUILD.gn b/front_end/third_party/third-party-web/BUILD.gn
+index e5ffbd38532eced1d04b4c104436d1d1dfc69da2..adbddc9fb9997a49c055ec80b5d94a2d20c5fd55 100644
+--- a/front_end/third_party/third-party-web/BUILD.gn
++++ b/front_end/third_party/third-party-web/BUILD.gn
+@@ -15,6 +15,10 @@ devtools_pre_built("third-party-web") {
+     "package/lib/index.d.ts",
+     "package/lib/subsets/nostats.d.ts",
+   ]
++
++  # esbuild reads the package.json (and tsconfig.json) above each file it
++  # bundles; declare them so the bundle step has them under remote execution.
++  inputs = [ "package.json" ]
+ }
+ 
+ devtools_entrypoint("bundle") {
+diff --git a/front_end/third_party/wasmparser/BUILD.gn b/front_end/third_party/wasmparser/BUILD.gn
+index fa8e79ede8cc924d85fd630a88b9f8ed49c08ea6..856d20614dc0a1837ac112c1e07e57572a8be929 100644
+--- a/front_end/third_party/wasmparser/BUILD.gn
++++ b/front_end/third_party/wasmparser/BUILD.gn
+@@ -15,6 +15,19 @@ devtools_pre_built("wasmparser") {
+     "package/dist/esm/WasmParser.d.ts",
+     "package/dist/esm/WasmParser.js",
+   ]
++
++  # esbuild reads the package.json (and tsconfig.json) above each file it
++  # bundles; declare them so the bundle step has them under remote execution.
++  # With --sourcemap esbuild follows the sourceMappingURL of these files and
++  # reads the source maps, and the original sources they point at when the
++  # maps have no sourcesContent.
++  inputs = [
++    "package/dist/esm/WasmDis.js.map",
++    "package/dist/esm/WasmParser.js.map",
++    "package/package.json",
++    "package/src/WasmDis.ts",
++    "package/src/WasmParser.ts",
++  ]
+ }
+ 
+ devtools_entrypoint("bundle") {
+diff --git a/front_end/third_party/web-vitals/BUILD.gn b/front_end/third_party/web-vitals/BUILD.gn
+index c57963202288aae7518e0070ea905d0a48992435..7709722a264a83ae034c86c1209260d3bfc2efbf 100644
+--- a/front_end/third_party/web-vitals/BUILD.gn
++++ b/front_end/third_party/web-vitals/BUILD.gn
+@@ -100,6 +100,10 @@ devtools_pre_built("web-vitals") {
+   sources_are_release = false
+ 
+   sources = filter_exclude(SOURCES, EXCLUDED_SOURCES)
++
++  # esbuild reads the package.json (and tsconfig.json) above each file it
++  # bundles; declare them so the bundle step has them under remote execution.
++  inputs = [ "package/package.json" ]
+ }
+ 
+ devtools_entrypoint("bundle") {
+diff --git a/inspector_overlay/BUILD.gn b/inspector_overlay/BUILD.gn
+index a816e5d10a7efe72c1fbb70058f7007b9e128bef..a51eba7e625d8ef8ded606104e5a090e8d7b2926 100644
+--- a/inspector_overlay/BUILD.gn
++++ b/inspector_overlay/BUILD.gn
+@@ -27,6 +27,9 @@ bundle("build_inspector_overlay") {
+     "tool_screenshot.css",
+     "tool_source_order.css",
+     "tool_window_controls.css",
++
++    # esbuild reads the tsconfig.json above the sources.
++    "tsconfig.json",
+   ]
+   deps = [
+     ":inspector_overlay",
+diff --git a/scripts/build/ninja/bundle.gni b/scripts/build/ninja/bundle.gni
+index 8ee2b2c699ba3e02395974fd4c09f821c7975953..cae966e683a7dd2ddfcfeb046d845d598908dae4 100644
+--- a/scripts/build/ninja/bundle.gni
++++ b/scripts/build/ninja/bundle.gni
+@@ -43,6 +43,14 @@ template("bundle") {
+       invoker.entrypoint,
+       devtools_location_prepend + "scripts/build/devtools_plugin.js",
+       devtools_location_prepend + "scripts/devtools_paths.js",
++
++      # esbuild reads the package.json and tsconfig.json files (following
++      # "extends") above each file it bundles, and they change the output:
++      # e.g. "strict" in tsconfig.base.json makes it emit "use strict". The
++      # ones of third_party packages are inputs of the package's targets.
++      devtools_location_prepend + "package.json",
++      devtools_location_prepend + "config/typescript/tsconfig.base.json",
++      devtools_location_prepend + "front_end/tsconfig.json",
+     ]
+     if (defined(invoker.inputs)) {
+       inputs += invoker.inputs
+@@ -178,6 +186,10 @@ template("bundle") {
+     }
+ 
+     outputs = [ invoker.output_file_location ]
++    if (_sourcemap) {
++      # esbuild writes the source map next to the bundle.
++      outputs += [ "${invoker.output_file_location}.map" ]
++    }
+ 
+     if (defined(invoker.metafile)) {
+       args += [

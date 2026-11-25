@@ -110,15 +110,16 @@ jobs:
       with:
         go-version-file: chromium-build/siso/go.mod
         cache: false
-    - name: Test patched siso spawn-helper packages
+    - name: Test patched siso packages
       if: steps.cache-siso.outputs.cache-hit != 'true'
       working-directory: chromium-build/siso
       # Runs natively on the workflow host (no GOOS/GOARCH): `go build` alone
       # never compiles or runs _test.go files, so without this the tests the
       # in-tree patches add would not gate the build. localexec is included
-      # because it drives the spawn helper end-to-end.
+      # because it drives the spawn helper end-to-end; reapi covers the zstd
+      # encoder reuse patch.
       run: |
-        go test ./execute/spawnhelper/ ./execute/localexec/
+        go test ./execute/spawnhelper/ ./execute/localexec/ ./reapi/
     - name: Build siso (${{ inputs.host }})
       if: steps.cache-siso.outputs.cache-hit != 'true'
       working-directory: chromium-build/siso

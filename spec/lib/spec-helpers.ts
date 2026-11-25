@@ -1,6 +1,6 @@
 import type { BrowserWindow } from 'electron/main';
 
-import { afterAll, assert, beforeAll, describe, it } from 'vitest';
+import { afterAll, assert, beforeAll, describe, it, TestRunner } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
@@ -30,6 +30,22 @@ export const isWayland =
 // spawned apps in that end state directly so they skip the failed launches.
 export const ciGpuArgs: string[] =
   process.env.CI && process.platform === 'darwin' && process.arch === 'x64' ? ['--disable-gpu'] : [];
+
+// The worker's vitest config, handed over by spec/vitest/runner.ts. It is the
+// object vi.setConfig() changes.
+let specConfig: { testTimeout: number } | undefined;
+export function setSpecConfig(config: { testTimeout: number }) {
+  specConfig = config;
+}
+
+// How long the running test may take: its own timeout if it sets one, else
+// testTimeout from spec/vitest.config.ts (ELECTRON_SPEC_TIMEOUT). Outside a
+// test, e.g. while a spec file is being collected, the configured testTimeout.
+export function getSpecTimeout(): number {
+  const timeout = TestRunner.getCurrentTest()?.timeout ?? specConfig?.testTimeout;
+  if (timeout === undefined) throw new Error('getSpecTimeout() needs the runner from spec/vitest/runner.ts');
+  return timeout;
+}
 
 type CleanupFunction = (() => void) | (() => Promise<void>);
 // Each cleanup comes with the error it fails with if it times out,
@@ -117,15 +133,14 @@ class RemoteControlApp {
 export async function startRemoteControlApp(extraArgs: string[] = [], options?: childProcess.SpawnOptionsWithoutStdio) {
   const appPath = path.join(import.meta.dirname, '..', 'fixtures', 'apps', 'remote-control');
   // The app quits by itself after --remote-app-timeout (30s unless given) in
-  // case nothing stops it. Sanitizer builds give each test 180s
-  // (ELECTRON_SPEC_TIMEOUT) and are slow enough that a test can still be
-  // talking to the app after 30s, which then fails with "socket hang up" or
-  // hangs. Keep the app alive at least as long as the test may run; defer()
-  // below stops it when the test is done.
-  const specTimeout = Number(process.env.ELECTRON_SPEC_TIMEOUT) || 30_000;
+  // case nothing stops it. A test can run for longer than that (sanitizer
+  // builds give each test 180s, and some tests set a longer timeout of their
+  // own), and one still talking to the app after it quit fails with "socket
+  // hang up" or hangs. Keep the app alive as long as the test may run;
+  // defer() below stops it when the test is done.
   const timeoutArgs = extraArgs.some((arg) => arg.startsWith('--remote-app-timeout='))
     ? []
-    : [`--remote-app-timeout=${specTimeout}`];
+    : [`--remote-app-timeout=${getSpecTimeout()}`];
   const appProcess = childProcess.spawn(
     process.execPath,
     [appPath, ...ciGpuArgs, ...timeoutArgs, ...extraArgs],
@@ -220,12 +235,27 @@ export async function spawnAndWait(
 
   let timedOut = false;
   let killTimeoutId: NodeJS.Timeout | undefined;
+  let stopReadingTimeoutId: NodeJS.Timeout | undefined;
+  let stdioHeldOpen = false;
+  // 'close' also waits for stdout and stderr to close, and a descendant that
+  // inherited them can keep them open long after the child has exited (Windows
+  // testing builds hand both to their sandboxed child processes). So once
+  // timed out, stop reading them a moment after the child exits.
+  const stopReadingSoon = () => {
+    stopReadingTimeoutId = globalThis.setTimeout(() => {
+      stdioHeldOpen = true;
+      child.stdout.destroy();
+      child.stderr.destroy();
+    }, 1000);
+  };
   const timeoutId = globalThis.setTimeout(() => {
     timedOut = true;
     child.kill();
     killTimeoutId = globalThis.setTimeout(() => {
       child.kill('SIGKILL');
     }, killTimeout);
+    if (child.exitCode !== null || child.signalCode !== null) stopReadingSoon();
+    else child.once('exit', stopReadingSoon);
   }, timeout);
 
   const [code, signal] = await new Promise<[number | null, NodeJS.Signals | null]>((resolve, reject) => {
@@ -236,12 +266,16 @@ export async function spawnAndWait(
   }).finally(() => {
     globalThis.clearTimeout(timeoutId);
     if (killTimeoutId) globalThis.clearTimeout(killTimeoutId);
+    if (stopReadingTimeoutId) globalThis.clearTimeout(stopReadingTimeoutId);
   });
 
   const output = formatSpawnOutput(stdout, stderr, stripOutput);
   if (timedOut) {
+    const status = stdioHeldOpen
+      ? `It exited with code ${code} and signal ${signal}, but its stdout or stderr stayed open.`
+      : `Process closed with code ${code} and signal ${signal}.`;
     throw new Error(
-      `Timed out after ${timeout}ms waiting for ${command} ${args.join(' ')} to exit. Process closed with code ${code} and signal ${signal}.\n\nstdout:\n${output.stdout}\n\nstderr:\n${output.stderr}`
+      `Timed out after ${timeout}ms waiting for ${command} ${args.join(' ')} to exit. ${status}\n\nstdout:\n${output.stdout}\n\nstderr:\n${output.stderr}`
     );
   }
 

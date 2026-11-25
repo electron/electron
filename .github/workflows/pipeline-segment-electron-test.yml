@@ -30,6 +30,11 @@ on:
         required: false
         type: boolean
         default: false
+      is-coverage:
+        description: 'Running against a Clang source-based code coverage build'
+        required: false
+        type: boolean
+        default: false
       enable-ssh:
         description: 'Enable SSH debugging'
         required: false
@@ -66,7 +71,7 @@ on:
         required: false
 
 concurrency:
-  group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ inputs.is-ubsan }}-${{ inputs.display-server }}-${{ github.ref_protected == true && github.run_id || github.ref }}
+  group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ inputs.is-ubsan }}-${{ inputs.is-coverage }}-${{ inputs.display-server }}-${{ github.ref_protected == true && github.run_id || github.ref }}
   cancel-in-progress: ${{ github.ref_protected != true }}
 
 permissions: {}
@@ -94,8 +99,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build-type: ${{ inputs.target-platform == 'macos' && (inputs.is-ubsan && fromJSON('["darwin"]') || fromJSON('["darwin","mas"]')) || (inputs.target-platform == 'win' && fromJSON('["win"]') || fromJSON('["linux"]')) }}
-        shard: ${{ case(inputs.display-server == 'wayland', fromJSON('[1]'), inputs.target-platform == 'macos' && inputs.is-ubsan, fromJSON('[1, 2, 3]'), inputs.target-platform == 'linux', fromJSON('[1, 2, 3]'), inputs.target-platform == 'macos' && !inputs.full-macos-tests && inputs.target-arch == 'x64', fromJSON('[1]'), inputs.target-platform == 'macos' && inputs.target-arch == 'x64', fromJSON('[1, 2, 3]'), fromJSON('[1, 2]')) }}
+        build-type: ${{ inputs.target-platform == 'macos' && ((inputs.is-ubsan || inputs.is-coverage) && fromJSON('["darwin"]') || fromJSON('["darwin","mas"]')) || (inputs.target-platform == 'win' && fromJSON('["win"]') || fromJSON('["linux"]')) }}
+        # Coverage runs unsharded so the whole suite lands in one profile set.
+        shard: ${{ case(inputs.display-server == 'wayland', fromJSON('[1]'), inputs.is-coverage, fromJSON('[1]'), inputs.target-platform == 'macos' && inputs.is-ubsan, fromJSON('[1, 2, 3]'), inputs.target-platform == 'linux', fromJSON('[1, 2, 3]'), inputs.target-platform == 'macos' && !inputs.full-macos-tests && inputs.target-arch == 'x64', fromJSON('[1]'), inputs.target-platform == 'macos' && inputs.target-arch == 'x64', fromJSON('[1, 2, 3]'), fromJSON('[1, 2]')) }}
         # The reduced macOS arm64 leg keeps both darwin shards and runs mas on
         # a single one; the reduced x64 leg is already one shard per variant.
         exclude: ${{ inputs.target-platform == 'macos' && !inputs.full-macos-tests && inputs.target-arch == 'arm64' && fromJSON('[{"build-type":"mas","shard":2}]') || fromJSON('[]') }}
@@ -108,6 +114,7 @@ jobs:
       # elsewhere. The mas list wins on mas_x64: its arch coverage comes from
       # the darwin_x64 leg of the same run.
       MACOS_SPEC_ALLOWLIST: ${{ inputs.target-platform == 'macos' && !inputs.full-macos-tests && (matrix.build-type == 'mas' && 'script/macos-mas-spec-allowlist.txt' || inputs.target-arch == 'x64' && 'script/macos-x64-spec-allowlist.txt') || '' }}
+      COVERAGE_PROFILE_DIR: /tmp/electron-coverage
       # depot_tools' unbootstrapped python3 wrapper (crrev.com/c/8162440) breaks system python3 resolution; bypass it
       DEPOT_TOOLS_PYTHON_BYPASS: 1
     steps:
@@ -126,18 +133,29 @@ jobs:
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
         epochdate=$(($(date +'%s * 1000 + %-N / 1000000')))
+        # The sqlite3 CLI doesn't wait for locks by default, so the insert can fail
+        # with "database is locked" if tccd has TCC.db open at the same time. Wait
+        # up to 10s for the lock and retry a few times; the insert is idempotent.
+        insert_tccdb () {
+          local dbPath=$1
+          local values=$2
+          shift 2
+          local sqlQuery="BEGIN IMMEDIATE; INSERT OR REPLACE INTO access VALUES($values); COMMIT;"
+          local attempt
+          for attempt in 1 2 3 4 5; do
+            "$@" sqlite3 -cmd ".timeout 10000" "$dbPath" "$sqlQuery" && return 0
+            echo "Failed to update $dbPath (attempt $attempt), retrying in $((attempt * 2))s..."
+            sleep $((attempt * 2))
+          done
+          return 1
+        }
+
         configure_user_tccdb () {
-          local values=$1
-          local dbPath="$HOME/Library/Application Support/com.apple.TCC/TCC.db"
-          local sqlQuery="INSERT OR REPLACE INTO access VALUES($values);"
-          sqlite3 "$dbPath" "$sqlQuery"
+          insert_tccdb "$HOME/Library/Application Support/com.apple.TCC/TCC.db" "$1"
         }
 
         configure_sys_tccdb () {
-          local values=$1
-          local dbPath="/Library/Application Support/com.apple.TCC/TCC.db"
-          local sqlQuery="INSERT OR REPLACE INTO access VALUES($values);"
-          sudo sqlite3 "$dbPath" "$sqlQuery"
+          insert_tccdb "/Library/Application Support/com.apple.TCC/TCC.db" "$1" sudo
         }
 
         userValuesArray=(
@@ -147,6 +165,15 @@ jobs:
             "'kTCCServiceCamera','/opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
             "'kTCCServiceBluetoothAlways','/opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
             "'kTCCServiceScreenCapture','/bin/bash',1,2,3,1,NULL,NULL,NULL,'UNUSED',NULL,0,$epochdate"
+            # The specs run under script/actions/check-macos-tcc.sh's disclaim
+            # wrapper, which makes /bin/bash their responsible process, so it
+            # needs every service they use. The hosted-compute-agent rows cover
+            # jobs that still run without the wrapper.
+            "'kTCCServicePostEvent','/bin/bash',1,2,3,1,NULL,NULL,NULL,'UNUSED',NULL,0,$epochdate"
+            "'kTCCServiceAccessibility','/bin/bash',1,2,3,1,NULL,NULL,NULL,'UNUSED',NULL,0,$epochdate"
+            "'kTCCServiceScreenCapture','/opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,$epochdate"
+            "'kTCCServicePostEvent','/opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,$epochdate"
+            "'kTCCServiceAccessibility','/opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,$epochdate"
         )
         for values in "${userValuesArray[@]}"; do
           # Sonoma and higher have a few extra values
@@ -217,6 +244,42 @@ jobs:
         echo "ARTIFACT_KEY=${BUILD_TYPE}_${TARGET_ARCH}_ubsan" >> $GITHUB_ENV
         echo "DISABLE_CRASH_REPORTER_TESTS=true" >> $GITHUB_ENV
         echo "IS_UBSAN=true" >> $GITHUB_ENV
+    - name: Load coverage specific environment variables
+      if: ${{ inputs.is-coverage == true && inputs.target-platform != 'win' }}
+      run: |
+        # World-writable because Linux tests run as builduser via runuser, and
+        # every Electron child process inherits LLVM_PROFILE_FILE and writes here.
+        mkdir -p "$COVERAGE_PROFILE_DIR"
+        chmod 777 "$COVERAGE_PROFILE_DIR"
+        # %4m caps the profile set at four files (the runtime merges into them
+        # under a lock); %c enables continuous mode so counters survive the
+        # abnormal exits and sandboxed processes the suite produces.
+        echo "LLVM_PROFILE_FILE=$COVERAGE_PROFILE_DIR/electron.%4m%c.profraw" >> $GITHUB_ENV
+        echo "IS_COVERAGE=true" >> $GITHUB_ENV
+    # Apps launched through LaunchServices (e.g. ShipIt's post-update relaunch
+    # in the autoUpdater specs) get launchd's environment, not the job's.
+    - name: Set coverage profile path for LaunchServices launches on macOS
+      if: ${{ inputs.is-coverage == true && inputs.target-platform == 'macos' }}
+      run: |
+        launchctl setenv LLVM_PROFILE_FILE "$COVERAGE_PROFILE_DIR/electron.%4m%c.profraw"
+        launchctl getenv LLVM_PROFILE_FILE
+    # Sandboxed renderer and GPU processes run at Low integrity on Windows and
+    # cannot write to a normal (Medium) directory, so label the profile
+    # directory Low and have the files created in it inherit that label.
+    # Same %4m%c pattern as above; continuous mode maps the profile at process
+    # startup, before the sandbox lowers the token.
+    - name: Load coverage specific environment variables (Windows)
+      if: ${{ inputs.is-coverage == true && inputs.target-platform == 'win' }}
+      shell: pwsh
+      run: |
+        $dir = Join-Path $env:RUNNER_TEMP 'electron-coverage'
+        New-Item -ItemType Directory -Force -Path $dir | Out-Null
+        icacls $dir /setintegritylevel '(OI)(CI)low'
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        icacls $dir
+        "COVERAGE_PROFILE_DIR=$dir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+        "LLVM_PROFILE_FILE=$dir\electron.%4m%c.profraw" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+        "IS_COVERAGE=true" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
     # Safe to parallelize: each step writes a disjoint location (src/electron
     # node_modules, ./depot_tools, ./generated_artifacts_*, ./src_artifacts_*,
     # system CUPS state) and none reads another's output; the env/PATH changes
@@ -334,6 +397,9 @@ jobs:
         cd src/out/Default
         Expand-Archive -Force dist.zip -DestinationPath ./
         if (Test-Path xcache.zip) { Expand-Archive -Force xcache.zip -DestinationPath ./ }
+    - name: Strip coverage mapping from electron.exe (win)
+      if: ${{ inputs.is-coverage && inputs.target-platform == 'win' }}
+      run: node src/electron/script/actions/strip-coverage-mapping-win.mjs src/out/Default/electron.exe
     - name: Unzip Dist (unix)
       if: ${{ inputs.target-platform != 'win' }}
       run: |
@@ -363,13 +429,13 @@ jobs:
           -f src/out/Default/Electron.app
 
     # Some hosted macOS VMs deny screen capture and synthetic input to the job
-    # even though the image and the TCC step above grant them. Print what TCC
-    # needs to explain why (process chain, TCC.db rows, tccd attribution) and
-    # warn; this step never changes TCC state or fails the job.
+    # even though the image and the TCC step above grant them. Check access
+    # with and without the disclaim wrapper the specs run under, print the TCC
+    # diagnostics, and fail here, before the specs, when the host denies it
+    # either way. Exports MACOS_TCC_DISCLAIM when the wrapper should be used.
     - name: Check TCC access on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       timeout-minutes: 5
-      continue-on-error: true
       run: src/electron/script/actions/check-macos-tcc.sh
 
     # On GitHub-hosted Windows runners the agent's terminal window sits in the
@@ -417,7 +483,7 @@ jobs:
         TARGET_PLATFORM: ${{ inputs.target-platform }}
         DISPLAY_SERVER: ${{ inputs.display-server }}
         SHARD: ${{ matrix.shard }}
-        SHARD_COUNT: ${{ case(inputs.display-server == 'wayland', 1, env.MACOS_SPEC_ALLOWLIST != '', 1, inputs.target-platform == 'macos' && inputs.is-ubsan, 3, inputs.target-platform == 'linux', 3, inputs.target-platform == 'macos' && inputs.target-arch == 'x64', 3, 2) }}
+        SHARD_COUNT: ${{ case(inputs.display-server == 'wayland', 1, inputs.is-coverage, 1, env.MACOS_SPEC_ALLOWLIST != '', 1, inputs.target-platform == 'macos' && inputs.is-ubsan, 3, inputs.target-platform == 'linux', 3, inputs.target-platform == 'macos' && inputs.target-arch == 'x64', 3, 2) }}
       run: |
         cd src/electron
         export ELECTRON_TEST_RESULTS_DIR=`pwd`/junit
@@ -473,12 +539,23 @@ jobs:
             export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1:external_symbolizer_path=$PWD/../third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer"
             export ELECTRON_SPEC_TIMEOUT=180000
           fi
-          node script/yarn.js test --runners=main --trace-uncaught $LOGGING_ARGS --files $tests_files
+          # On macOS, run the specs as their own TCC responsible process (via
+          # /bin/bash) rather than the runner agent's; see check-macos-tcc.sh.
+          SPEC_LAUNCHER=()
+          if [ -n "${MACOS_TCC_DISCLAIM:-}" ]; then
+            SPEC_LAUNCHER=("$MACOS_TCC_DISCLAIM" /bin/bash -c '"$@"; exit $?' bash)
+          fi
+          "${SPEC_LAUNCHER[@]}" node script/yarn.js test --runners=main --trace-uncaught $LOGGING_ARGS --files $tests_files
         else
           chown :builduser .. && chmod g+w ..
           chown -R :builduser . && chmod -R g+w .
           chmod 4755 ../out/Default/chrome-sandbox
           runuser -u builduser -- git config --global --add safe.directory $(pwd)
+          # xvfb-run's default screen, plus -noreset: otherwise Xvfb resets
+          # whenever its last client disconnects and drops connections that
+          # arrive meanwhile, so a spec worker starting just as the others quit
+          # exits with "Missing X server or $DISPLAY" before it is ready.
+          XVFB_RUN=(xvfb-run -s "-screen 0 1280x1024x24 -noreset")
           if [ "$IS_ASAN" == "true" ]; then
             cd ..
             ASAN_SYMBOLIZE="$PWD/tools/valgrind/asan/asan_symbolize.py --executable-path=$PWD/out/Default/electron"
@@ -495,18 +572,18 @@ jobs:
             export ELECTRON_SPEC_TIMEOUT=180000
             echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
             cd electron
-            runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
+            runuser -u builduser -- "${XVFB_RUN[@]}" script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
           elif [ "$IS_UBSAN" == "true" ]; then
             cd ..
             export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1:external_symbolizer_path=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer"
             export ELECTRON_SPEC_TIMEOUT=180000
             cd electron
-            runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
+            runuser -u builduser -- "${XVFB_RUN[@]}" script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
           else
             if [ "$DISPLAY_SERVER" = "wayland" ]; then
               runuser -u builduser -- script/actions/run-tests-wayland.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
             else
-              runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
+              runuser -u builduser -- "${XVFB_RUN[@]}" script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
             fi
           fi
         fi
@@ -568,6 +645,16 @@ jobs:
         name: ${{ inputs.target-platform == 'linux' && format('test_artifacts_{0}_{1}_{2}', env.ARTIFACT_KEY, inputs.display-server, matrix.shard) || format('test_artifacts_{0}_{1}', env.ARTIFACT_KEY, matrix.shard) }}
         path: src/electron/spec/artifacts
         if-no-files-found: ignore
+    # Raw counters only; pipeline-segment-electron-coverage-report.yml indexes
+    # them and renders the report.
+    - name: Upload Coverage Profiles
+      if: ${{ inputs.is-coverage && !cancelled() }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 #v7.0.2
+      with:
+        name: coverage_profraw_${{ env.ARTIFACT_KEY }}
+        path: ${{ env.COVERAGE_PROFILE_DIR }}
+        if-no-files-found: error
+        retention-days: 7
     - name: Wait for active SSH sessions
       if: always() && !cancelled()
       shell: bash

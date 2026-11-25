@@ -15,10 +15,10 @@ capturer was window or screen-specific, as the IDs remain valid for
 generic capturer as well.
 
 diff --git a/content/browser/media/capture/desktop_capture_device.cc b/content/browser/media/capture/desktop_capture_device.cc
-index 5866c4ae91052efc7b6d211b1fdc3e6b9fa7e6ae..9eca3638fcf7215d6a416b5420e27fbe18c0b47a 100644
+index 7a88c4f355ef19fefdd94d1b0800c71234b1b474..4251f82f1207eee1689ff54b541def8b606a9af7 100644
 --- a/content/browser/media/capture/desktop_capture_device.cc
 +++ b/content/browser/media/capture/desktop_capture_device.cc
-@@ -1413,9 +1413,16 @@ std::unique_ptr<media::VideoCaptureDevice> DesktopCaptureDevice::Create(
+@@ -1410,9 +1410,16 @@ std::unique_ptr<media::VideoCaptureDevice> DesktopCaptureDevice::Create(
  
    switch (source.type) {
      case DesktopMediaID::TYPE_SCREEN: {
@@ -38,7 +38,7 @@ index 5866c4ae91052efc7b6d211b1fdc3e6b9fa7e6ae..9eca3638fcf7215d6a416b5420e27fbe
        if (screen_capturer && screen_capturer->SelectSource(source.id)) {
          capturer = std::make_unique<webrtc::DesktopAndCursorComposer>(
              std::move(screen_capturer), options);
-@@ -1432,8 +1439,15 @@ std::unique_ptr<media::VideoCaptureDevice> DesktopCaptureDevice::Create(
+@@ -1429,8 +1436,15 @@ std::unique_ptr<media::VideoCaptureDevice> DesktopCaptureDevice::Create(
      }
  
      case DesktopMediaID::TYPE_WINDOW: {

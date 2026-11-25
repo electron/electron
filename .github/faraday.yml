@@ -20,6 +20,13 @@ trusted-bots:
   - login: electron-roller[bot]
     id: 84116207
 
+# A passing Claude Code Review counts as one approval (never the last one)
+# on roller PRs only — e.g. the second review on a roll a human pushed to.
+trust-claude-code-review:
+  authors:
+    - login: electron-roller[bot]
+      id: 84116207
+
 trusted-reviewers:
   # Docs reviewer app — counts as at most one approval, and only
   # when every changed file is under docs/.

@@ -13,7 +13,8 @@
 #include "base/containers/span.h"
 #include "base/functional/callback.h"
 #include "base/functional/callback_helpers.h"
-#include "base/memory/memory_pressure_listener_registry.h"
+#include "base/memory/memory_pressure_level.h"
+#include "base/memory_coordinator/memory_pressure_source.h"
 #include "base/no_destructor.h"
 #include "base/strings/strcat.h"
 #include "base/strings/utf_string_conversions.h"
@@ -44,6 +45,7 @@
 #include "shell/renderer/api/electron_api_context_bridge.h"
 #include "shell/renderer/api/electron_api_spell_check_client.h"
 #include "shell/renderer/electron_render_frame_observer.h"
+#include "shell/renderer/inserted_css.h"
 #include "shell/renderer/renderer_client_base.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
@@ -673,11 +675,8 @@ class WebFrameRenderer final
 
     blink::WebFrame* web_frame = render_frame->GetWebFrame();
     if (web_frame->IsWebLocalFrame()) {
-      return web_frame->ToWebLocalFrame()
-          ->GetDocument()
-          .InsertStyleSheet(blink::WebString::FromUtf8(css), nullptr,
-                            css_origin)
-          .Utf16();
+      return InsertStyleSheet(web_frame->ToWebLocalFrame()->GetDocument(), css,
+                              css_origin);
     }
     return {};
   }
@@ -689,8 +688,8 @@ class WebFrameRenderer final
 
     blink::WebFrame* web_frame = render_frame->GetWebFrame();
     if (web_frame->IsWebLocalFrame()) {
-      web_frame->ToWebLocalFrame()->GetDocument().RemoveInsertedStyleSheet(
-          blink::WebString::FromUtf16(key));
+      RemoveInsertedStyleSheet(web_frame->ToWebLocalFrame()->GetDocument(),
+                               key);
     }
   }
 
@@ -887,7 +886,7 @@ class WebFrameRenderer final
 
   void ClearCache(v8::Isolate* isolate) {
     blink::WebCache::Clear();
-    base::MemoryPressureListenerRegistry::NotifyMemoryPressure(
+    base::MemoryPressureSource::SimulatePressureNotification(
         base::MEMORY_PRESSURE_LEVEL_CRITICAL);
   }
 

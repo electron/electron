@@ -260,10 +260,8 @@ function attachDiagnostics(win) {
     diag.unresponsive = true;
     log('DIAGNOSTIC: renderer became unresponsive');
   });
-  win.webContents.on('console-message', (event, legacyLevel, legacyMessage) => {
-    const level = typeof event.level === 'string' ? event.level : legacyLevel;
-    const message = event.message !== undefined ? event.message : legacyMessage;
-    if (level === 'error' || level === 3) {
+  win.webContents.on('console-message', ({ level, message }) => {
+    if (level === 'error') {
       diag.consoleErrors.push(String(message).slice(0, 500));
     }
   });

@@ -170,9 +170,10 @@ void OffScreenVideoConsumer::OnFrameCaptured(
     }
 #endif
 
-    // The release holder will be released from JS side when `release` called
-    texture.releaser_holder = new OffscreenReleaserHolder(std::move(gmb_handle),
-                                                          std::move(callbacks));
+    // The JS texture object takes a reference; the frame is returned once it
+    // calls `release()` and this value goes out of scope.
+    texture.releaser_holder = base::MakeRefCounted<OffscreenReleaserHolder>(
+        std::move(gmb_handle), std::move(callbacks));
 
     callback_.Run(content_rect, {}, std::move(texture));
     return;
@@ -226,7 +227,7 @@ void OffScreenVideoConsumer::OnFrameCaptured(
 
   // The SkBitmap's pixels will be marked as immutable, but the installPixels()
   // API requires a non-const pointer. So, cast away the const.
-  void* const pixels = const_cast<void*>(mapping.memory());
+  void* const pixels = const_cast<uint8_t*>(mapping.data());
 
   // Call installPixels() with a |releaseProc| that: 1) notifies the capturer
   // that this consumer has finished with the frame, and 2) releases the shared

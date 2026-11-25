@@ -13,6 +13,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/weak_persistent.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "v8/include/cppgc/allocation.h"
@@ -103,7 +104,7 @@ void AutoUpdater::OnUpdateDownloaded(const std::string& release_notes,
   Emit("update-downloaded", release_notes, release_name, release_date, url,
        // Keep compatibility with old APIs.
        base::BindRepeating(&AutoUpdater::QuitAndInstall,
-                           base::Unretained(this)));
+                           gin_helper::WrapWeakPersistent(this)));
 }
 
 void AutoUpdater::OnWindowAllClosed() {

@@ -13,24 +13,23 @@
 #include "base/compiler_specific.h"
 #include "base/containers/span.h"
 #include "base/logging.h"
-#include "base/synchronization/lock.h"
+#include "base/no_destructor.h"
 #include "base/task/current_thread.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/initialization_util.h"
-#include "base/thread_annotations.h"
 #include "electron/snapshot_checksum.h"
 #include "gin/array_buffer.h"
 #include "gin/per_isolate_data.h"
 #include "gin/public/isolate_holder.h"
 #include "gin/v8_initializer.h"
-#include "partition_alloc/partition_alloc_constants.h"
+#include "partition_alloc/partition_alloc.h"
+#include "partition_alloc/partition_root.h"
 #include "shell/browser/microtasks_runner.h"
 #include "shell/browser/native_peer.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/process_util.h"
-#include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 #include "third_party/blink/public/common/switches.h"
 #include "third_party/electron_node/src/node_snapshot_builder.h"
 #include "third_party/electron_node/src/node_wasm_web_api.h"
@@ -49,68 +48,94 @@ namespace electron {
 namespace {
 
 #if defined(V8_ENABLE_SANDBOX)
-// V8's built-in in-sandbox allocator (behind ArrayBuffer::Allocator::
-// NewDefaultAllocator(), which Node uses for Buffers) is a slow fallback that
-// embedders are expected to replace; route it to gin's PartitionAlloc
-// partition inside the sandbox, as Blink does for renderers. Requests beyond
-// PartitionAlloc's single-allocation cap (~2 GiB) come straight from the
-// sandbox's address space instead.
-class InSandboxAllocator final : public v8::Allocator {
+// The ArrayBuffer allocator of every JavascriptEnvironment isolate (browser
+// process, ELECTRON_RUN_AS_NODE, the utility-process node service) and V8's
+// in-sandbox allocator, which Node.js reaches through
+// ArrayBuffer::Allocator::NewDefaultAllocator() for worker_threads isolates.
+// Like d8's PAInSandboxAllocator: a PartitionAlloc partition in the
+// configurable pool, which gin::V8Initializer::Initialize() places inside the
+// V8 sandbox. Unlike gin's array buffer partition, it allows giga allocations,
+// so a single ArrayBuffer can reach partition_alloc::MaxGigaAllocationSize()
+// (16 GiB - 2 MiB) instead of MaxAllocationSize() (2 GiB - 2 MiB), as Blink's
+// allocator allows for renderers.
+class PAInSandboxAllocator final : public v8::Allocator,
+                                   public v8::ArrayBuffer::Allocator {
  public:
+  static std::shared_ptr<PAInSandboxAllocator> SharedInstance() {
+    static base::NoDestructor<std::shared_ptr<PAInSandboxAllocator>> instance(
+        std::make_shared<PAInSandboxAllocator>());
+    return *instance;
+  }
+
   void* Allocate(size_t size) override {
-    if (size > partition_alloc::MaxAllocationSize())
-      return AllocatePages(size);
-    return gin::ArrayBufferAllocator::SharedInstance()->Allocate(size);
+    constexpr partition_alloc::AllocFlags flags =
+        partition_alloc::AllocFlags::kZeroFill |
+        partition_alloc::AllocFlags::kReturnNull;
+    return AllocateInternal<flags>(size);
   }
+
   void* AllocateUninitialized(size_t size) override {
-    if (size > partition_alloc::MaxAllocationSize())
-      return AllocatePages(size);
-    return gin::ArrayBufferAllocator::SharedInstance()->AllocateUninitialized(
-        size);
+    constexpr partition_alloc::AllocFlags flags =
+        partition_alloc::AllocFlags::kReturnNull;
+    return AllocateInternal<flags>(size);
   }
+
   void* AllocateUninitializedOrCrash(size_t size) override {
     void* result = AllocateUninitialized(size);
     CHECK(result);
     return result;
   }
+
+  void Free(void* data, size_t /* length */) override { Free(data); }
+
   void Free(void* ptr) override {
     if (!ptr)
       return;
-    {
-      base::AutoLock lock(lock_);
-      auto it = pages_.find(ptr);
-      if (it != pages_.end()) {
-        v8::V8::GetSandboxAddressSpace()->FreePages(
-            reinterpret_cast<uintptr_t>(ptr), it->second);
-        pages_.erase(it);
-        return;
-      }
-    }
-    gin::ArrayBufferAllocator::SharedInstance()->Free(ptr, 0);
+    // See AllocateInternal().
+    Partition()->Free<partition_alloc::FreeFlags::kNoMemoryToolOverride>(ptr);
   }
 
  private:
-  // Fresh sandbox pages are zero-filled, so this serves both entry points.
-  void* AllocatePages(size_t size) {
-    v8::VirtualAddressSpace* space = v8::V8::GetSandboxAddressSpace();
-    size_t granularity = space->allocation_granularity();
-    size_t rounded = (size + granularity - 1) / granularity * granularity;
-    if (rounded < size)
-      return nullptr;
-    uintptr_t address =
-        space->AllocatePages(v8::VirtualAddressSpace::kNoHint, rounded,
-                             granularity, v8::PagePermissions::kReadWrite);
-    if (!address)
-      return nullptr;
-    base::AutoLock lock(lock_);
-    pages_.emplace(reinterpret_cast<void*>(address), rounded);
-    return reinterpret_cast<void*>(address);
+  template <partition_alloc::AllocFlags flags>
+  static void* AllocateInternal(size_t length) {
+    // Backing stores must be inside the sandbox, which allocation override
+    // hooks (e.g. GWP-ASan) and memory tools (e.g. ASan) that override malloc
+    // do not guarantee, so bypass both, as gin and d8 do.
+    constexpr auto new_flags =
+        flags | partition_alloc::AllocFlags::kAllowGigaAllocations |
+        partition_alloc::AllocFlags::kNoOverrideHooks |
+        partition_alloc::AllocFlags::kNoMemoryToolOverride;
+    return Partition()->Alloc<new_flags>(length, "PAInSandboxAllocator");
   }
 
-  base::Lock lock_;
-  absl::flat_hash_map<void*, size_t> pages_ GUARDED_BY(lock_);
+  // Created on first use, which is after gin::V8Initializer::Initialize() has
+  // set up the configurable pool inside the sandbox: nothing allocates an
+  // ArrayBuffer before the first isolate exists.
+  static partition_alloc::PartitionRoot* Partition() {
+    static base::NoDestructor<partition_alloc::PartitionAllocator> allocator(
+        []() {
+          partition_alloc::PartitionOptions opts;
+          opts.backup_ref_ptr = partition_alloc::PartitionOptions::kDisabled;
+          opts.use_configurable_pool =
+              partition_alloc::PartitionOptions::kAllowed;
+          // Without this, kAllowGigaAllocations above keeps the
+          // MaxAllocationSize() cap.
+          opts.allow_giga_allocations =
+              partition_alloc::PartitionOptions::kAllowed;
+          return opts;
+        }());
+    return allocator->root();
+  }
 };
 #endif
+
+v8::ArrayBuffer::Allocator* GetIsolateArrayBufferAllocator() {
+#if defined(V8_ENABLE_SANDBOX)
+  return PAInSandboxAllocator::SharedInstance().get();
+#else
+  return gin::ArrayBufferAllocator::SharedInstance();
+#endif
+}
 
 // Whether the V8 snapshot blob this process loaded (v8_context_snapshot.bin,
 // or in the browser process under the LoadBrowserProcessSpecificV8Snapshot
@@ -146,6 +171,12 @@ const node::SnapshotData* NodeSnapshotForThisProcess() {
   static const node::SnapshotData* const snapshot =
       []() -> const node::SnapshotData* {
     if (!electron::IsBrowserProcess() && !electron::IsUtilityProcess())
+      return nullptr;
+    // --no-node-snapshot, as node::Start() honors it. Only ELECTRON_RUN_AS_NODE
+    // has parsed Node's options by now (shell/app/node_main.cc); the browser
+    // process and the node service parse them after creating their
+    // JavascriptEnvironment, so the option keeps its default (true) there.
+    if (!node::per_process::cli_options->node_snapshot)
       return nullptr;
     const node::SnapshotData* embedded =
         node::SnapshotBuilder::GetEmbeddedSnapshotData();
@@ -276,15 +307,14 @@ v8::Isolate* JavascriptEnvironment::Initialize(
 
   v8::V8::InitializePlatform(platform_.get());
   gin::IsolateHolder::Initialize(
-      gin::IsolateHolder::kNonStrictMode,
-      gin::ArrayBufferAllocator::SharedInstance(),
+      gin::IsolateHolder::kNonStrictMode, GetIsolateArrayBufferAllocator(),
       nullptr /* external_reference_table */, js_flags,
       false /* disallow_v8_feature_flag_overrides */,
       nullptr /* fatal_error_callback */, nullptr /* oom_error_callback */,
       false /* create_v8_platform */);
 
 #if defined(V8_ENABLE_SANDBOX)
-  v8::V8::SetInSandboxAllocator(std::make_shared<InSandboxAllocator>());
+  v8::V8::SetInSandboxAllocator(PAInSandboxAllocator::SharedInstance());
 #endif
 
   v8::Isolate* isolate = v8::Isolate::Allocate();

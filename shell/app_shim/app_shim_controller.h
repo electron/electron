@@ -109,6 +109,7 @@ class AppShimController : public mojom::AppShim, private AppShimMenu::Client {
                          const std::string& type,
                          int32_t duration_ms,
                          int32_t state) override;
+  void SetWindowHasShadow(uint64_t window_id, bool has_shadow) override;
   void PerformWindowTabAction(uint64_t window_id,
                               mojom::AppShimTabAction action) override;
   void AddTabbedWindow(uint64_t window_id, uint64_t tabbed_window_id) override;

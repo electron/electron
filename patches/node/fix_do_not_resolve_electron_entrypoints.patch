@@ -8,10 +8,10 @@ reading a file named 'electron' from disk for it and expose the module's own
 keys as its named exports.
 
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 06f931edaf39a0dc2634db4da14df83bec821bf7..95e99e3bc9b74e4f217225a542b6a0748f6f0c1d 100644
+index f031ed81b9b27f2f5886b66f9c31cc575f029668..007d2e6035c117739276d3d12be7a0f4ac4ec672 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -429,6 +429,10 @@ function cjsPreparseModuleExports(filename, source, format) {
+@@ -434,6 +434,10 @@ function cjsPreparseModuleExports(filename, source, format) {
      return { module, exportNames: module[kModuleExportNames] };
    }
  

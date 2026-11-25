@@ -14,11 +14,18 @@ const versionHash = testing.computeV8VersionHashForTesting(embedder);
 const foreignVersionHash = testing.computeV8VersionHashForTesting(foreignEmbedder);
 assert.notEqual(versionHash, foreignVersionHash);
 
-const readVersionHash = (cache) => (os.endianness() === 'LE' ? cache.readUInt32LE(4) : cache.readUInt32BE(4));
-const foreignCache = (cache) => {
+// SerializedCodeData::kVersionHashOffset (v8/src/snapshot/code-serializer.h),
+// after the magic number, payload length and trusted payload length.
+const kScriptVersionHashOffset = 12;
+// WasmSerializer::kVersionHashOffset (v8/src/wasm/wasm-serialization.h).
+const kWasmVersionHashOffset = 4;
+
+const readVersionHash = (cache, offset) =>
+  os.endianness() === 'LE' ? cache.readUInt32LE(offset) : cache.readUInt32BE(offset);
+const foreignCache = (cache, offset) => {
   const copy = Buffer.from(cache);
-  if (os.endianness() === 'LE') copy.writeUInt32LE(foreignVersionHash, 4);
-  else copy.writeUInt32BE(foreignVersionHash, 4);
+  if (os.endianness() === 'LE') copy.writeUInt32LE(foreignVersionHash, offset);
+  else copy.writeUInt32BE(foreignVersionHash, offset);
   return copy;
 };
 
@@ -35,7 +42,7 @@ exports.javascript = () => {
   const source = '(() => 42)()';
   const producer = new vm.Script(source, { filename: 'producer.js' });
   const cache = producer.createCachedData();
-  assert.equal(readVersionHash(cache), versionHash);
+  assert.equal(readVersionHash(cache, kScriptVersionHashOffset), versionHash);
 
   const consume = (cachedData, filename) => {
     const script = new vm.Script(source, { filename, cachedData });
@@ -46,8 +53,8 @@ exports.javascript = () => {
     };
   };
   const matching = consume(cache, 'matching.js');
-  const foreign = consume(foreignCache(cache), 'foreign.js');
-  assert.equal(readVersionHash(foreign.cache), versionHash);
+  const foreign = consume(foreignCache(cache, kScriptVersionHashOffset), 'foreign.js');
+  assert.equal(readVersionHash(foreign.cache, kScriptVersionHashOffset), versionHash);
   const rebuilt = consume(foreign.cache, 'rebuilt.js');
   return report(matching, foreign, rebuilt);
 };
@@ -70,7 +77,7 @@ exports.webassembly = async (builderPath) => {
   const module = new WebAssembly.Module(wireBytes);
   const cache = testing.serializeWasmModuleForTesting(module);
   assert.ok(cache.length > 32, 'Expected serialized optimized Wasm code');
-  assert.equal(readVersionHash(cache), versionHash);
+  assert.equal(readVersionHash(cache, kWasmVersionHashOffset), versionHash);
 
   const consume = async (cachedData) => {
     const result = testing.compileWasmModuleWithCacheForTesting(wireBytes, cachedData);
@@ -85,8 +92,8 @@ exports.webassembly = async (builderPath) => {
     };
   };
   const matching = await consume(cache);
-  const foreign = await consume(foreignCache(cache));
-  assert.equal(readVersionHash(foreign.cache), versionHash);
+  const foreign = await consume(foreignCache(cache, kWasmVersionHashOffset));
+  assert.equal(readVersionHash(foreign.cache, kWasmVersionHashOffset), versionHash);
   const rebuilt = await consume(foreign.cache);
   return report(matching, foreign, rebuilt);
 };

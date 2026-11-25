@@ -8,9 +8,10 @@ Process: [Main](../glossary.md#main-process)
 const { app, netLog } = require('electron')
 
 app.whenReady().then(async () => {
-  await netLog.startLogging('/path/to/net-log')
+  const path = '/path/to/net-log'
+  await netLog.startLogging(path)
   // After some network events
-  const path = await netLog.stopLogging()
+  await netLog.stopLogging()
   console.log('Net-logs written to', path)
 })
 ```

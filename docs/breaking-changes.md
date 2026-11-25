@@ -14,11 +14,90 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Breaking API Changes (47.0)
+
+### Removed: `level`, `message`, `line`, and `sourceId` arguments in `console-message` event on `WebContents`
+
+The positional arguments of the `console-message` event on `WebContents`,
+deprecated in Electron 35, have been removed. Use the properties of the `Event`
+argument instead.
+
+```js
+// Removed
+webContents.on('console-message', (event, level, message, line, sourceId) => {})
+
+// Replace with:
+webContents.on('console-message', ({ level, message, lineNumber, sourceId, frame }) => {})
+```
+
+Note that `level` on the `Event` is a string with possible values of `info`,
+`warning`, `error`, and `debug`.
+
+The `console-message` event on `<webview>` is unchanged.
+
+### Behavior Changed: `useSystemPicker` follows `displaySurface`
+
+On macOS 15+, `session.setDisplayMediaRequestHandler(handler, { useSystemPicker: true })`
+now opens the same system picker Chrome uses:
+
+* The picker offers what the page asks for: windows for
+  `getDisplayMedia({ video: { displaySurface: 'window' } })`, screens for
+  `'monitor'`, and windows, applications and screens otherwise (screens only
+  on macOS 15.0 and 15.1). Previously it always offered everything.
+* When the page also asks for audio, the stream now includes system audio,
+  unless the page opts out. Previously the stream was video only. See
+  [`ses.setDisplayMediaRequestHandler`](api/session.md#sessetdisplaymediarequesthandlerhandler-opts).
+* The video track reports the picked kind: a screen now reports
+  `displaySurface: 'monitor'` instead of `'window'`. Its `deviceId` also
+  changes format.
+
+### Removed: `top-level-storage-access` permission
+
+Chromium has removed the `top-level-storage-access` permission type, so it is
+no longer a possible `permission` value in
+[`ses.setPermissionRequestHandler(handler)`](api/session.md#sessetpermissionrequesthandlerhandler)
+or [`ses.setPermissionCheckHandler(handler)`](api/session.md#sessetpermissioncheckhandlerhandler).
+Web content lost the ability to trigger this permission in Electron 46 when
+`document.requestStorageAccessFor` was removed.
+
+### Deprecated: `preconnect` event on `session`
+
+The `preconnect` event on `Session` is deprecated. Use the
+[`preconnect` event on `WebFrameMain`](api/web-frame-main.md#event-preconnect)
+instead, since preconnection hints belong to the frame that requested them.
+The session event continues to forward hints from live frames with a
+deprecation warning. Hints from frames that have already been destroyed are
+no longer emitted.
+
+```js
+// Deprecated
+win.webContents.session.on('preconnect', (event, url, allowCredentials, frame) => {})
+
+// Replace with:
+win.webContents.mainFrame.on('preconnect', (event, url, allowCredentials) => {})
+
+// To observe newly created frames, including subframes:
+win.webContents.on('frame-created', (event, { frame }) => {
+  frame?.on('preconnect', (event, url, allowCredentials) => {})
+})
+```
+
 ## Breaking API Changes (46.0)
 
-### Removed: `--no-stdio-init` command-line switch
+### Removed: `--experimental-transform-types` command-line switch
 
-The `--no-stdio-init` command-line switch has been removed.
+Node.js 26 removed the `--experimental-transform-types` flag, so Electron no
+longer accepts it. Electron ignores it on its command line, and
+`ELECTRON_RUN_AS_NODE` exits with a "bad option" error, as Node.js does.
+Type stripping of TypeScript files is still enabled by default; compile
+TypeScript-only syntax such as `enum` and `namespace` with a TypeScript
+compiler or bundler instead.
+
+### Behavior Changed: `--no-stdio-init` command-line switch is ignored
+
+The `--no-stdio-init` command-line switch no longer affects stdio initialization.
+It is still accepted and silently ignored, including in `ELECTRON_RUN_AS_NODE`
+mode, so existing launch arguments do not prevent startup.
 
 On Windows, Electron now automatically skips Node.js stdio initialization when
 the `NUL` device cannot be opened, instead of aborting startup. This applies to

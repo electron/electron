@@ -100,6 +100,8 @@ Returns `number` - The ID of this subscription
 
 Same as `subscribeNotification`, but uses `NSNotificationCenter` for local defaults.
 This is necessary for events such as `NSUserDefaultsDidChangeNotification`.
+`callback` is always called on the main thread. Notifications posted on other
+threads are delivered to it asynchronously.
 
 If `event` is null, the `NSNotificationCenter` doesn’t use it as criteria for delivery to the observer. See [docs](https://developer.apple.com/documentation/foundation/nsnotificationcenter/1411723-addobserverforname?language=objc) for more information.
 
@@ -363,13 +365,26 @@ This user consent was not required until macOS 10.14 Mojave, so this method will
 
 ### `systemPreferences.getAnimationSettings()`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/17382
+changes:
+  - pr-url: https://github.com/electron/electron/pull/55805
+    description: "Added `prefersAnimatedImagesStartPaused` to the returned object."
+```
+-->
+
 Returns `Object`:
 
 * `shouldRenderRichAnimation` boolean - Returns true if rich animations should be rendered. Looks at session type (e.g. remote desktop) and accessibility settings to give guidance for heavy animations.
 * `scrollAnimationsEnabledBySystem` boolean - Determines on a per-platform basis whether scroll animations (e.g. produced by home/end key) should be enabled.
 * `prefersReducedMotion` boolean - Determines whether the user desires reduced motion based on platform APIs.
+* `prefersAnimatedImagesStartPaused` boolean - Determines whether the user prefers that animated images (e.g. GIFs) start paused, so they play only when the user chooses. On macOS 14 and later, this is `true` when the "Auto-play animated images" accessibility setting is off. Always `false` on Windows and Linux, which have no equivalent setting, and on earlier versions of macOS.
 
 Returns an object with system animation settings.
+
+To be notified when `prefersAnimatedImagesStartPaused` changes on macOS, pass `com.apple.accessibility.reduce.motion.autoplay.animated.images.status` (the value of [`AXAnimatedImagesEnabledDidChangeNotification`](https://developer.apple.com/documentation/accessibility/axanimatedimagesenableddidchangenotification)) to [`systemPreferences.subscribeLocalNotification()`](#systempreferencessubscribelocalnotificationevent-callback-macos).
 
 ## Properties
 

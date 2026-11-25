@@ -8,7 +8,7 @@ import { defer } from './lib/spec-helpers.ts';
 
 // import { once } from 'node:events';
 
-describe('webUtils module', () => {
+describe('webUtils module', { retry: 0 }, () => {
   const fixtures = path.resolve(import.meta.dirname, 'fixtures');
 
   describe('getPathForFile', () => {

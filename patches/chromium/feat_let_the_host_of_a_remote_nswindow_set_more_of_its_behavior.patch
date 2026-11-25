@@ -26,10 +26,10 @@ it ever does.
 Co-Authored-By: Claude <noreply@anthropic.com>
 
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
-index 834897f345154f48f868fa25d6e87fad8666e10b..793fa52e3a378ecbed18f1c2cfa76b9f832802fc 100644
+index 520372cf08e431f0ecafded4272c1bf49f4877aa..4c265d14262c8983e959943b31edec556ffb1ae1 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
-@@ -325,6 +325,10 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
+@@ -327,6 +327,10 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
    void SetCALayerParams(gfx::CALayerParams ca_layer_params) override;
    void SetWindowTitle(const std::u16string& title) override;
    void SetIgnoresMouseEvents(bool ignores_mouse_events) override;
@@ -40,10 +40,10 @@ index 834897f345154f48f868fa25d6e87fad8666e10b..793fa52e3a378ecbed18f1c2cfa76b9f
    void MakeFirstResponder() override;
    void SortSubviews(
        const std::vector<uint64_t>& associated_subview_ids) override;
-@@ -480,6 +484,10 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
-   std::unique_ptr<CocoaWindowMoveLoop> window_move_loop_;
-   ui::mojom::ModalType modal_type_ = ui::mojom::ModalType::kNone;
-   bool is_translucent_window_ = false;
+@@ -509,6 +513,10 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
+   bool is_tooltip_ = false;
+   bool window_initialized_ = false;
+   bool is_tracked_by_occlusion_checker_ = false;
 +  // Set by SetFullscreenable(); takes the place of what the size constraints
 +  // would decide.
 +  std::optional<bool> fullscreenable_override_;
@@ -52,10 +52,10 @@ index 834897f345154f48f868fa25d6e87fad8666e10b..793fa52e3a378ecbed18f1c2cfa76b9f
  
    raw_ptr<NativeWidgetNSWindowBridge> parent_ =
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 1febc578747baf590386f59c20a8ee349394c67a..dc5b2c305ef353aeaf785c818724efc945a36071 100644
+index b27053be9d1489d4f3316c28d351ff631943ed7d..e4e9ca951fcce9784050fa924983d65a76cf0907 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -1632,6 +1632,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -1647,6 +1647,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    gfx::ApplyNSWindowSizeConstraints(window_, min_size, max_size,
                                      shows_resize_controls,
                                      shows_fullscreen_controls);
@@ -63,7 +63,7 @@ index 1febc578747baf590386f59c20a8ee349394c67a..dc5b2c305ef353aeaf785c818724efc9
  }
  
  void NativeWidgetNSWindowBridge::OnShowAnimationComplete() {
-@@ -2047,7 +2048,10 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -2089,7 +2090,10 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
  void NativeWidgetNSWindowBridge::SetAspectRatio(
      const gfx::SizeF& aspect_ratio,
      const gfx::Size& excluded_margin) {
@@ -75,7 +75,7 @@ index 1febc578747baf590386f59c20a8ee349394c67a..dc5b2c305ef353aeaf785c818724efc9
    [window_delegate_ setAspectRatio:aspect_ratio.width() / aspect_ratio.height()
                      excludedMargin:excluded_margin];
  }
-@@ -2127,6 +2131,56 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -2169,6 +2173,56 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    [window_ setIgnoresMouseEvents:ignores_mouse_events];
  }
  
@@ -133,10 +133,10 @@ index 1febc578747baf590386f59c20a8ee349394c67a..dc5b2c305ef353aeaf785c818724efc9
    [window_ makeFirstResponder:bridged_view_];
  }
 diff --git a/components/remote_cocoa/app_shim/views_nswindow_delegate.h b/components/remote_cocoa/app_shim/views_nswindow_delegate.h
-index 40b1e27ecca25715dd6677743c9f520576cd657b..751d8af8b8f03c1de9f1f1b143057fe6b3e7648d 100644
+index 070acf4960f67ac5f3fa9a3446e6a20ae464cea3..d86bf3540264d19b817f8d14dc431c9928952e51 100644
 --- a/components/remote_cocoa/app_shim/views_nswindow_delegate.h
 +++ b/components/remote_cocoa/app_shim/views_nswindow_delegate.h
-@@ -52,6 +52,9 @@ REMOTE_COCOA_APP_SHIM_EXPORT
+@@ -69,6 +69,9 @@ REMOTE_COCOA_APP_SHIM_EXPORT
  - (void)setAspectRatio:(float)aspectRatio
          excludedMargin:(const gfx::Size&)excludedMargin;
  
@@ -147,10 +147,10 @@ index 40b1e27ecca25715dd6677743c9f520576cd657b..751d8af8b8f03c1de9f1f1b143057fe6
  
  #endif  // COMPONENTS_REMOTE_COCOA_APP_SHIM_VIEWS_NSWINDOW_DELEGATE_H_
 diff --git a/components/remote_cocoa/app_shim/views_nswindow_delegate.mm b/components/remote_cocoa/app_shim/views_nswindow_delegate.mm
-index 1aa3983953a5e292fd57a9e4a860a49c6942f7e5..f2c394a8afe4a09ab473e000938c42dfe0e2ea42 100644
+index 629b0f3f6f0b46b66464b4aa546dc5f2941682bb..1a74fcbd21c617e110dd26d031f27addb2a99570 100644
 --- a/components/remote_cocoa/app_shim/views_nswindow_delegate.mm
 +++ b/components/remote_cocoa/app_shim/views_nswindow_delegate.mm
-@@ -153,6 +153,11 @@ - (void)setAspectRatio:(float)aspectRatio
+@@ -156,6 +156,11 @@ - (void)setAspectRatio:(float)aspectRatio
    _excludedMargin = excludedMargin;
  }
  
@@ -192,10 +192,10 @@ index c4f1bd2e8d646306ae2c80100aba01085777a0fc..d5d4d778fb1190eb22b4933632ad9d3a
  };
  
 diff --git a/components/remote_cocoa/common/native_widget_ns_window.mojom b/components/remote_cocoa/common/native_widget_ns_window.mojom
-index 8ca5673a225b69b5630383ed9673653ba03a0e97..f650180f02ef8c5c92421a5bec35f1b13355e533 100644
+index 02123df2d574a31d534fd550a08051a0532b7e75..f8f6cf9d30edf50ff272e8184009465724394fe2 100644
 --- a/components/remote_cocoa/common/native_widget_ns_window.mojom
 +++ b/components/remote_cocoa/common/native_widget_ns_window.mojom
-@@ -291,6 +291,7 @@ interface NativeWidgetNSWindow {
+@@ -275,6 +275,7 @@ interface NativeWidgetNSWindow {
    // Presumably, (10, 15) of this area would be used to draw client-drawn
    // decorations, while the remaining (30, 30) would be used for whatever
    // content is supposed to have a 1.f aspect-ratio.
@@ -203,7 +203,7 @@ index 8ca5673a225b69b5630383ed9673653ba03a0e97..f650180f02ef8c5c92421a5bec35f1b1
    SetAspectRatio(
        gfx.mojom.SizeF aspect_ratio, gfx.mojom.Size excluded_margin);
  
-@@ -303,6 +304,18 @@ interface NativeWidgetNSWindow {
+@@ -287,6 +288,18 @@ interface NativeWidgetNSWindow {
    // Ignore or accept mouse events on the NSWindow.
    SetIgnoresMouseEvents(bool ignores_mouse_events);
  
@@ -223,10 +223,10 @@ index 8ca5673a225b69b5630383ed9673653ba03a0e97..f650180f02ef8c5c92421a5bec35f1b1
    MakeFirstResponder();
  
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index d88a457d25459a4b97495dfeabd58c1aebbff4c8..17592ecae14a9ffaf1d678e1ef7db033aa9403dd 100644
+index b7fc55871006d02bec9a389dcbf843a3bcf32006..4b84276fbfacf9f4b186196add01ed17f5f647a6 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -910,8 +910,17 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -952,8 +952,17 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    if (@available(macOS 14, *)) {
      if (application_host_ &&
          new_state == WindowVisibilityState::kShowAndActivateWindow) {

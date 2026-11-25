@@ -48,6 +48,8 @@ import {
   ifit,
   ifdescribe,
   defer,
+  focusWebContents,
+  getSpecTimeout,
   listen,
   waitUntil,
   isWayland,
@@ -98,14 +100,14 @@ const expectCenteredBounds = (win: BrowserWindow, width: number, height: number)
   });
 };
 
-const isBeforeUnload = (event: Event, level: number, message: string) => {
+const isBeforeUnload = ({ message }: { message: string }) => {
   return message === 'beforeunload';
 };
 
 const getViewportSize = (w: BrowserWindow) =>
   w.webContents.executeJavaScript('[window.innerWidth, window.innerHeight]');
 
-describe('BrowserWindow module', () => {
+describe('BrowserWindow module', { retry: 0 }, () => {
   it('sets the correct class name on the prototype', () => {
     expect(BrowserWindow.prototype.constructor.name).toBe('BrowserWindow');
   });
@@ -1569,8 +1571,17 @@ describe('BrowserWindow module', () => {
           const refocused = once(w, 'focus');
           w.focus();
           await refocused;
-          expect(child.webContents.isFocused()).toBe(true);
-          expect(w.webContents.isFocused()).toBe(false);
+          // The window can report 'focus' before focus inside it has settled:
+          // on X11 the activation Electron reports and the views focus
+          // restore can land in separate tasks. Wait for the child to get
+          // focus back, then check where focus ended up, so a real failure
+          // still shows which webContents holds it.
+          const focusState = () => ({
+            child: child.webContents.isFocused(),
+            primary: w.webContents.isFocused()
+          });
+          await waitUntil(() => child.webContents.isFocused(), { timeout: 5000 }).catch(() => {});
+          expect(focusState()).toEqual({ child: true, primary: false });
           other.destroy();
         }
       );
@@ -3211,12 +3222,111 @@ describe('BrowserWindow module', () => {
 
     it('parses <link rel=preconnect>', async () => {
       w = new BrowserWindow({ show: true });
-      const p = once(w.webContents.session, 'preconnect');
+      const p = once(w.webContents.mainFrame, 'preconnect');
       w.loadURL(url + '/link');
-      const [, preconnectUrl, allowCredentials, frame] = await p;
+      const [, preconnectUrl, allowCredentials] = await p;
+      expect(preconnectUrl).toBe('http://example.com/');
+      expect(allowCredentials, 'allowCredentials').toBe(true);
+    });
+
+    it('forwards preconnect hints to the deprecated session event', async () => {
+      w = new BrowserWindow({ show: true });
+      const p = once(w.webContents.session, 'preconnect');
+      const framePreconnect = once(w.webContents.mainFrame, 'preconnect');
+      w.loadURL(url + '/link');
+      const [[, preconnectUrl, allowCredentials, frame], frameArgs] = await Promise.all([p, framePreconnect]);
       expect(preconnectUrl).toBe('http://example.com/');
       expect(allowCredentials, 'allowCredentials').toBe(true);
       expect(frame).toBe(w.webContents.mainFrame);
+      expect(frameArgs.slice(1)).toEqual([preconnectUrl, allowCredentials]);
+    });
+
+    it('keeps the deprecated session event independent of frame listeners', async () => {
+      w = new BrowserWindow({ show: false });
+      w.webContents.mainFrame.removeAllListeners('preconnect');
+      const preconnect = once(w.webContents.session, 'preconnect');
+      await w.loadURL(url + '/link');
+      const [, preconnectUrl, allowCredentials, frame] = await preconnect;
+      expect(preconnectUrl).toBe('http://example.com/');
+      expect(allowCredentials).toBe(true);
+      expect(frame).toBe(w.webContents.mainFrame);
+    });
+
+    for (const crossOrigin of [false, true]) {
+      it(`emits preconnect on the requesting ${crossOrigin ? 'cross-origin' : 'same-origin'} subframe only`, async () => {
+        w = new BrowserWindow({ show: false });
+        await w.loadURL(url);
+        let mainFramePreconnects = 0;
+        w.webContents.mainFrame.on('preconnect', () => mainFramePreconnects++);
+        const preconnect = new Promise<[string, boolean, WebFrameMain]>((resolve) => {
+          w.webContents.on('frame-created', (_event, { frame }) => {
+            if (!frame?.parent) return;
+            frame.once('preconnect', (_event, preconnectUrl, allowCredentials) => {
+              resolve([preconnectUrl, allowCredentials, frame]);
+            });
+          });
+        });
+        const frameUrl = `${crossOrigin ? url.replace('127.0.0.1', 'localhost') : url}/link`;
+        await w.webContents.executeJavaScript(`
+          const frame = document.createElement('iframe');
+          frame.src = ${JSON.stringify(frameUrl)};
+          document.body.appendChild(frame);
+          null; // don't return the iframe
+        `);
+        const [preconnectUrl, allowCredentials, frame] = await preconnect;
+        expect(preconnectUrl).toBe('http://example.com/');
+        expect(allowCredentials).toBe(true);
+        expect(frame.parent).toBe(w.webContents.mainFrame);
+        expect(mainFramePreconnects).toBe(0);
+      });
+    }
+
+    it('forwards preconnect when a frame listener requests window destruction', async () => {
+      w = new BrowserWindow({ show: false });
+      const frame = w.webContents.mainFrame;
+      const ses = w.webContents.session;
+      let sessionPreconnects = 0;
+      let frameDestroyedWhenForwarded: boolean | undefined;
+      const onSessionPreconnect = (
+        _event: Electron.Event,
+        _preconnectUrl: string,
+        _allowCredentials: boolean,
+        requestingFrame: WebFrameMain | null
+      ) => {
+        if (requestingFrame !== frame) return;
+        sessionPreconnects++;
+        frameDestroyedWhenForwarded = requestingFrame.isDestroyed();
+      };
+      ses.on('preconnect', onSessionPreconnect);
+      defer(() => ses.removeListener('preconnect', onSessionPreconnect));
+      const preconnect = new Promise<void>((resolve) => {
+        frame.prependOnceListener('preconnect', () => {
+          w.destroy();
+          resolve();
+        });
+      });
+      const load = w.loadURL(url + '/link').catch((error: Error) => {
+        expect(error.message).toMatch(/ERR_(ABORTED|FAILED)/);
+      });
+      await preconnect;
+      await load;
+      await waitUntil(() => frame.isDestroyed());
+      expect(sessionPreconnects).toBe(1);
+      expect(frameDestroyedWhenForwarded).toBe(false);
+    });
+
+    it('does not forward preconnect if the frame is destroyed by its listener', async () => {
+      const fixture = path.join(fixtures, 'api', 'quit-after-preconnect');
+      const { code, signal, stdout, stderr } = await spawnAndWait(
+        process.execPath,
+        [fixture, '--destroy-frame-on-preconnect'],
+        { timeout: 20_000 }
+      );
+      const message = `code=${code} signal=${signal}\nstdout:\n${stdout}\nstderr:\n${stderr}`;
+      expect(stdout, message).toContain('frame destroyed inside listener: true');
+      expect(stdout, message).toContain('session preconnects: 0, listeners: 1');
+      expect(signal, message).toBeNull();
+      expect(code, message).toBe(0);
     });
   });
 
@@ -4437,11 +4547,16 @@ describe('BrowserWindow module', () => {
             // already reported from that document if it ran there.
             const preloadA = path.join(fixtures, 'module', 'preload-window-open-a.js');
             const preloadB = path.join(fixtures, 'module', 'preload-window-open-b.js');
+            // Partitions are in-memory sessions that outlive the test, so each
+            // attempt (including a retry) gets fresh ones.
+            const attempt = crypto.randomUUID();
             let partitions = 0;
             const collectFilteredPreloads = async (filters: Partial<Electron.PreloadScriptRegistration>) => {
-              const ses = session.fromPartition(`preload-origin-fallback-${sandbox}-${partitions++}`);
-              ses.registerPreloadScript({ type: 'frame', filePath: preloadA, ...filters });
-              ses.registerPreloadScript({ type: 'frame', filePath: preloadB });
+              const ses = session.fromPartition(`preload-origin-fallback-${sandbox}-${attempt}-${partitions++}`);
+              const ids = [
+                ses.registerPreloadScript({ type: 'frame', filePath: preloadA, ...filters }),
+                ses.registerPreloadScript({ type: 'frame', filePath: preloadB })
+              ];
               const reports: Array<{ which: string; href: string }> = [];
               const handler = (_e: any, which: string, href: string) => reports.push({ which, href });
               ipcMain.on('preload-ran', handler);
@@ -4452,6 +4567,7 @@ describe('BrowserWindow module', () => {
                 await waitUntil(() => reports.some((r) => r.which === 'b' && r.href === 'about:blank'));
               } finally {
                 ipcMain.removeListener('preload-ran', handler);
+                ids.forEach((id) => ses.unregisterPreloadScript(id));
               }
               return reports.filter((r) => r.which === 'a').map((r) => r.href);
             };
@@ -7461,6 +7577,13 @@ describe('BrowserWindow module', () => {
       it('correctly remembers state prior to HTML fullscreen transition', async () => {
         const w = new BrowserWindow();
         await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+        // On the Windows CI hosts a foreign window can cover this one, and
+        // Chromium's native occlusion tracker then hides the page. A hidden
+        // page doesn't draw, and requestFullscreen() and exitFullscreen() only
+        // settle once the page has drawn at the window's new size. Keep it
+        // drawing while covered; unlike the constructor option, this also
+        // un-hides a hidden page.
+        w.webContents.setBackgroundThrottling(false);
 
         // This should do nothing.
         w.setFullScreen(false);
@@ -7474,6 +7597,9 @@ describe('BrowserWindow module', () => {
             menuBarVisible
           );
 
+          // Shortly after leaving fullscreen, Chromium refuses requestFullscreen()
+          // from an unfocused page, and a foreign window can take focus.
+          await focusWebContents(w.webContents);
           const enterFullScreen = once(w, 'enter-full-screen');
           await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
           await enterFullScreen;
@@ -7739,16 +7865,52 @@ describe('BrowserWindow module', () => {
         const leaveFullScreen = once(child, 'leave-full-screen');
         child.setFullScreen(false);
         await leaveFullScreen;
+
+        // Leave the parent's fullscreen Space too. Otherwise closing it after
+        // the test runs the exit animation while the next test asks a new
+        // window to enter fullscreen, and AppKit can refuse that request.
+        await setTimeout();
+        const parentLeaveFS = once(parent, 'leave-full-screen');
+        parent.setFullScreen(false);
+        await parentLeaveFS;
       });
 
       it('should be able to load a URL while transitioning to fullscreen', async () => {
+        // The window asks AppKit for fullscreen from its constructor, before
+        // it is shown. If the app isn't active at that point, for example
+        // because the previous test's fullscreen Space exit handed activation
+        // to another app, AppKit can drop the request without a will-enter or
+        // did-fail callback, and 'enter-full-screen' never comes. Windows that
+        // go fullscreen after being shown activate the app first, so only
+        // this test needs to take activation itself.
+        //
+        // Budget the waits from this test's timeout, which sanitizer builds
+        // raise, keeping some of it for leaving fullscreen at the end.
+        const budget = getSpecTimeout();
+        const deadline = Date.now() + budget - 5000;
+        await waitUntil(
+          () => {
+            if (app.isActive()) return true;
+            app.focus({ steal: true });
+            return false;
+          },
+          { rate: 100, timeout: Math.min(10000, budget / 3) }
+        );
+
         const w = new BrowserWindow({ fullscreen: true });
+        const fired: string[] = [];
+        const load = once(w.webContents, 'did-finish-load').then(() => fired.push('did-finish-load'));
+        const enterFS = once(w, 'enter-full-screen').then(() => fired.push('enter-full-screen'));
         w.loadFile(path.join(fixtures, 'pages', 'c.html'));
 
-        const load = once(w.webContents, 'did-finish-load');
-        const enterFS = once(w, 'enter-full-screen');
-
-        await Promise.all([enterFS, load]);
+        // Fail with what did and didn't arrive instead of a bare test timeout.
+        const settled = await Promise.race([
+          Promise.all([enterFS, load]).then(() => true),
+          setTimeout(Math.max(0, deadline - Date.now()), false)
+        ]);
+        expect({ settled, fired, isFullScreen: w.isFullScreen(), appActive: app.isActive() }).toMatchObject({
+          settled: true
+        });
         expect(w.fullScreen).toBe(true);
 
         await setTimeout();

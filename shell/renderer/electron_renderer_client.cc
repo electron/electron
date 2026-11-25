@@ -11,7 +11,6 @@
 #include "base/task/sequenced_task_runner.h"
 #include "components/cdm/renderer/key_system_support_update.h"
 #include "content/public/renderer/render_frame.h"
-#include "electron/fuses.h"
 #include "net/http/http_request_headers.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -19,7 +18,6 @@
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
-#include "shell/common/v8_util.h"
 #include "shell/renderer/electron_api_service_impl.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/web_worker_observer.h"
@@ -408,16 +406,6 @@ void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
   // Call base class last: OOM callback deregistration must happen after
   // all other cleanup that might still trigger V8 heap operations.
   RendererClientBase::WillDestroyWorkerContextOnWorkerThread(context);
-}
-
-void ElectronRendererClient::SetUpWebAssemblyTrapHandler() {
-#if ((BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)) && \
-     defined(ARCH_CPU_X86_64)) ||                                       \
-    ((BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC)) && defined(ARCH_CPU_ARM64))
-  if (electron::fuses::IsWasmTrapHandlersEnabled()) {
-    electron::SetUpWebAssemblyTrapHandler();
-  }
-#endif
 }
 
 v8::Local<v8::Context> ElectronRendererClient::GetEnvironmentContext(

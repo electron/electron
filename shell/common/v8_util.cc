@@ -28,6 +28,8 @@
 
 #if BUILDFLAG(IS_LINUX) && (defined(ARCH_CPU_X86_64) || defined(ARCH_CPU_ARM64))
 #define ENABLE_WEB_ASSEMBLY_TRAP_HANDLER_LINUX
+#include <signal.h>
+
 #include "base/command_line.h"
 #include "base/debug/stack_trace.h"
 #include "components/crash/core/app/crashpad.h"  // nogncheck
@@ -383,9 +385,19 @@ void SetUpWebAssemblyTrapHandler() {
     return;
   }
 
+  // The stack dump callback below only runs if base's in-process stack dump
+  // handlers are installed, which official builds skip unless
+  // ELECTRON_ENABLE_STACK_DUMPING is set. When nothing handles SIGSEGV yet,
+  // let V8 install its own handler instead.
+  struct sigaction current_action = {};
+  const bool no_sigsegv_handler =
+      sigaction(SIGSEGV, nullptr, &current_action) == 0 &&
+      !(current_action.sa_flags & SA_SIGINFO) &&
+      current_action.sa_handler == SIG_DFL;
+
   const bool use_v8_default_handler =
-      base::CommandLine::ForCurrentProcess()->HasSwitch(
-          ::switches::kDisableInProcessStackTraces);
+      no_sigsegv_handler || base::CommandLine::ForCurrentProcess()->HasSwitch(
+                                ::switches::kDisableInProcessStackTraces);
 
   if (use_v8_default_handler) {
     // There is no signal handler yet, but it's okay if v8 registers one.
@@ -413,13 +425,13 @@ namespace util {
  * UNSAFE_BUFFER_USAGE test, so let's isolate the unsafe API here.
  *
  * Where possible, Electron should use spans returned here instead of
- * |v8::ArrayBufferView::Buffer()->Data()|,
+ * |v8::ArrayBufferView::GetBuffer()->Data()|,
  * |v8::ArrayBufferView::ByteOffset()|,
  * |v8::ArrayBufferView::ByteLength()|.
  */
 base::span<uint8_t> as_byte_span(v8::Local<v8::ArrayBufferView> val) {
-  uint8_t* data = UNSAFE_BUFFERS(static_cast<uint8_t*>(val->Buffer()->Data()) +
-                                 val->ByteOffset());
+  uint8_t* data = UNSAFE_BUFFERS(
+      static_cast<uint8_t*>(val->GetBuffer()->Data()) + val->ByteOffset());
   const size_t size = val->ByteLength();
   return UNSAFE_BUFFERS(base::span{data, size});
 }

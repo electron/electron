@@ -5,12 +5,13 @@ import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { setImmediate, setTimeout } from 'node:timers/promises';
 
 import { singleModifierCombinations } from './lib/accelerator-helpers.ts';
-import { defer, ifit, isWayland, spawnAndWait } from './lib/spec-helpers.ts';
+import { defer, ifit, isWayland, spawnAndWait, waitUntil } from './lib/spec-helpers.ts';
 import { closeWindow } from './lib/window-helpers.ts';
 
 const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
@@ -1121,6 +1122,32 @@ describe('Menu module', () => {
       expect(Menu.getApplicationMenu(), 'application menu').not.toBeNull();
     });
 
+    ifit(process.platform === 'darwin' && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
+      'updates the native menu title after a JS label change and menu refresh',
+      async () => {
+        const { getMenuItemTitles } = createRequire(import.meta.url)('@electron-ci/menu-helper');
+        const menuTitle = 'Label refresh test';
+        const menu = Menu.buildFromTemplate([
+          { role: 'appMenu' },
+          { label: menuTitle, submenu: [{ label: 'Original label' }] }
+        ]);
+        Menu.setApplicationMenu(menu);
+
+        // Application menus are installed on the next native run loop turn.
+        await waitUntil(() => getMenuItemTitles(menuTitle, false) !== null);
+        expect(getMenuItemTitles(menuTitle, false)).toEqual(['Original label']);
+
+        const item = menu.items[1].submenu!.items[0];
+        item.label = 'Updated label';
+        expect(getMenuItemTitles(menuTitle, true)).toEqual(['Updated label']);
+
+        // Exercise another change on the same native item, including restoring
+        // its original label, so stale cached state cannot hide a regression.
+        item.label = 'Original label';
+        expect(getMenuItemTitles(menuTitle, true)).toEqual(['Original label']);
+      }
+    );
+
     it('unsets a menu with null', () => {
       Menu.setApplicationMenu(Menu.buildFromTemplate([{ label: '1' }]));
       Menu.setApplicationMenu(null);
@@ -1188,6 +1215,50 @@ describe('Menu module', () => {
         console.log(code, output);
       }
       expect(output).toContain('Window has no menu');
+    });
+  });
+
+  describe('Menu.setHighlightColors', () => {
+    afterEach(() => {
+      Menu.setHighlightColors(null);
+    });
+
+    it('accepts CSS color strings', () => {
+      expect(() => {
+        Menu.setHighlightColors({
+          light: { background: '#0067c0', foreground: 'white' },
+          dark: { background: 'rgb(76, 194, 255)', foreground: '#000' }
+        });
+      }).not.toThrow();
+    });
+
+    it('accepts a partial set of colors', () => {
+      expect(() => Menu.setHighlightColors({ light: { background: '#0067c0' } })).not.toThrow();
+      expect(() => Menu.setHighlightColors({ dark: { foreground: '#fff' } })).not.toThrow();
+      expect(() => Menu.setHighlightColors({})).not.toThrow();
+    });
+
+    it('resets the colors when passed null', () => {
+      Menu.setHighlightColors({ light: { background: '#0067c0' } });
+      expect(() => Menu.setHighlightColors(null)).not.toThrow();
+    });
+
+    it('throws on an invalid color, naming the mode', () => {
+      expect(() => Menu.setHighlightColors({ light: { background: 'not-a-color' } })).toThrow(
+        /Invalid color for 'light\.background'/
+      );
+      expect(() => Menu.setHighlightColors({ light: { foreground: 123 as any } })).toThrow(
+        /Invalid color for 'light\.foreground'/
+      );
+      expect(() => Menu.setHighlightColors({ dark: { background: 'nope' } })).toThrow(
+        /Invalid color for 'dark\.background'/
+      );
+    });
+
+    it('throws on invalid options', () => {
+      expect(() => Menu.setHighlightColors('#0067c0' as any)).toThrow(/Options must be an object or null/);
+      expect(() => Menu.setHighlightColors({ light: '#fff' as any })).toThrow(/'light' must be an object/);
+      expect(() => Menu.setHighlightColors({ dark: null as any })).toThrow(/'dark' must be an object/);
     });
   });
 });

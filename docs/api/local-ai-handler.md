@@ -11,7 +11,7 @@ This module is intended to be used by a script registered to a session via
 
 The `localAIHandler` module has the following methods:
 
-#### `localAIHandler.setPromptAPIHandler(promptAPIHandler)` _Experimental_
+### `localAIHandler.setPromptAPIHandler(promptAPIHandler)` _Experimental_
 
 * `promptAPIHandler` Function\<typeof [LanguageModelUtility](language-model-utility.md) | null\>
   * `details` Object

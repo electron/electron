@@ -1,4 +1,4 @@
-import { BrowserWindow, type WebPreferences } from 'electron/main';
+import { BrowserWindow, session, type WebPreferences } from 'electron/main';
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
@@ -11,11 +11,11 @@ import { emittedUntil } from './lib/events-helpers.ts';
 import { listen } from './lib/spec-helpers.ts';
 import { closeWindow } from './lib/window-helpers.ts';
 
-const messageContainsSecurityWarning = (event: Event, level: number, message: string) => {
+const messageContainsSecurityWarning = ({ message }: { message: string }) => {
   return message.includes('Electron Security Warning');
 };
 
-const isLoaded = (event: Event, level: number, message: string) => {
+const isLoaded = ({ message }: { message: string }) => {
   return message === 'loaded';
 };
 
@@ -24,8 +24,14 @@ describe('security warnings', () => {
   let w: BrowserWindow;
   let useCsp = true;
   let serverUrl: string;
+  const partition = 'security-warnings-spec';
 
   beforeAll(async () => {
+    // Load pages in an isolated session: CI agents may route traffic through
+    // an HTTP proxy, which would bypass the host-resolver-rules mapping for
+    // localhost2.
+    await session.fromPartition(partition).setProxy({ mode: 'direct' });
+
     // Create HTTP Server
     server = http.createServer(async (request, response) => {
       const uri = new URL(request.url!, `http://${request.headers.host}`).pathname!;
@@ -67,6 +73,7 @@ describe('security warnings', () => {
     w = new BrowserWindow({
       show: false,
       webPreferences: {
+        partition,
         nodeIntegration: true,
         contextIsolation: false
       }
@@ -81,6 +88,7 @@ describe('security warnings', () => {
     w = new BrowserWindow({
       show: false,
       webPreferences: {
+        partition,
         nodeIntegration: true
       }
     });
@@ -211,6 +219,6 @@ describe('security warnings', () => {
     });
   };
 
-  generateSpecs('without sandbox', { contextIsolation: false });
-  generateSpecs('with sandbox', { sandbox: true, contextIsolation: false });
+  generateSpecs('without sandbox', { partition, contextIsolation: false });
+  generateSpecs('with sandbox', { partition, sandbox: true, contextIsolation: false });
 });

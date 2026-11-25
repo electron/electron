@@ -34,6 +34,7 @@
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/network_quality_observer_factory.h"
 #include "content/public/browser/network_service_instance.h"
+#include "electron/buildflags/buildflags.h"
 #include "extensions/common/constants.h"
 #include "net/proxy_resolution/proxy_config.h"
 #include "net/proxy_resolution/proxy_config_service.h"
@@ -45,6 +46,10 @@
 #include "shell/common/electron_constants.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/thread_restrictions.h"
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "components/storage_monitor/storage_monitor.h"
+#endif
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/print_job_manager.h"
@@ -242,9 +247,20 @@ void BrowserProcessImpl::PreCreateThreads() {
 void BrowserProcessImpl::PreMainMessageLoopRun() {
   CreateNetworkQualityObserver();
   CreateOSCryptAsync();
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  // chrome.system.storage dereferences the global monitor without a null
+  // check. Device scanning only starts on first use.
+  storage_monitor::StorageMonitor::Create();
+#endif
 }
 
 void BrowserProcessImpl::PostMainMessageLoopRun() {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  // Must outlive browser contexts: removing a chrome.system.storage listener
+  // when a context shuts down reaches for the monitor.
+  storage_monitor::StorageMonitor::Destroy();
+#endif
+
   if (local_state_)
     local_state_->CommitPendingWrite();
 

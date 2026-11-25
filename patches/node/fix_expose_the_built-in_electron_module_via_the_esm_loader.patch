@@ -6,7 +6,7 @@ Subject: fix: expose the built-in electron module via the ESM loader
 This allows usage of `import { app } from 'electron'` and `import('electron')` natively in the browser + non-sandboxed renderer
 
 diff --git a/lib/internal/modules/customization_hooks.js b/lib/internal/modules/customization_hooks.js
-index c2579269ec6396097aee1acd45d2830500a6a57a..70cb459d10d60caac56f9c980fbba242d5e7881c 100644
+index c3d1970243fd33cbe701b8983c2be26ea4255107..cfc267497e1e06c51fa8de38c9bb68ee9db5db14 100644
 --- a/lib/internal/modules/customization_hooks.js
 +++ b/lib/internal/modules/customization_hooks.js
 @@ -286,6 +286,7 @@ function validateSourceStrict(url, context, result) {
@@ -18,7 +18,7 @@ index c2579269ec6396097aee1acd45d2830500a6a57a..70cb459d10d60caac56f9c980fbba242
        !isAnyArrayBuffer(source) &&
        !isArrayBufferView(source) &&
 diff --git a/lib/internal/modules/esm/get_format.js b/lib/internal/modules/esm/get_format.js
-index b486337fac8307765d0a2f4f3e8d11d8781855ae..3d30f8dc006d3caef6aa90f6f0b4118862c057e0 100644
+index e69a0a01d99694a00d5c91885c6f3b1f352c7f01..f856a2c7ee3d37795894b8df1db60cc91221e776 100644
 --- a/lib/internal/modules/esm/get_format.js
 +++ b/lib/internal/modules/esm/get_format.js
 @@ -83,6 +83,7 @@ const protocolHandlers = {
@@ -30,10 +30,10 @@ index b486337fac8307765d0a2f4f3e8d11d8781855ae..3d30f8dc006d3caef6aa90f6f0b41188
  
  /**
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index ed271a40e5c470978dd6e4060c263209027dd0a3..c61cbdc86ad5e644da987932dc73985801d561c6 100644
+index 06f60f9f6725d1488aa714c7a3812397e1a93854..03dae22f4b732370320c24dd9f5bed559f012ed5 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
-@@ -81,7 +81,7 @@ function defaultLoad(url, context = kEmptyObject) {
+@@ -79,7 +79,7 @@ function defaultLoad(url, context = kEmptyObject) {
  
    throwIfUnsupportedURLScheme(urlInstance);
  
@@ -42,7 +42,7 @@ index ed271a40e5c470978dd6e4060c263209027dd0a3..c61cbdc86ad5e644da987932dc739858
      source = null;
      format ??= 'builtin';
    } else if (format === 'addon') {
-@@ -97,7 +97,7 @@ function defaultLoad(url, context = kEmptyObject) {
+@@ -95,7 +95,7 @@ function defaultLoad(url, context = kEmptyObject) {
        // Now that we have the source for the module, run `defaultGetFormat` to detect its format.
        format = defaultGetFormat(urlInstance, context);
  
@@ -51,7 +51,7 @@ index ed271a40e5c470978dd6e4060c263209027dd0a3..c61cbdc86ad5e644da987932dc739858
          // For backward compatibility reasons, we need to discard the source in
          // order for the CJS loader to re-fetch it.
          source = null;
-@@ -145,7 +145,7 @@ function defaultLoadSync(url, context = kEmptyObject) {
+@@ -143,7 +143,7 @@ function defaultLoadSync(url, context = kEmptyObject) {
  
    throwIfUnsupportedURLScheme(urlInstance, false);
  
@@ -60,7 +60,7 @@ index ed271a40e5c470978dd6e4060c263209027dd0a3..c61cbdc86ad5e644da987932dc739858
      source = null;
      format ??= 'builtin';
    } else if (format === 'addon') {
-@@ -184,12 +184,13 @@ function throwIfUnsupportedURLScheme(parsed) {
+@@ -182,12 +182,13 @@ function throwIfUnsupportedURLScheme(parsed) {
      protocol !== 'file:' &&
      protocol !== 'data:' &&
      protocol !== 'node:' &&
@@ -76,10 +76,10 @@ index ed271a40e5c470978dd6e4060c263209027dd0a3..c61cbdc86ad5e644da987932dc739858
    }
  }
 diff --git a/lib/internal/modules/esm/loader.js b/lib/internal/modules/esm/loader.js
-index e34e6f58538fc57791d8bc73bcc38cc6b9072d24..91cf127534088ad8c3b9b5effc828bf5c8e95110 100644
+index f92e87785ce12c29b9945f06abf990242d7e6c40..c59ce2aad052fc8b5a331879e6cfaab148578714 100644
 --- a/lib/internal/modules/esm/loader.js
 +++ b/lib/internal/modules/esm/loader.js
-@@ -402,7 +402,7 @@ class ModuleLoader {
+@@ -405,7 +405,7 @@ class ModuleLoader {
      assert(wrap instanceof ModuleWrap, `Translator used for require(${url}) should not be async`);
  
      const cjsModule = wrap[imported_cjs_symbol];
@@ -89,10 +89,10 @@ index e34e6f58538fc57791d8bc73bcc38cc6b9072d24..91cf127534088ad8c3b9b5effc828bf5
        if (cjsModule?.[kIsExecuting]) {
          const parentFilename = urlToFilename(parentURL);
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index f6c8078228419eaca8fbed5a9d43d8b56cacffb0..e7311af43237c9459263d15c6b10749b92a5b7d3 100644
+index 0d00f014147d6b8dca74800a5995c9130c0cc696..68a92d8bad3b90da977e8d900635f4967cb50315 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -752,6 +752,9 @@ function packageImportsResolve(name, base, conditions) {
+@@ -719,6 +719,9 @@ function packageImportsResolve(name, base, conditions) {
    throw importNotDefined(name, packageJSONUrl, base);
  }
  
@@ -102,7 +102,7 @@ index f6c8078228419eaca8fbed5a9d43d8b56cacffb0..e7311af43237c9459263d15c6b10749b
  /**
   * Resolves a package specifier to a URL.
   * @param {string} specifier - The package specifier to resolve.
-@@ -765,6 +768,11 @@ function packageResolve(specifier, base, conditions) {
+@@ -732,6 +735,11 @@ function packageResolve(specifier, base, conditions) {
      return new URL('node:' + specifier);
    }
  
@@ -115,10 +115,10 @@ index f6c8078228419eaca8fbed5a9d43d8b56cacffb0..e7311af43237c9459263d15c6b10749b
  
    if (hasPackageMap()) {
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 5e90e0d06fe94341f58c954f000d42737507c93f..06f931edaf39a0dc2634db4da14df83bec821bf7 100644
+index 8b90849143d8e71a274dbc5504cf0c36cc9fff8d..f031ed81b9b27f2f5886b66f9c31cc575f029668 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -217,7 +217,9 @@ function createCJSModuleWrap(url, translateContext, parentURL) {
+@@ -222,7 +222,9 @@ function createCJSModuleWrap(url, translateContext, parentURL) {
    const { exportNames, module } = cjsPreparseModuleExports(filename, source, sourceFormat);
    cjsCache.set(url, module);
  
@@ -129,7 +129,7 @@ index 5e90e0d06fe94341f58c954f000d42737507c93f..06f931edaf39a0dc2634db4da14df83b
    if (!exportNames.has('default')) {
      ArrayPrototypePush(wrapperNames, 'default');
    }
-@@ -329,6 +331,10 @@ translators.set('require-commonjs', (url, translateContext, parentURL) => {
+@@ -334,6 +336,10 @@ translators.set('require-commonjs', (url, translateContext, parentURL) => {
    return createCJSModuleWrap(url, translateContext, parentURL);
  });
  
@@ -141,10 +141,10 @@ index 5e90e0d06fe94341f58c954f000d42737507c93f..06f931edaf39a0dc2634db4da14df83b
  // This path is only used by require() from imported CJS customized by the *async*
  // loader hooks.
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index f58a26d94e7ed5b5a9830c4e93e9beb0545eb30d..f9eb426e7d6c418e0ac39d4ae4271a156f2188be 100644
+index 471df4db439e38fd384d1f3e5929e1e38366a7ef..60d56e724576c751cbdf7991f9d819ec669bbb7d 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
-@@ -1643,6 +1643,8 @@ function fileURLToPath(path, options = kEmptyObject) {
+@@ -1659,6 +1659,8 @@ function fileURLToPath(path, options = kEmptyObject) {
      path = new URL(path);
    else if (!isURL(path))
      throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);

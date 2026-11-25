@@ -22,6 +22,7 @@
 #include "third_party/blink/public/mojom/ai/ai_manager.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_proofreader.mojom-forward.h"
 #include "third_party/blink/public/mojom/ai/ai_rewriter.mojom-forward.h"
+#include "third_party/blink/public/mojom/ai/ai_semantic_embedder.mojom-forward.h"
 #include "third_party/blink/public/mojom/ai/ai_summarizer.mojom-forward.h"
 #include "third_party/blink/public/mojom/ai/ai_writer.mojom-forward.h"
 #include "url/origin.h"
@@ -120,12 +121,16 @@ class UtilityAIManager : public blink::mojom::AIManager {
       mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor)
       override;
   void CanCreateSemanticEmbedder(
+      blink::mojom::AISemanticEmbedderCreateOptionsPtr options,
       CanCreateSemanticEmbedderCallback callback) override;
   void CreateSemanticEmbedder(
       mojo::PendingRemote<blink::mojom::AIManagerCreateSemanticEmbedderClient>
           client,
+      blink::mojom::AISemanticEmbedderCreateOptionsPtr options,
       mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor)
       override;
+  void GetSupportedEmbeddingSpaces(
+      GetSupportedEmbeddingSpacesCallback callback) override;
 
   std::optional<int32_t> web_contents_id_;
   url::Origin security_origin_;

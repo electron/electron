@@ -30,6 +30,7 @@
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/plugin.mojom.h"
+#include "shell/common/v8_util.h"
 #include "shell/common/world_ids.h"
 #include "shell/renderer/api/context_bridge/object_cache.h"
 #include "shell/renderer/api/electron_api_context_bridge.h"
@@ -349,6 +350,19 @@ void RendererClientBase::SetRuntimeFeaturesDefaultsBeforeBlinkInitialization() {
       base::FeatureList::IsEnabled(
           blink::features::kClipboardOnExtensionServiceWorker)) {
     blink::WebRuntimeFeatures::EnableClipboardOnExtensionServiceWorker(true);
+  }
+#endif
+}
+
+// Both the sandboxed and unsandboxed renderer clients need this. Content's
+// default implementation assumes Crashpad forwards SIGSEGV to V8 on Linux, but
+// Electron only sets that up after crashReporter.start() has been called.
+void RendererClientBase::SetUpWebAssemblyTrapHandler() {
+#if ((BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)) && \
+     defined(ARCH_CPU_X86_64)) ||                                       \
+    ((BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC)) && defined(ARCH_CPU_ARM64))
+  if (electron::fuses::IsWasmTrapHandlersEnabled()) {
+    electron::SetUpWebAssemblyTrapHandler();
   }
 #endif
 }

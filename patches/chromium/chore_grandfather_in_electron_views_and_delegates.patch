@@ -10,7 +10,7 @@ Subject: chore: "grandfather in" Electron Views and Delegates
 6448510: Lock further access to View::set_owned_by_client(). | https://chromium-review.googlesource.com/c/chromium/src/+/6448510
 
 diff --git a/ui/views/view.h b/ui/views/view.h
-index 11cdeed5625b963108149f99c874dfaa1ed9372c..ea1cc9fc4977a31ef225037c017401ae1f2ecf3f 100644
+index 91e5d6df0912bb6b440ee60097b05707496da1ce..0395cd147b30d974f562f9fa8b76184edef70dd0 100644
 --- a/ui/views/view.h
 +++ b/ui/views/view.h
 @@ -78,6 +78,17 @@ namespace ash {
@@ -45,10 +45,10 @@ index 11cdeed5625b963108149f99c874dfaa1ed9372c..ea1cc9fc4977a31ef225037c017401ae
      // These existing cases are "grandfathered in", but there shouldn't be more.
      // See comments atop class.
 diff --git a/ui/views/widget/widget_delegate.h b/ui/views/widget/widget_delegate.h
-index 2365f88bddec11d282940f32255b79b4e4ede583..1ae62843509c30012d5b148100a09cb58d068979 100644
+index 298f2848afa9a358f8d8c22c5289f3316f86310d..ba8c8be88fb22f9a5c382157a2378511e1b90c3d 100644
 --- a/ui/views/widget/widget_delegate.h
 +++ b/ui/views/widget/widget_delegate.h
-@@ -167,6 +167,12 @@ namespace crostini {
+@@ -166,6 +166,12 @@ namespace crostini {
  class AppRestartDialog;
  }
  
@@ -61,7 +61,7 @@ index 2365f88bddec11d282940f32255b79b4e4ede583..1ae62843509c30012d5b148100a09cb5
  namespace exo {
  class ShellSurfaceBase;
  }
-@@ -356,6 +362,7 @@ class VIEWS_EXPORT WidgetDelegate {
+@@ -355,6 +361,7 @@ class VIEWS_EXPORT WidgetDelegate {
  
    class OwnedByWidgetPassKey {
     private:
@@ -69,7 +69,7 @@ index 2365f88bddec11d282940f32255b79b4e4ede583..1ae62843509c30012d5b148100a09cb5
      // DO NOT ADD TO THIS LIST!
      // These existing cases are "grandfathered in", but there shouldn't be more.
      // See comments atop `SetOwnedByWidget()`.
-@@ -446,6 +453,7 @@ class VIEWS_EXPORT WidgetDelegate {
+@@ -444,6 +451,7 @@ class VIEWS_EXPORT WidgetDelegate {
    };
    class RegisterDeleteCallbackPassKey {
     private:
@@ -77,7 +77,7 @@ index 2365f88bddec11d282940f32255b79b4e4ede583..1ae62843509c30012d5b148100a09cb5
      // DO NOT ADD TO THIS LIST!
      // These existing cases are "grandfathered in", but there shouldn't be more.
      // See comments atop `RegisterDeleteDelegateCallback()`.
-@@ -900,6 +908,7 @@ class VIEWS_EXPORT WidgetDelegateView : public WidgetDelegate, public View {
+@@ -898,6 +906,7 @@ class VIEWS_EXPORT WidgetDelegateView : public WidgetDelegate, public View {
    View* GetContentsView() override;
  
   private:

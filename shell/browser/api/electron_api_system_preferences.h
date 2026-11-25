@@ -144,12 +144,18 @@ class SystemPreferences final
   int DoSubscribeNotification(v8::Local<v8::Value> maybe_name,
                               const NotificationCallback& callback,
                               NotificationCenterKind kind);
-  void DoUnsubscribeNotification(int request_id, NotificationCenterKind kind);
+  void DoUnsubscribeNotification(int request_id);
   void ClearNotificationSubscriptions();
 #endif
 
  private:
   void Dispose();
+
+#if BUILDFLAG(IS_MAC)
+  // Whether the user turned off the "Auto-play animated images" accessibility
+  // setting, asking that animated images start paused.
+  static bool PrefersAnimatedImagesStartPaused();
+#endif
 
 #if BUILDFLAG(IS_WIN)
   void OnSystemAccentColorChanged();

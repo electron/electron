@@ -183,7 +183,6 @@ void ElectronPermissionManager::CancelPendingRequests(
 void ElectronPermissionManager::RequestPermissionWithDetails(
     blink::mojom::PermissionDescriptorPtr permission,
     content::RenderFrameHost* render_frame_host,
-    const GURL& requesting_origin,
     bool user_gesture,
     base::DictValue details,
     StatusCallback response_callback) {
@@ -197,8 +196,8 @@ void ElectronPermissionManager::RequestPermissionWithDetails(
 
   RequestPermissionsWithDetails(
       render_frame_host,
-      content::PermissionRequestDescription(std::move(permission), user_gesture,
-                                            requesting_origin),
+      content::PermissionRequestDescription(std::move(permission),
+                                            user_gesture),
       std::move(details),
       base::BindOnce(PermissionRequestResponseCallbackWrapper,
                      std::move(response_callback)));
@@ -473,20 +472,6 @@ ElectronPermissionManager::GetPermissionResultForWorker(
     const GURL& worker_origin) {
   blink::mojom::PermissionStatus status =
       GetPermissionStatus(permission_descriptor, worker_origin, worker_origin);
-  return content::PermissionResult(status);
-}
-
-content::PermissionResult
-ElectronPermissionManager::GetPermissionResultForEmbeddedRequester(
-    const blink::mojom::PermissionDescriptorPtr& permission_descriptor,
-    content::RenderFrameHost* render_frame_host,
-    const url::Origin& requesting_origin) {
-  if (render_frame_host->IsNestedWithinFencedFrame())
-    return content::PermissionResult(blink::mojom::PermissionStatus::DENIED);
-
-  blink::mojom::PermissionStatus status =
-      GetPermissionStatus(permission_descriptor, requesting_origin.GetURL(),
-                          render_frame_host->GetLastCommittedOrigin().GetURL());
   return content::PermissionResult(status);
 }
 

@@ -11,10 +11,10 @@ its own blended handler between Node and Blink.
 Not upstreamable.
 
 diff --git a/lib/internal/modules/esm/utils.js b/lib/internal/modules/esm/utils.js
-index 87190b71909592aa939ac8fb0cd519b69225b6ed..bfa97ad20d57611083cbef5e1618679092229674 100644
+index 9e27a2db1ebce8fa94005d69bb783a43a5539930..e2fab9633213e40acf9390ac2ee9a3fd9dcd529b 100644
 --- a/lib/internal/modules/esm/utils.js
 +++ b/lib/internal/modules/esm/utils.js
-@@ -36,7 +36,7 @@ const {
+@@ -37,7 +37,7 @@ const {
    ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING,
    ERR_INVALID_ARG_VALUE,
  } = require('internal/errors').codes;
@@ -23,7 +23,7 @@ index 87190b71909592aa939ac8fb0cd519b69225b6ed..bfa97ad20d57611083cbef5e16186790
  const {
    emitExperimentalWarning,
    kEmptyObject,
-@@ -287,12 +287,13 @@ let _shouldSpawnLoaderHookWorker = true;
+@@ -302,12 +302,13 @@ let _shouldSpawnLoaderHookWorker = true;
   *   should be spawned later.
   */
  function initializeESM(shouldSpawnLoaderHookWorker = true) {
@@ -40,11 +40,11 @@ index 87190b71909592aa939ac8fb0cd519b69225b6ed..bfa97ad20d57611083cbef5e16186790
  
  /**
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index bc1ce3ad3c2d2c85173d98fd1a9c69d08b18e6a4..fbcf8f0f99ccaac583040e1ecebcbf65bd03cfa6 100644
+index aa6b3bc303f7c056dc2e768e42f339dba771b0cf..3a78877716291eff26d3d2e1d6e3e1a32b8181ed 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
-@@ -1085,7 +1085,7 @@ Maybe<ModuleWrap*> ModuleWrap::ResolveModule(
-   return Just(module_wrap);
+@@ -1123,7 +1123,7 @@ Maybe<ModuleWrap*> ModuleWrap::ResolveModule(Local<Context> context,
+   return Just(dependent->linked_module_wraps_[module_request_index]);
  }
  
 -static MaybeLocal<Promise> ImportModuleDynamicallyWithPhase(
@@ -52,7 +52,7 @@ index bc1ce3ad3c2d2c85173d98fd1a9c69d08b18e6a4..fbcf8f0f99ccaac583040e1ecebcbf65
      Local<Context> context,
      Local<Data> host_defined_options,
      Local<Value> resource_name,
-@@ -1173,14 +1173,16 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
+@@ -1211,14 +1211,16 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
    Realm* realm = Realm::GetCurrent(args);
    HandleScope handle_scope(isolate);
  
@@ -71,8 +71,8 @@ index bc1ce3ad3c2d2c85173d98fd1a9c69d08b18e6a4..fbcf8f0f99ccaac583040e1ecebcbf65
 +  }
  }
  
- void ModuleWrap::HostInitializeImportMetaObjectCallback(
-@@ -1222,13 +1224,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
+ void ModuleWrap::SetImportMetaResolveInitializer(
+@@ -1433,13 +1435,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
    Realm* realm = Realm::GetCurrent(args);
    Isolate* isolate = realm->isolate();
  
@@ -91,7 +91,7 @@ index bc1ce3ad3c2d2c85173d98fd1a9c69d08b18e6a4..fbcf8f0f99ccaac583040e1ecebcbf65
  
  MaybeLocal<Value> ModuleWrap::SyntheticModuleEvaluationStepsCallback(
 diff --git a/src/module_wrap.h b/src/module_wrap.h
-index d81facabf8d80e967c5bff2bbd3a1ce9dd79cc76..93d47c7573da7e5824e9bc391dd1c2f5f2588822 100644
+index 14a8f1a4f2d611e0112f20bf749d1186acc02361..ea58cbe08aef9cf8952d5fa7a0c58c1318a2d853 100644
 --- a/src/module_wrap.h
 +++ b/src/module_wrap.h
 @@ -8,6 +8,7 @@
@@ -102,7 +102,7 @@ index d81facabf8d80e967c5bff2bbd3a1ce9dd79cc76..93d47c7573da7e5824e9bc391dd1c2f5
  #include "v8-script.h"
  
  namespace node {
-@@ -92,7 +93,15 @@ struct ModuleCacheKey : public MemoryRetainer {
+@@ -91,7 +92,15 @@ struct ModuleCacheKey : public MemoryRetainer {
          hash(hash) {}
  };
  
@@ -116,10 +116,10 @@ index d81facabf8d80e967c5bff2bbd3a1ce9dd79cc76..93d47c7573da7e5824e9bc391dd1c2f5
 +    v8::Local<v8::FixedArray> import_attributes);
 +
 +class NODE_EXTERN ModuleWrap : public BaseObject {
-   using ResolveCache =
-       std::unordered_map<ModuleCacheKey, uint32_t, ModuleCacheKey::Hash>;
- 
-@@ -156,6 +165,8 @@ class ModuleWrap : public BaseObject {
+  public:
+   enum InternalFields {
+     kModuleSlot = BaseObject::kInternalFieldCount,
+@@ -151,6 +160,8 @@ class ModuleWrap : public BaseObject {
    static void CreateRequiredModuleFacade(
        const v8::FunctionCallbackInfo<v8::Value>& args);
  
@@ -128,9 +128,9 @@ index d81facabf8d80e967c5bff2bbd3a1ce9dd79cc76..93d47c7573da7e5824e9bc391dd1c2f5
   private:
    ModuleWrap(Realm* realm,
               v8::Local<v8::Object> object,
-@@ -204,7 +215,6 @@ class ModuleWrap : public BaseObject {
-       v8::Local<v8::String> specifier,
-       v8::Local<v8::FixedArray> import_attributes,
+@@ -199,7 +210,6 @@ class ModuleWrap : public BaseObject {
+       v8::Local<v8::Context> context,
+       size_t module_request_index,
        v8::Local<v8::Module> referrer);
 -  static ModuleWrap* GetFromModule(node::Environment*, v8::Local<v8::Module>);
  

@@ -1,0 +1,164 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Mon, 2 Nov 2026 14:19:14 +0900
+Subject: [api] Promote EmbedderDataArray API deprecations to V8_DEPRECATED
+
+Refs https://github.com/nodejs/node/commit/0c6630c4c29c4e645b10134ace7d73b670e4101e
+Refs https://issues.chromium.org/issues/570436596
+
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index 7dd7cd6d023c225ba902e3f0f56b0f707aa59dbd..71b2bc22aa0dd4850a880b8a8df22f8b939a27a9 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -865,7 +865,7 @@ Maybe<void> InitializeContextRuntime(Local<Context> context) {
+   bool is_code_generation_from_strings_allowed =
+       context->IsCodeGenerationFromStringsAllowed();
+   context->AllowCodeGenerationFromStrings(false);
+-  context->SetEmbedderData(
++  context->SetEmbedderDataV3(
+       ContextEmbedderIndex::kAllowCodeGenerationFromStrings,
+       Boolean::New(isolate, is_code_generation_from_strings_allowed));
+ 
+@@ -961,9 +961,9 @@ Maybe<void> InitializeMainContextForSnapshot(Local<Context> context) {
+   HandleScope handle_scope(isolate);
+ 
+   // Initialize the default values.
+-  context->SetEmbedderData(ContextEmbedderIndex::kAllowWasmCodeGeneration,
+-                           True(isolate));
+-  context->SetEmbedderData(
++  context->SetEmbedderDataV3(ContextEmbedderIndex::kAllowWasmCodeGeneration,
++                            True(isolate));
++  context->SetEmbedderDataV3(
+       ContextEmbedderIndex::kAllowCodeGenerationFromStrings, True(isolate));
+ 
+   if (InitializeBaseContextForSnapshot(context).IsNothing()) {
+diff --git a/src/env.cc b/src/env.cc
+index 01114f34db383f87006d922a2106fcc692e8b23e..64cf7f9f0b8cc1e367fc87072d685167273582c2 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -718,14 +718,14 @@ void TrackingTraceStateObserver::UpdateTraceCategoryState() {
+ void Environment::AssignToContext(Local<v8::Context> context,
+                                   Realm* realm,
+                                   const ContextInfo& info) {
+-  context->SetAlignedPointerInEmbedderData(ContextEmbedderIndex::kEnvironment,
+-                                           this,
+-                                           EmbedderDataTag::kPerContextData);
+-  context->SetAlignedPointerInEmbedderData(
++  context->SetAlignedPointerInEmbedderDataV2(ContextEmbedderIndex::kEnvironment,
++                                          this,
++                                          EmbedderDataTag::kPerContextData);
++  context->SetAlignedPointerInEmbedderDataV2(
+       ContextEmbedderIndex::kRealm, realm, EmbedderDataTag::kPerContextData);
+ 
+   // ContextifyContexts will update this to a pointer to the native object.
+-  context->SetAlignedPointerInEmbedderData(
++  context->SetAlignedPointerInEmbedderDataV2(
+       ContextEmbedderIndex::kContextifyContext,
+       nullptr,
+       EmbedderDataTag::kPerContextData);
+@@ -743,13 +743,13 @@ void Environment::AssignToContext(Local<v8::Context> context,
+ 
+ void Environment::UnassignFromContext(Local<v8::Context> context) {
+   if (!context.IsEmpty()) {
+-    context->SetAlignedPointerInEmbedderData(ContextEmbedderIndex::kEnvironment,
+-                                             nullptr,
+-                                             EmbedderDataTag::kPerContextData);
+-    context->SetAlignedPointerInEmbedderData(ContextEmbedderIndex::kRealm,
+-                                             nullptr,
+-                                             EmbedderDataTag::kPerContextData);
+-    context->SetAlignedPointerInEmbedderData(
++    context->SetAlignedPointerInEmbedderDataV2(ContextEmbedderIndex::kEnvironment,
++                                            nullptr,
++                                            EmbedderDataTag::kPerContextData);
++    context->SetAlignedPointerInEmbedderDataV2(ContextEmbedderIndex::kRealm,
++                                            nullptr,
++                                            EmbedderDataTag::kPerContextData);
++    context->SetAlignedPointerInEmbedderDataV2(
+         ContextEmbedderIndex::kContextifyContext,
+         nullptr,
+         EmbedderDataTag::kPerContextData);
+diff --git a/src/node_context_data.h b/src/node_context_data.h
+index 02eae73cb2ca441784b8fa3f8cb8370145d9076b..cdeea184912878869db67cebd2ebb12f834ff055 100644
+--- a/src/node_context_data.h
++++ b/src/node_context_data.h
+@@ -10,9 +10,9 @@
+ namespace node {
+ 
+ // Pick an index that's hopefully out of the way when we're embedded inside
+-// another application. Performance-wise or memory-wise it doesn't matter:
+-// Context::SetAlignedPointerInEmbedderData() is backed by a FixedArray,
+-// worst case we pay a one-time penalty for resizing the array.
++// another application. V8 allocates the context embedder data array with a
++// fixed size of V8_EMBEDDER_DATA_ARRAY_SIZE, which must cover every index
++// below.
+ #ifndef NODE_CONTEXT_EMBEDDER_DATA_INDEX
+ #define NODE_CONTEXT_EMBEDDER_DATA_INDEX 32
+ #endif
+@@ -48,10 +48,14 @@ namespace node {
+ #define NODE_CONTEXT_TAG 39
+ #endif
+ 
++static_assert(NODE_CONTEXT_TAG < V8_EMBEDDER_DATA_ARRAY_SIZE,
++              "V8 must be built with v8_embedder_data_array_size greater than "
++              "NODE_CONTEXT_TAG");
++
+ /**
+  * These are indexes used to set Node.js-specific data in the V8 contexts
+- * via v8::Context::SetAlignedPointerInEmbedderData() (for pointers) and
+- * v8::Context::SetEmbedderData() (for v8::Values).
++ * via v8::Context::SetAlignedPointerInEmbedderDataV2() (for pointers) and
++ * v8::Context::SetEmbedderDataV3() (for v8::Values).
+  *
+  * There are five types of contexts in Node.js:
+  * 1. Default V8 context, with nothing Node.js-specific. This is normally only
+@@ -134,7 +138,7 @@ class ContextEmbedderTag {
+   static inline void TagNodeContext(v8::Local<v8::Context> context) {
+     // Used by ContextEmbedderTag::IsNodeContext to know that we are on a node
+     // context.
+-    context->SetAlignedPointerInEmbedderData(
++    context->SetAlignedPointerInEmbedderDataV2(
+         ContextEmbedderIndex::kContextTag,
+         ContextEmbedderTag::kNodeContextTagPtr,
+         EmbedderDataTag::kPerContextData);
+diff --git a/src/node_contextify.cc b/src/node_contextify.cc
+index 1538123dc5a5c8d34e14e7df6ed9afdfcd267be2..661c6ffc4338b9ed594e315752e88a3624228874 100644
+--- a/src/node_contextify.cc
++++ b/src/node_contextify.cc
+@@ -185,7 +185,7 @@ ContextifyContext::ContextifyContext(Environment* env,
+   DCHECK_NULL(v8_context->GetAlignedPointerFromEmbedderData(
+       ContextEmbedderIndex::kContextifyContext,
+       EmbedderDataTag::kPerContextData));
+-  v8_context->SetAlignedPointerInEmbedderData(
++  v8_context->SetAlignedPointerInEmbedderDataV2(
+       ContextEmbedderIndex::kContextifyContext,
+       this,
+       EmbedderDataTag::kPerContextData);
+@@ -292,21 +292,21 @@ ContextifyContext* ContextifyContext::New(Local<Context> v8_context,
+   // to the ContextifyContext wrapper which in turn internally references
+   // the context from its constructor.
+   if (sandbox_obj.IsEmpty()) {
+-    v8_context->SetEmbedderData(ContextEmbedderIndex::kSandboxObject,
+-                                v8::Undefined(env->isolate()));
++    v8_context->SetEmbedderDataV3(ContextEmbedderIndex::kSandboxObject,
++                                 v8::Undefined(env->isolate()));
+   } else {
+-    v8_context->SetEmbedderData(ContextEmbedderIndex::kSandboxObject,
+-                                sandbox_obj);
++    v8_context->SetEmbedderDataV3(ContextEmbedderIndex::kSandboxObject,
++                                 sandbox_obj);
+   }
+ 
+   // Delegate the code generation validation to
+   // node::ModifyCodeGenerationFromStrings.
+   v8_context->AllowCodeGenerationFromStrings(false);
+-  v8_context->SetEmbedderData(
++  v8_context->SetEmbedderDataV3(
+       ContextEmbedderIndex::kAllowCodeGenerationFromStrings,
+       options->allow_code_gen_strings);
+-  v8_context->SetEmbedderData(ContextEmbedderIndex::kAllowWasmCodeGeneration,
+-                              options->allow_code_gen_wasm);
++  v8_context->SetEmbedderDataV3(ContextEmbedderIndex::kAllowWasmCodeGeneration,
++                               options->allow_code_gen_wasm);
+ 
+   Utf8Value name_val(env->isolate(), options->name);
+   ContextInfo info(name_val.ToString());

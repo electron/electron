@@ -12,10 +12,10 @@ invisible state of the `viz::DisplayScheduler` owned
 by the `ui::Compositor`.
 
 diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
-index 2f07d24490c95a75dba04045b3b6b3f6039d6df5..d1b73bd43828302052b3aacfeb1730929dca7d96 100644
+index fb3d79edb6cfe24b73f3522dd3c9113c16d532c7..9b4ae2f4e7c213edb9eb7d232177a3af69956a7d 100644
 --- a/ui/compositor/compositor.cc
 +++ b/ui/compositor/compositor.cc
-@@ -357,9 +357,11 @@ void Compositor::SetLayerTreeFrameSink(
+@@ -362,9 +362,11 @@ void Compositor::SetLayerTreeFrameSink(
    // to match the Compositor's.
    if (display_private_) {
      display_private_->Resize(size());
@@ -29,7 +29,7 @@ index 2f07d24490c95a75dba04045b3b6b3f6039d6df5..d1b73bd43828302052b3aacfeb173092
      display_private_->SetDisplayColorSpaces(display_color_spaces_);
      display_private_->SetDisplayColorMatrix(
          gfx::SkM44ToTransform(display_color_matrix_));
-@@ -599,9 +601,11 @@ void Compositor::SetVisible(bool visible) {
+@@ -604,9 +606,11 @@ void Compositor::SetVisible(bool visible) {
    // updated then. We need to call this even if the visibility hasn't changed,
    // for the same reason.
    if (display_private_) {
@@ -43,7 +43,7 @@ index 2f07d24490c95a75dba04045b3b6b3f6039d6df5..d1b73bd43828302052b3aacfeb173092
    }
  
    if (changed) {
-@@ -1070,6 +1074,17 @@ void Compositor::MaybeUpdateObserveBeginFrame() {
+@@ -1077,6 +1081,17 @@ void Compositor::MaybeUpdateObserveBeginFrame() {
        host_begin_frame_observer_->GetBoundRemote());
  }
  
@@ -62,10 +62,10 @@ index 2f07d24490c95a75dba04045b3b6b3f6039d6df5..d1b73bd43828302052b3aacfeb173092
  void Compositor::SetSeamlessRefreshRates(
      const std::vector<float>& seamless_refresh_rates) {
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index c9409ec32097cac6ac7ff25706123f685d04f13c..39008279db0b65121c57c185044bdd9de1bc4acb 100644
+index 7c3297062f4a0f255d21f0372de57c940a48905b..e84490feb57db48de69e9339544471e720a789a4 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -496,6 +496,10 @@ class COMPOSITOR_EXPORT Compositor
+@@ -509,6 +509,10 @@ class COMPOSITOR_EXPORT Compositor
  
    const cc::LayerTreeSettings& GetLayerTreeSettings() const;
  
@@ -76,7 +76,7 @@ index c9409ec32097cac6ac7ff25706123f685d04f13c..39008279db0b65121c57c185044bdd9d
    size_t saved_events_metrics_count_for_testing() const {
      return host_->saved_events_metrics_count_for_testing();
    }
-@@ -709,6 +713,12 @@ class COMPOSITOR_EXPORT Compositor
+@@ -722,6 +726,12 @@ class COMPOSITOR_EXPORT Compositor
    // See go/report-ux-metrics-at-painting for details.
    bool animation_started_ = false;
  

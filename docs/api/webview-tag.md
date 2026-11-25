@@ -479,7 +479,7 @@ Executes editing command `cut` in page.
 
 Executes editing command `copy` in page.
 
-#### `<webview>.centerSelection()`
+### `<webview>.centerSelection()`
 
 Centers the current text selection in page.
 
@@ -503,15 +503,15 @@ Executes editing command `selectAll` in page.
 
 Executes editing command `unselect` in page.
 
-#### `<webview>.scrollToTop()`
+### `<webview>.scrollToTop()`
 
 Scrolls to the top of the current `<webview>`.
 
-#### `<webview>.scrollToBottom()`
+### `<webview>.scrollToBottom()`
 
 Scrolls to the bottom of the current `<webview>`.
 
-#### `<webview>.adjustSelection(options)`
+### `<webview>.adjustSelection(options)`
 
 * `options` Object
   * `start` Number (optional) - Amount to shift the start index of the current selection.
@@ -1048,7 +1048,7 @@ Returns:
 
 Emitted when a link is clicked in DevTools or 'Open in new tab' is selected for a link in its context menu.
 
-#### Event: 'devtools-search-query'
+### Event: 'devtools-search-query'
 
 Returns:
 
@@ -1117,9 +1117,9 @@ Returns:
     `input-datetime-local`, `input-email`, `input-file`, `input-hidden`,
     `input-image`, `input-month`, `input-number`, `input-password`, `input-radio`,
     `input-range`, `input-reset`, `input-search`, `input-submit`, `input-telephone`,
-    `input-text`, `input-time`, `input-url`, `input-week`, `output`, `reset-button`,
-    `select-list`, `select-list`, `select-multiple`, `select-one`, `submit-button`,
-    and `text-area`,
+    `input-text`, `input-time`, `input-url`, `input-week`, `output`, `range-group`,
+    `reset-button`, `select-list`, `select-multiple`, `select-one`,
+    `submit-button`, and `text-area`,
   * `spellcheckEnabled` boolean - If the context is editable, whether or not spellchecking is enabled.
   * `menuSourceType` string - Input source that invoked the context menu.
     Can be `none`, `mouse`, `keyboard`, `touch`, `touchMenu`, `longPress`, `longTap`, `touchHandle`, `stylus`, `adjustSelection`, or `adjustSelectionReset`.

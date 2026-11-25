@@ -132,6 +132,7 @@ class Menu : public gin::Wrappable<Menu>,
   void MenuWillShowForTesting();
   static void SetApplicationMenuFromJS(gin::Arguments* args);
   static v8::Local<v8::Value> GetApplicationMenu(v8::Isolate* isolate);
+  static void SetHighlightColors(gin::Arguments* args);
   // Menu.setApplicationMenu(menu); a null |menu| removes it.
   static void ChangeApplicationMenu(Menu* menu);
   // The menu passed to Menu.setApplicationMenu, or the default one.

@@ -7,11 +7,11 @@ Subject: build: ensure native module compilation fails if not using a new
 This should not be upstreamed, it is a quality-of-life patch for downstream module builders.
 
 diff --git a/common.gypi b/common.gypi
-index b4161293343cc05a868d2734419367fc7146a664..c11b4a8df43cd2d07c55ca3dbbb67d5b555c77cc 100644
+index 2967d1e63a4859061ee850619fafa1a70a589104..8de0176ea7e3bb314e95388bb44b6c6d043acd69 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -96,6 +96,8 @@
-     'v8_use_perfetto': 0,
+@@ -92,6 +92,8 @@
+     'v8_use_perfetto%': 0,
      'tsan%': 0,
  
 +    'using_electron_config_gypi%': 0,
@@ -19,7 +19,7 @@ index b4161293343cc05a868d2734419367fc7146a664..c11b4a8df43cd2d07c55ca3dbbb67d5b
      ##### end V8 defaults #####
  
      'conditions': [
-@@ -347,7 +349,8 @@
+@@ -371,7 +373,8 @@
        '_GLIBCXX_USE_CXX11_ABI=1',
        # This help forks when building Node.js on a 32-bit arch as
        # libuv is always compiled with _FILE_OFFSET_BITS=64
@@ -29,7 +29,7 @@ index b4161293343cc05a868d2734419367fc7146a664..c11b4a8df43cd2d07c55ca3dbbb67d5b
      ],
  
      # Forcibly disable -Werror.  We support a wide range of compilers, it's
-@@ -504,6 +507,11 @@
+@@ -528,6 +531,11 @@
            }],
          ],
        }],
@@ -42,10 +42,10 @@ index b4161293343cc05a868d2734419367fc7146a664..c11b4a8df43cd2d07c55ca3dbbb67d5b
        # list in v8/BUILD.gn.
        ['node_enable_experimentals == "true"', {
 diff --git a/configure.py b/configure.py
-index 1b35f195f7ee7547544cc954baf95c725afa8d0b..172aef2c5194574eb298462588ecf76ae2a2e366 100755
+index 493f6b51fdf2280aaa5f9ac2b4850efc02ea0052..54ee6f2aad71104d7d4165d2896b06b2158947d7 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1930,6 +1930,7 @@ def configure_library(lib, output, pkgname=None):
+@@ -2233,6 +2233,7 @@ def configure_library(lib, output, pkgname=None, libraries_key='libraries'):
  def configure_v8(o, configs):
    set_configuration_variable(configs, 'v8_enable_v8_checks', release=0, debug=1)
  
@@ -54,7 +54,7 @@ index 1b35f195f7ee7547544cc954baf95c725afa8d0b..172aef2c5194574eb298462588ecf76a
    o['variables']['v8_enable_javascript_promise_hooks'] = 1
    o['variables']['v8_enable_lite_mode'] = 1 if options.v8_lite_mode else 0
 diff --git a/src/node.h b/src/node.h
-index 9f9ba48eb8e2ffcac85dd2147fe631204f2a604e..cba83119bfaf88b360b2f1220611a0c642ec7364 100644
+index 28f20193762956ed29ab29c95efa6a0c0493359c..70e2b41957f8c749419614901505bd56f043e3b7 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -22,6 +22,12 @@

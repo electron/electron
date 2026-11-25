@@ -306,7 +306,7 @@ void ElectronDesktopWindowTreeHostLinux::AddAdditionalInitProperties(
     ui::PlatformWindowInitProperties* properties) {
   views::DesktopWindowTreeHostLinux::AddAdditionalInitProperties(params,
                                                                  properties);
-  const auto* linux_ui_theme = ui::LinuxUiTheme::GetForProfile(nullptr);
+  const auto* linux_ui_theme = ui::LinuxUiTheme::GetDefault();
   properties->prefer_dark_theme =
       linux_ui_theme && linux_ui_theme->PreferDarkTheme();
 }

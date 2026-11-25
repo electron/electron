@@ -15,10 +15,13 @@
 #include "base/auto_reset.h"
 #include "base/base_switches.h"
 #include "base/command_line.h"
+#include "base/containers/fixed_flat_map.h"
 #include "base/debug/crash_logging.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/i18n/language_tag.h"
+#include "base/i18n/tag_converters.h"
 #include "base/memory/self_deleting.h"
 #include "base/no_destructor.h"
 #include "base/notreached.h"
@@ -414,6 +417,21 @@ void MaybeAppendSecureOriginsAllowlistSwitch(base::CommandLine* cmdline) {
   }
 }
 
+// Refs
+// https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/chrome_content_browser_client.cc;l=4056-4067;drc=e70e5ce76d4eafd833b4468a6d15bcd9ea0f6cea
+blink::mojom::PreferredContrast GetPreferredContrast(
+    const ui::NativeTheme& native_theme) {
+  using NC = ui::NativeTheme::PreferredContrast;
+  using BC = blink::mojom::PreferredContrast;
+  static constexpr auto kContrastMap =
+      base::MakeFixedFlatMap<NC, BC>({{NC::kNoPreference, BC::kNoPreference},
+                                      {NC::kMore, BC::kMore},
+                                      {NC::kLess, BC::kLess},
+                                      {NC::kCustom, BC::kCustom}});
+  const NC preferred_contrast = native_theme.preferred_contrast();
+  return kContrastMap.at(preferred_contrast);
+}
+
 }  // namespace
 
 // static
@@ -515,6 +533,7 @@ void ElectronBrowserClient::OverrideWebPreferences(
   renderer_prefs->can_accept_load_drops = false;
 
   ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
+  prefs->preferred_contrast = GetPreferredContrast(*native_theme);
   prefs->in_forced_colors = native_theme->forced_colors() !=
                             ui::ColorProviderKey::ForcedColors::kNone;
   prefs->preferred_color_scheme =
@@ -543,7 +562,8 @@ bool ElectronBrowserClient::WebPreferencesNeedUpdateForColorRelatedStateChanges(
               ui::NativeTheme::PreferredColorScheme::kDark
           ? blink::mojom::PreferredColorScheme::kDark
           : blink::mojom::PreferredColorScheme::kLight;
-  return prefs.in_forced_colors != in_forced_colors ||
+  return prefs.preferred_contrast != GetPreferredContrast(*native_theme) ||
+         prefs.in_forced_colors != in_forced_colors ||
          prefs.preferred_color_scheme != preferred_color_scheme;
 }
 
@@ -1650,13 +1670,13 @@ bool ElectronBrowserClient::HasWebRequestAPIProxy(
 }
 
 bool ElectronBrowserClient::WillInterceptWebSocket(
-    content::RenderFrameHost* frame) {
+    content::RenderFrameHost* frame,
+    content::BrowserContext* browser_context) {
   if (!frame)
     return false;
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
-  auto* browser_context = frame->GetProcess()->GetBrowserContext();
   auto* web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
 
   // NOTE: Some unit test environments do not initialize
@@ -2021,10 +2041,12 @@ void ElectronBrowserClient::BindAIManager(
 }
 #endif  // BUILDFLAG(ENABLE_PROMPT_API)
 
-std::string ElectronBrowserClient::GetApplicationLocale() {
-  return BrowserThread::CurrentlyOn(BrowserThread::IO)
-             ? *g_io_thread_application_locale
-             : *g_application_locale;
+base::i18n::LanguageTag ElectronBrowserClient::GetApplicationLocale() {
+  const std::string& locale = BrowserThread::CurrentlyOn(BrowserThread::IO)
+                                  ? *g_io_thread_application_locale
+                                  : *g_application_locale;
+  return base::i18n::GetLanguageTagFromString(locale).value_or(
+      ContentBrowserClient::GetApplicationLocale());
 }
 
 bool ElectronBrowserClient::ShouldUseSpareRenderProcessHost(

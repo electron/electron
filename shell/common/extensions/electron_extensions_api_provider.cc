@@ -56,24 +56,25 @@ namespace electron {
 ElectronExtensionsAPIProvider::ElectronExtensionsAPIProvider() = default;
 ElectronExtensionsAPIProvider::~ElectronExtensionsAPIProvider() = default;
 
-void ElectronExtensionsAPIProvider::AddAPIFeatures(
-    extensions::FeatureProvider* provider) {
-  extensions::AddElectronAPIFeatures(provider);
+extensions::StaticFeatureTable ElectronExtensionsAPIProvider::GetAPIFeatures()
+    const {
+  return extensions::AddElectronAPIFeatures();
 }
 
-void ElectronExtensionsAPIProvider::AddManifestFeatures(
-    extensions::FeatureProvider* provider) {
-  extensions::AddElectronManifestFeatures(provider);
+extensions::StaticFeatureTable
+ElectronExtensionsAPIProvider::GetManifestFeatures() const {
+  return extensions::AddElectronManifestFeatures();
 }
 
-void ElectronExtensionsAPIProvider::AddPermissionFeatures(
-    extensions::FeatureProvider* provider) {
-  extensions::AddElectronPermissionFeatures(provider);
+extensions::StaticFeatureTable
+ElectronExtensionsAPIProvider::GetPermissionFeatures() const {
+  return extensions::AddElectronPermissionFeatures();
 }
 
-void ElectronExtensionsAPIProvider::AddBehaviorFeatures(
-    extensions::FeatureProvider* provider) {
+extensions::StaticFeatureTable
+ElectronExtensionsAPIProvider::GetBehaviorFeatures() const {
   // No shell-specific behavior features.
+  return {};
 }
 
 void ElectronExtensionsAPIProvider::AddAPIJSONSources(

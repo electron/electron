@@ -10,6 +10,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "base/containers/queue.h"
@@ -643,6 +644,9 @@ class NativeWindowRelay
   ~NativeWindowRelay() override;
 
   NativeWindow* GetNativeWindow() const { return native_window_.get(); }
+  void SetNativeWindow(base::WeakPtr<NativeWindow> window) {
+    native_window_ = std::move(window);
+  }
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
 

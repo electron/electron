@@ -1,0 +1,4 @@
+{
+  "name": "electron-test-shared-worker-experimental-features",
+  "main": "main.js"
+}

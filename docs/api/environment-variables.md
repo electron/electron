@@ -116,7 +116,9 @@ Don't use the global menu bar on Linux.
 
 ### `ELECTRON_TRASH` _Linux_
 
-Set the trash implementation on Linux. Default is `gio`.
+Set the trash implementation on Linux. Default is `gio` for
+sandboxed environments and non-KDE desktops, and will use
+`kioclient` or `kioclient5` depending on the KDE desktop version.
 
 Options:
 

@@ -34,10 +34,10 @@ return the root initiator ExecutionContext).
 Pending upstream crbug.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index 41a5db4e019084d47763a43bd548b29faa070660..49206eb36d5d4dff4e2c26691f39ecb6db6f0f09 100644
+index 6af83eef49d611571af71dcbd0a4f247f5eb1b5f..cdf4df9936fd914c45ed16812712d993445a525e 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-@@ -450,10 +450,7 @@ static void PromiseRejectHandlerInWorker(v8::PromiseRejectMessage data) {
+@@ -378,10 +378,7 @@ static void PromiseRejectHandlerInWorker(v8::PromiseRejectMessage data) {
      return;
  
    ExecutionContext* root_worker_context =
@@ -50,10 +50,10 @@ index 41a5db4e019084d47763a43bd548b29faa070660..49206eb36d5d4dff4e2c26691f39ecb6
  
    auto* script_controller =
 diff --git a/third_party/blink/renderer/core/execution_context/execution_context.h b/third_party/blink/renderer/core/execution_context/execution_context.h
-index 07c9dd9c4ffa9b0b805187acce4f0eef4b641ceb..158a1b496753c192d5fe4525234e94dc5f413571 100644
+index 7361d1e456fb1b333044d2812f05b56bbce272b4..734bccf97c1f9597bd10a15f5e5237a79ec0d2a3 100644
 --- a/third_party/blink/renderer/core/execution_context/execution_context.h
 +++ b/third_party/blink/renderer/core/execution_context/execution_context.h
-@@ -164,6 +164,8 @@ class CORE_EXPORT ExecutionContext : public Supplementable<ExecutionContext>,
+@@ -165,6 +165,8 @@ class CORE_EXPORT ExecutionContext : public Supplementable<ExecutionContext>,
    virtual bool IsShadowRealmGlobalScope() const { return false; }
    virtual bool IsJSExecutionForbidden() const { return false; }
  

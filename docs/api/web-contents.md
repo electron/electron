@@ -837,9 +837,9 @@ Returns:
     `input-datetime-local`, `input-email`, `input-file`, `input-hidden`,
     `input-image`, `input-month`, `input-number`, `input-password`, `input-radio`,
     `input-range`, `input-reset`, `input-search`, `input-submit`, `input-telephone`,
-    `input-text`, `input-time`, `input-url`, `input-week`, `output`, `reset-button`,
-    `select-list`, `select-list`, `select-multiple`, `select-one`, `submit-button`,
-    and `text-area`,
+    `input-text`, `input-time`, `input-url`, `input-week`, `output`, `range-group`,
+    `reset-button`, `select-list`, `select-multiple`, `select-one`,
+    `submit-button`, and `text-area`,
   * `spellcheckEnabled` boolean - If the context is editable, whether or not spellchecking is enabled.
   * `menuSourceType` string - Input source that invoked the context menu.
     Can be `none`, `mouse`, `keyboard`, `touch`, `touchMenu`, `longPress`, `longTap`, `touchHandle`, `stylus`, `adjustSelection`, or `adjustSelectionReset`.
@@ -1025,10 +1025,6 @@ Returns:
   * `lineNumber` Integer - Line number in the log source
   * `sourceId` string - URL of the log source
   * `frame` WebFrameMain - Frame that logged the message
-* `level` Integer _Deprecated_ - The log level, from 0 to 3. In order it matches `verbose`, `info`, `warning` and `error`.
-* `message` string _Deprecated_ - The actual console message
-* `line` Integer _Deprecated_ - The line number of the source that triggered this console message
-* `sourceId` string _Deprecated_
 
 Emitted when the associated window logs a console message.
 
@@ -2023,7 +2019,7 @@ Opens the DevTools.
 When `contents` is a `<webview>` tag, the `mode` would be `detach` by default,
 explicitly passing an empty `mode` can force using last used dock state.
 
-On Windows, if Window Control Overlay is enabled, DevTools will be opened with `mode: 'detach'`.
+On Windows and Linux, if Window Controls Overlay is enabled and the DevTools would dock over the window controls (`right`, or `left` in RTL layouts), it will be opened with `mode: 'undocked'` to avoid overlapping the controls.
 
 #### `contents.closeDevTools()`
 
@@ -2190,10 +2186,6 @@ Disable device emulation enabled by `webContents.enableDeviceEmulation`.
 * `inputEvent` [MouseInputEvent](structures/mouse-input-event.md) | [MouseWheelInputEvent](structures/mouse-wheel-input-event.md) | [KeyboardInputEvent](structures/keyboard-input-event.md)
 
 Sends an input `event` to the page.
-
-> [!NOTE]
-> The [`BrowserWindow`](browser-window.md) containing the contents needs to be focused for
-`sendInputEvent()` to work.
 
 #### `contents.beginFrameSubscription([onlyDirty ,]callback)`
 

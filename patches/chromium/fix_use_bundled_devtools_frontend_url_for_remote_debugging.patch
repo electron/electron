@@ -26,10 +26,10 @@ behavior for Chrome and other embedders.
 Fixes: https://github.com/electron/electron/issues/51035
 
 diff --git a/content/browser/devtools/devtools_http_handler.cc b/content/browser/devtools/devtools_http_handler.cc
-index b1a097466d126e5c9cb5aed3c96dd6c5ad80728d..8eded12b50133958a1540a5e936d1bdec65428cf 100644
+index 4cb4ec6ea27ac909b2196cf3704b4116768764a1..47c7760641be7fee6b73e1b89162904edf1ca879 100644
 --- a/content/browser/devtools/devtools_http_handler.cc
 +++ b/content/browser/devtools/devtools_http_handler.cc
-@@ -561,7 +561,8 @@ std::string DevToolsHttpHandler::GetFrontendURLInternal(
+@@ -566,7 +566,8 @@ std::string DevToolsHttpHandler::GetFrontendURLInternal(
      const std::string& host) {
    std::string frontend_url;
    const std::string git_revision = CHROMIUM_GIT_REVISION;
@@ -40,10 +40,10 @@ index b1a097466d126e5c9cb5aed3c96dd6c5ad80728d..8eded12b50133958a1540a5e936d1bde
      frontend_url = "/devtools/inspector.html";
    } else {
 diff --git a/content/public/browser/devtools_manager_delegate.cc b/content/public/browser/devtools_manager_delegate.cc
-index db9be7653aa0f0d7fac4679601a093cd7138cbda..40565699ab6769f696acefde92f54e26b1550a90 100644
+index d25e534bb725f75b901b8013188f26fb987ac427..2d4b98407aa75bbe1dfe425a9374426980394931 100644
 --- a/content/public/browser/devtools_manager_delegate.cc
 +++ b/content/public/browser/devtools_manager_delegate.cc
-@@ -124,6 +124,10 @@ bool DevToolsManagerDelegate::HasBundledFrontendResources() {
+@@ -126,6 +126,10 @@ bool DevToolsManagerDelegate::HasBundledFrontendResources() {
    return false;
  }
  
@@ -55,10 +55,10 @@ index db9be7653aa0f0d7fac4679601a093cd7138cbda..40565699ab6769f696acefde92f54e26
    return false;
  }
 diff --git a/content/public/browser/devtools_manager_delegate.h b/content/public/browser/devtools_manager_delegate.h
-index 069a7b48a71ed650b2088721e61fc7d6d7947c08..6f0ad59678b63f8f4c5651527c6fb44bad57e95c 100644
+index 9f66813915d19e7bb187caccba94c921ee5a0183..94804ad64ecc8af869a7465e59e04919fe54fb1c 100644
 --- a/content/public/browser/devtools_manager_delegate.h
 +++ b/content/public/browser/devtools_manager_delegate.h
-@@ -169,6 +169,13 @@ class CONTENT_EXPORT DevToolsManagerDelegate {
+@@ -173,6 +173,13 @@ class CONTENT_EXPORT DevToolsManagerDelegate {
    // Returns whether frontend resources are bundled within the binary.
    virtual bool HasBundledFrontendResources();
  

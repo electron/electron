@@ -6,22 +6,22 @@ Subject: expose WebBlob::Path to allow embedders to get file paths
 Used to replace the File.path augmentation Electron currently implements.  This is safer / more web-standard technique.
 
 diff --git a/third_party/blink/public/web/web_blob.h b/third_party/blink/public/web/web_blob.h
-index 384a59138db11ea38028f844dd67e328ebffbe7b..f153997c2afccef1fa1b64ee5f162c28a2d07e5d 100644
+index 9d8b44628a8e7ffebaed2e21d005aa3c79007602..9a9da206b6c3a4c42bb8542b3a93d45042f03a5d 100644
 --- a/third_party/blink/public/web/web_blob.h
 +++ b/third_party/blink/public/web/web_blob.h
-@@ -67,6 +67,7 @@ class BLINK_EXPORT WebBlob {
+@@ -69,6 +69,7 @@ class BLINK_EXPORT WebBlob {
    void Reset();
    void Assign(const WebBlob&);
-   WebString Uuid();
+   CrossVariantMojoRemote<mojom::BlobInterfaceBase> CloneBlobRemote() const;
 +  std::string Path();
  
    bool IsNull() const { return private_.IsNull(); }
  
 diff --git a/third_party/blink/renderer/core/exported/web_blob.cc b/third_party/blink/renderer/core/exported/web_blob.cc
-index d9a54e5ca92d9e85093ad41d83a17b058d9f54b5..15910147b2cfef81a647211b200dc85c739abb0a 100644
+index 2010b2bc9bab2b7f4be09cf28f1ee3c192f28398..31c627ccc83fdae101fbd1710270e43c39cf01f7 100644
 --- a/third_party/blink/renderer/core/exported/web_blob.cc
 +++ b/third_party/blink/renderer/core/exported/web_blob.cc
-@@ -41,6 +41,7 @@
+@@ -42,6 +42,7 @@
  #include "third_party/blink/renderer/core/execution_context/execution_context.h"
  #include "third_party/blink/renderer/core/fileapi/blob.h"
  #include "third_party/blink/renderer/core/fileapi/file_backed_blob_factory_dispatcher.h"
@@ -29,8 +29,8 @@ index d9a54e5ca92d9e85093ad41d83a17b058d9f54b5..15910147b2cfef81a647211b200dc85c
  #include "third_party/blink/renderer/platform/blob/blob_data.h"
  #include "third_party/blink/renderer/platform/file_metadata.h"
  #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
-@@ -84,6 +85,14 @@ WebString WebBlob::Uuid() {
-   return private_->GetBlobDataHandle()->GetUuidMayBlock();
+@@ -87,6 +88,14 @@ WebBlob::CloneBlobRemote() const {
+   return private_->AsMojoBlob();
  }
  
 +std::string WebBlob::Path() {

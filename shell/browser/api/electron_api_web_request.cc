@@ -48,6 +48,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/weak_persistent.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -191,8 +192,7 @@ CalculateOnBeforeSendHeadersDelta(const net::HttpRequestHeaders* old_headers,
   // Keys of request headers to be deleted.
   std::set<std::string> deleted_request_headers;
 
-  // The event listener might not have passed any new headers if it
-  // just wanted to cancel the request.
+  // If the listener omitted requestHeaders, leave both sets empty.
   if (new_headers) {
     // Find deleted headers.
     {
@@ -215,7 +215,8 @@ CalculateOnBeforeSendHeadersDelta(const net::HttpRequestHeaders* old_headers,
     }
   }
 
-  return std::make_pair(modified_request_headers, deleted_request_headers);
+  // BeforeSendHeadersCallback takes removed headers before set headers.
+  return std::make_pair(deleted_request_headers, modified_request_headers);
 }
 
 WebRequest* ForObservedRequest(
@@ -496,7 +497,7 @@ int WebRequest::HandleOnBeforeSendHeadersResponseEvent(
 
   ResponseCallback response =
       base::BindOnce(&WebRequest::OnBeforeSendHeadersListenerResult,
-                     base::Unretained(this), request_info->id);
+                     gin_helper::WrapWeakPersistent(this), request_info->id);
   info.listener.Run(gin::ConvertToV8(isolate, details), std::move(response));
   return net::ERR_IO_PENDING;
 }
@@ -533,10 +534,10 @@ void WebRequest::OnBeforeSendHeadersListenerResult(
     }
   }
 
-  // If the user passes |cancel|, |new_headers| should be nullptr.
+  // Omitted requestHeaders leaves the headers unchanged; an empty object
+  // explicitly removes them.
   const auto updated_headers = CalculateOnBeforeSendHeadersDelta(
-      old_headers,
-      result == net::ERR_BLOCKED_BY_CLIENT ? nullptr : &new_headers);
+      old_headers, user_modified_headers ? &new_headers : nullptr);
 
   // Leave |request.request_headers| unchanged if the user didn't modify it.
   if (user_modified_headers)
@@ -589,7 +590,7 @@ int WebRequest::HandleOnHeadersReceivedResponseEvent(
 
   ResponseCallback response =
       base::BindOnce(&WebRequest::OnHeadersReceivedListenerResult,
-                     base::Unretained(this), request_info->id);
+                     gin_helper::WrapWeakPersistent(this), request_info->id);
   info.listener.Run(gin::ConvertToV8(isolate, details), std::move(response));
   return net::ERR_IO_PENDING;
 }
@@ -657,9 +658,9 @@ WebRequest::AuthRequiredResponse WebRequest::OnAuthRequired(
   blocked_request.auth_callback = std::move(callback);
   blocked_requests_[request_info->id] = std::move(blocked_request);
 
-  auto login_callback =
-      base::BindOnce(&WebRequest::OnLoginAuthResult, base::Unretained(this),
-                     request_info->id, credentials);
+  auto login_callback = base::BindOnce(&WebRequest::OnLoginAuthResult,
+                                       gin_helper::WrapWeakPersistent(this),
+                                       request_info->id, credentials);
 
   scoped_refptr<net::HttpResponseHeaders> response_headers =
       request_info->response_headers;

@@ -29,7 +29,7 @@ exactly once, with a null response and a null error response.
 This patch should be upstreamed.
 
 diff --git a/dbus/object_proxy.cc b/dbus/object_proxy.cc
-index a29cccd304cde400d7f926a36cc3b36dab944f71..75abd132786dae524b8266907bd9f26addf291a8 100644
+index 87244c8c7d65cfd557a3f556011c9f48d534a109..5423bcadc9a6fec482991592dc177d32033b8126 100644
 --- a/dbus/object_proxy.cc
 +++ b/dbus/object_proxy.cc
 @@ -324,6 +324,23 @@ void ObjectProxy::StartAsyncMethodCall(int timeout_ms,
@@ -57,21 +57,22 @@ index a29cccd304cde400d7f926a36cc3b36dab944f71..75abd132786dae524b8266907bd9f26a
        base::OnceCallback<void(DBusPendingCall * pending_call)>;
    // This returns false only when unable to allocate memory.
 diff --git a/dbus/object_proxy_unittest.cc b/dbus/object_proxy_unittest.cc
-index 4725ccd5ec97eedb932661770a065235f41abf4e..c96057532a709b25bdfcb6c087a8d858cee73feb 100644
+index fc06b1dbb50a02b34048be6c91776f67a7045e74..c1aad423f4dcd2813efee8e69260b0cf4e7cf7eb 100644
 --- a/dbus/object_proxy_unittest.cc
 +++ b/dbus/object_proxy_unittest.cc
-@@ -9,11 +9,20 @@
- #include "base/functional/bind.h"
+@@ -14,13 +14,21 @@
+ #include "base/functional/callback_helpers.h"
  #include "base/memory/ref_counted.h"
  #include "base/run_loop.h"
 +#include "base/task/sequenced_task_runner.h"
  #include "base/test/task_environment.h"
+ #include "base/test/test_future.h"
  #include "dbus/bus.h"
 +#include "dbus/message.h"
 +#include "dbus/mock_bus.h"
 +#include "dbus/object_path.h"
  #include "dbus/test_service.h"
-+#include "testing/gmock/include/gmock/gmock.h"
+ #include "testing/gmock/include/gmock/gmock.h"
  #include "testing/gtest/include/gtest/gtest.h"
  
 +using ::testing::_;
@@ -81,7 +82,7 @@ index 4725ccd5ec97eedb932661770a065235f41abf4e..c96057532a709b25bdfcb6c087a8d858
  namespace dbus {
  namespace {
  
-@@ -36,6 +45,54 @@ class ObjectProxyTest : public testing::Test {
+@@ -43,6 +51,54 @@ class ObjectProxyTest : public testing::Test {
    scoped_refptr<Bus> bus_;
  };
  
@@ -136,8 +137,8 @@ index 4725ccd5ec97eedb932661770a065235f41abf4e..c96057532a709b25bdfcb6c087a8d858
  // Used as a WaitForServiceToBeAvailableCallback.
  void OnServiceIsAvailable(bool* dest_service_is_available,
                            int* num_calls,
-@@ -143,5 +200,38 @@ TEST_F(ObjectProxyTest, WaitForServiceToBeAvailableMultipleCallbacks) {
-   EXPECT_TRUE(service_is_available_2);
+@@ -211,5 +267,38 @@ TEST_F(ObjectProxyTest, ConnectToSignalReceivesOnlyRequestedSignal) {
+   EXPECT_THAT(received_signals, testing::ElementsAre("/:Test"));
  }
  
 +// dbus_connection_send_with_reply() succeeds without creating a pending call

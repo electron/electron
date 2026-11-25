@@ -4,7 +4,7 @@ The `virtualDisplay` addon leverages macOS CoreGraphics APIs to create virtual d
 
 ## Methods
 
-#### `virtualDisplay.create([options])`
+### `virtualDisplay.create([options])`
 
 Creates a virtual display and returns a display ID.
 
@@ -30,7 +30,7 @@ const displayId = virtualDisplay.create({
 > [!NOTE]
 > It is recommended to call [`virtualDisplay.forceCleanup()`](#virtualdisplayforcecleanup) before every test to prevent display creation from failing in that test. macOS CoreGraphics maintains an internal display ID allocation pool that can become corrupted when virtual displays are created and destroyed rapidly during testing. Without proper cleanup, subsequent display creation may fail with inconsistent display IDs, resulting in test flakiness.
 
-#### `virtualDisplay.forceCleanup()`
+### `virtualDisplay.forceCleanup()`
 
 Performs a complete cleanup of all virtual displays and resets the macOS CoreGraphics display system.
 
@@ -40,7 +40,7 @@ beforeEach(() => {
 })
 ```
 
-#### `virtualDisplay.destroy(displayId)`
+### `virtualDisplay.destroy(displayId)`
 
 Removes the virtual display.
 
