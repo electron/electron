@@ -36,6 +36,24 @@
 
 # User-Agent Client Hints are not populated (empty Sec-CH-UA).
 /client-hints/*
+# ElectronBrowserContext::GetClientHintsControllerDelegate() returns null, so
+# Accept-CH is not remembered and a prefetch carries only the hints sent by
+# default.
+/speculation-rules/prefetch/client-hints/* | * | *sec-ch-device-memory*
+
+# Electron does not support prerender speculation rules: api::WebContents does
+# not override WebContentsDelegate::IsPrerender2Supported(), which refuses
+# every prerender unless the embedder opts in. The directories that only
+# prerender are in exclude.txt; these tests prerender among other things.
+/speculation-rules/activation-header/prerender-activation-beacon.tentative.https.html
+/speculation-rules/speculation-tags/no-tags.https.html
+/speculation-rules/speculation-tags/prerender-target-hint.https.html
+
+# The test does nothing when the user agent contains "HeadlessChrome", which
+# is how it passes in the baseline. What it skips there, a conservative
+# document rule prefetched on pointerdown, does not happen in headless_shell
+# either.
+/speculation-rules/speculation-measurement/performance-speculations-navigations-pointerdown.tentative.https.html
 
 # screen.orientation.lock() has no ScreenOrientationDelegate.
 /screen-orientation/*

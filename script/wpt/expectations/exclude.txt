@@ -11,6 +11,7 @@
 
 # Electron does not support prerender speculation rules.
 /speculation-rules/prerender/
+/speculation-rules/prerender-until-script/
 
 # WebDriver protocol tests (wdspec), in case the type filter is lifted.
 /webdriver/
