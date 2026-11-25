@@ -76,6 +76,12 @@ CHROMIUM_BINARY_ARGS = [
     # headless_shell is given --accept-lang=en-US,en, which Electron does not
     # have; this is the closest equivalent.
     '--lang=en-US',
+    # headless_shell is given --enable-field-trial-config, which turns on what
+    # testing/variations/fieldtrial_testing_config.json lists. Electron has no
+    # field trial testing config, so features that are only on through it are
+    # named here. wptrunner passes --enable-features several times as well;
+    # ChromeDriver joins them all into one switch before it starts Electron.
+    '--enable-features=PrefetchActivationBeacon',
 ]
 
 # Test statuses the retry pass does not run again: every timeout would take
