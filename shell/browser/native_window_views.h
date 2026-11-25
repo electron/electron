@@ -13,7 +13,6 @@
 
 #include "base/functional/callback_helpers.h"
 #include "base/memory/raw_ptr.h"
-#include "base/memory/weak_ptr.h"
 #include "base/no_destructor.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
@@ -24,6 +23,7 @@
 
 #if BUILDFLAG(IS_WIN)
 #include "base/callback_list.h"
+#include "base/memory/weak_ptr.h"
 #include "base/win/scoped_gdi_object.h"
 #include "content/public/browser/scoped_accessibility_mode.h"
 #include "shell/browser/ui/win/taskbar_host.h"
@@ -417,8 +417,10 @@ class NativeWindowViews : public NativeWindow,
   double opacity_ = 1.0;
   bool widget_destroyed_ = false;
 
+#if BUILDFLAG(IS_WIN)
   // Must be the last member.
   base::WeakPtrFactory<NativeWindowViews> mouse_forwarding_weak_factory_{this};
+#endif
 };
 
 }  // namespace electron
