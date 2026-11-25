@@ -45,7 +45,9 @@ declare_args() {
 }
 
 if (is_mac) {
+  import("//build/config/clang/clang.gni")
   import("//build/config/mac/rules.gni")
+  import("//build/config/sanitizers/sanitizers.gni")
   import("//third_party/icu/config.gni")
   import("build/rules.gni")
 
@@ -1319,6 +1321,27 @@ if (is_mac) {
   electron_login_helper_name = "$electron_product_name Login Helper"
   electron_framework_version = "A"
 
+  # Path of Electron's Apéritif library (see shell/app/aperitif_mac.h) inside
+  # the framework bundle, and its install name. Component builds load it from
+  # the output directory instead.
+  electron_aperitif_lib = "libelectron_aperitif.dylib"
+  if (is_component_build) {
+    electron_aperitif_install_name = "@rpath/$electron_aperitif_lib"
+  } else {
+    electron_aperitif_install_name = "@rpath/$electron_framework_name.framework/Libraries/$electron_aperitif_lib"
+  }
+
+  # Check that the main and helper executables load exactly
+  # libelectron_aperitif, then Electron Framework, then libSystem, in that
+  # order, and that libelectron_aperitif itself loads nothing beyond libSystem
+  # and libsandbox. Matches Chrome's verify_dynamic_libraries.
+  electron_verify_libraries = !is_component_build && !is_asan && !is_ubsan_any
+  if (host_os == "mac") {
+    electron_objdump_path = mac_bin_path
+  } else {
+    electron_objdump_path = rebase_path("$clang_base_path/bin/", root_build_dir)
+  }
+
   mac_xib_bundle_data("electron_xibs") {
     sources = [ "shell/common/resources/mac/MainMenu.xib" ]
   }
@@ -1342,12 +1365,18 @@ if (is_mac) {
     outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
   }
 
-  if (!is_component_build && is_component_ffmpeg) {
+  # Component builds load these libraries from the output directory instead.
+  if (!is_component_build) {
     bundle_data("electron_framework_libraries") {
-      sources = []
-      public_deps = []
-      sources += [ "$root_out_dir/libffmpeg.dylib" ]
-      public_deps += [ "//third_party/ffmpeg" ]
+      sources = [ "$root_out_dir/$electron_aperitif_lib" ]
+      public_deps = [ ":electron_aperitif" ]
+      if (electron_verify_libraries) {
+        public_deps += [ ":verify_libraries_electron_aperitif" ]
+      }
+      if (is_component_ffmpeg) {
+        sources += [ "$root_out_dir/libffmpeg.dylib" ]
+        public_deps += [ "//third_party/ffmpeg" ]
+      }
       outputs = [ "{{bundle_contents_dir}}/Libraries/{{source_file_part}}" ]
     }
   } else {
@@ -1433,20 +1462,95 @@ if (is_mac) {
     }
   }
 
-  # Link against Electron Framework without mac_framework_bundle's "+link"
-  # group. Its public config lists the framework bundle in `inputs`, which GN
-  # applies to every compile step of the consuming target, so each executable's
-  # objects were rebuilt (and the whole bundle uploaded to RBE) whenever the
-  # framework relinked. GN already makes the link step depend on the bundle.
-  config("electron_framework_link_config") {
-    visibility = [ ":electron_framework_link" ]
-    framework_dirs = [ root_out_dir ]
-    frameworks = [ "$electron_framework_name.framework" ]
+  # Electron's Apéritif library; see shell/app/aperitif_mac.h. Its static
+  # initializer registers PartitionAlloc's early malloc zone, repairs stdio and
+  # (outside MAS builds) engages the Seatbelt sandbox in helpers, before any
+  # initializer in Electron Framework or the system libraries it links runs.
+  # Everything it links runs before the sandbox is on, so keep its dependencies
+  # to libSystem and libsandbox.
+  shared_library("electron_aperitif") {
+    output_name = "electron_aperitif"
+    sources = [
+      "shell/app/aperitif_mac.cc",
+      "shell/app/aperitif_mac.h",
+      "shell/app/uv_stdio_fix.cc",
+      "shell/app/uv_stdio_fix.h",
+    ]
+    include_dirs = [ "." ]
+    deps = [
+      "//base:compiler_specific",
+      "//base/allocator:early_zone_registration_apple",
+      "//electron/build/config:generate_mas_config",
+    ]
+    if (!is_mas_build) {
+      deps += [ "//sandbox/mac:seatbelt" ]
+    }
+    ldflags = [ "-Wl,-install_name,$electron_aperitif_install_name" ]
   }
 
-  group("electron_framework_link") {
-    public_deps = [ ":electron_framework" ]
-    public_configs = [ ":electron_framework_link_config" ]
+  # The main and helper executables link libelectron_aperitif, then Electron
+  # Framework. Shared libraries are linked in deps order, but `-framework`
+  # entries (mac_framework_bundle's "+link") are placed before all of them by
+  # the Apple link rule, so link the framework's shared library ("+link_nested")
+  # instead. Neither adds `inputs` to the executables' compile steps, so their
+  # objects are not rebuilt whenever the framework relinks. The app bundles
+  # copy in the framework separately.
+  electron_executable_link_deps = [
+    ":electron_aperitif",
+    ":electron_framework+link_nested",
+  ]
+
+  # Verifies that an executable loads exactly libelectron_aperitif, Electron
+  # Framework and libSystem, in that order.
+  template("electron_verify_executable_libraries") {
+    action(target_name) {
+      forward_variables_from(invoker, [ "deps" ])
+      script = "//chrome/tools/build/mac/verify_dynamic_libraries.py"
+      inputs = [ invoker.image ]
+      outputs = [ "$target_out_dir/run_$target_name.stamp" ]
+      args = [
+        "--stamp",
+        rebase_path(outputs[0], root_out_dir),
+        "-B",
+        electron_objdump_path,
+        "--image",
+        rebase_path(inputs[0], root_out_dir),
+        "--exact-match",
+        "--allow",
+        electron_aperitif_install_name,
+        "--allow",
+        "@rpath/$electron_framework_name.framework/$electron_framework_name",
+        "--allow",
+        "/usr/lib/libSystem.B.dylib",
+      ]
+    }
+  }
+
+  if (electron_verify_libraries) {
+    # Code in libelectron_aperitif runs before the sandbox is engaged; do not
+    # allow more libraries here without a security review.
+    action("verify_libraries_electron_aperitif") {
+      script = "//chrome/tools/build/mac/verify_dynamic_libraries.py"
+      inputs = [ "$root_out_dir/$electron_aperitif_lib" ]
+      outputs = [ "$target_out_dir/run_$target_name.stamp" ]
+      args = [
+        "--stamp",
+        rebase_path(outputs[0], root_out_dir),
+        "-B",
+        electron_objdump_path,
+        "--image",
+        rebase_path(inputs[0], root_out_dir),
+        "--allow",
+        "/usr/lib/libSystem.B.dylib",
+      ]
+      if (!is_mas_build) {
+        args += [
+          "--allow",
+          "/usr/lib/libsandbox.1.dylib",
+        ]
+      }
+      deps = [ ":electron_aperitif" ]
+    }
   }
 
   mac_framework_bundle("electron_framework") {
@@ -1531,19 +1635,10 @@ if (is_mac) {
       assert(defined(invoker.helper_name_suffix))
 
       output_name = electron_helper_name + invoker.helper_name_suffix
-      deps = [
-        ":electron_framework_link",
-        "//electron/build/config:generate_mas_config",
-      ]
-      if (!is_mas_build) {
-        deps += [ "//sandbox/mac:seatbelt" ]
-      }
+      deps = [ "//electron/build/config:generate_mas_config" ]
+      deps += electron_executable_link_deps
       defines = [ "HELPER_EXECUTABLE" ]
-      sources = [
-        "shell/app/electron_main_mac.cc",
-        "shell/app/uv_stdio_fix.cc",
-        "shell/app/uv_stdio_fix.h",
-      ]
+      sources = [ "shell/app/electron_main_mac.c" ]
       include_dirs = [ "." ]
       info_plist = "shell/renderer/resources/mac/Info.plist"
       extra_substitutions =
@@ -1553,6 +1648,8 @@ if (is_mac) {
         "@executable_path/../../..",
       ]
       if (is_component_build) {
+        # libelectron_aperitif is found next to the framework in the output
+        # directory.
         ldflags += [
           "-rpath",
           "@executable_path/../../../../../..",
@@ -1578,6 +1675,14 @@ if (is_mac) {
 
     electron_helper_app("electron_helper_app_${_helper_target}") {
       helper_name_suffix = _helper_suffix
+    }
+
+    if (electron_verify_libraries) {
+      electron_verify_executable_libraries(
+          "verify_libraries_electron_helper_app_${_helper_target}") {
+        image = "$root_out_dir/${electron_helper_name}${_helper_suffix}.app/Contents/MacOS/${electron_helper_name}${_helper_suffix}"
+        deps = [ ":electron_helper_app_${_helper_target}" ]
+      }
     }
   }
 
@@ -1619,7 +1724,7 @@ if (is_mac) {
     }
     outputs = [ "{{bundle_contents_dir}}/Frameworks/{{source_file_part}}" ]
     public_deps = [
-      ":electron_framework_link",
+      ":electron_framework",
       ":stripped_mantle_framework",
       ":stripped_reactiveobjc_framework",
       ":stripped_squirrel_framework",
@@ -1629,6 +1734,10 @@ if (is_mac) {
       sources +=
           [ "$root_out_dir/${electron_helper_name}${helper_params[2]}.app" ]
       public_deps += [ ":electron_helper_app_${helper_params[0]}" ]
+      if (electron_verify_libraries) {
+        public_deps +=
+            [ ":verify_libraries_electron_helper_app_${helper_params[0]}" ]
+      }
     }
   }
 
@@ -1694,13 +1803,10 @@ if (is_mac) {
 
   mac_app_bundle("electron_app") {
     output_name = electron_product_name
-    sources = [
-      "shell/app/electron_main_mac.cc",
-      "shell/app/uv_stdio_fix.cc",
-      "shell/app/uv_stdio_fix.h",
-    ]
+    sources = [ "shell/app/electron_main_mac.c" ]
     include_dirs = [ "." ]
-    deps = [
+    deps = electron_executable_link_deps
+    deps += [
       ":electron_app_framework_bundle_data",
       ":electron_app_plist",
       ":electron_app_resources",
@@ -1720,6 +1826,20 @@ if (is_mac) {
       "-rpath",
       "@executable_path/../Frameworks",
     ]
+    if (is_component_build) {
+      # libelectron_aperitif is found in the output directory.
+      ldflags += [
+        "-rpath",
+        "@executable_path/../../..",
+      ]
+    }
+  }
+
+  if (electron_verify_libraries) {
+    electron_verify_executable_libraries("verify_libraries_electron_app") {
+      image = "$root_out_dir/$electron_product_name.app/Contents/MacOS/$electron_product_name"
+      deps = [ ":electron_app" ]
+    }
   }
 
   if (enable_dsyms) {
@@ -2203,6 +2323,9 @@ if (is_debug || dcheck_always_on) {
 
 group("electron") {
   public_deps = [ ":electron_app" ]
+  if (is_mac && electron_verify_libraries) {
+    public_deps += [ ":verify_libraries_electron_app" ]
+  }
   if (is_debug || dcheck_always_on) {
     data_deps = [ ":v8_code_cache_spec_assets" ]
   }

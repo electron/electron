@@ -74,6 +74,20 @@ describe('node feature', () => {
           expect(stderr).toContain('requires a --type argument');
         }
       );
+
+      ifit(process.platform === 'darwin')('runs Node.js when the helper is executed with ELECTRON_RUN_AS_NODE', () => {
+        const { status, stdout, stderr } = childProcess.spawnSync(
+          process.helperExecPath,
+          ['-e', 'process.stdout.write(process.versions.node)'],
+          {
+            encoding: 'utf-8',
+            env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+            timeout: 20000
+          }
+        );
+        expect(status, stderr).toBe(0);
+        expect(stdout).toBe(process.versions.node);
+      });
     });
   });
 
