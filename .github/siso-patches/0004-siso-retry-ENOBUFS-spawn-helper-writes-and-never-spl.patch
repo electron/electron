@@ -1,4 +1,4 @@
-From 7b1c374664a88e23b15eb05e5b60e415af271851 Mon Sep 17 00:00:00 2001
+From 2d729ebbeeb3974874347eb47305cc36a0f00a95 Mon Sep 17 00:00:00 2001
 From: Samuel Attard <sam@electronjs.org>
 Date: Tue, 14 Jul 2026 19:47:16 +0000
 Subject: [PATCH] siso: retry ENOBUFS spawn-helper writes and never split a
@@ -20,42 +20,115 @@ it (up to 283 observed in one build).
 Marshal the whole frame (varint length prefix + payload) into a single
 buffer and write it with one loop that continues after partial writes
 and retries ENOBUFS/EAGAIN with exponential backoff (1ms doubling to
-100ms, giving up after ~2s of accumulated waiting), so kernel buffer
-pressure causes a brief stall instead of a failed build. Linux
-behavior is unchanged: writes there block rather than returning
-ENOBUFS, so the retry path is never taken. Both directions are covered
-since client and helper share spawnConn.send.
+100ms), so kernel buffer pressure causes a stall instead of a failed
+build. Linux behavior is unchanged: writes there block rather than
+returning ENOBUFS, so the retry path is never taken. Both directions
+are covered since client and helper share spawnConn.send.
 
-If the retry budget is exhausted anyway (or a non-retryable error
-hits) after part of the frame has already reached the wire, the stream
-is permanently desynced and no later send could ever be parsed, so
-retire the connection: close it so both ends' readers fail with a
-clean net.ErrClosed/EOF (Client.readLoop fails all pending runs; the
-helper treats it as siso exiting) instead of leaving a poisoned stream
-whose next frame recreates the wire-format parse error. A failure
-before any byte is written leaves the connection open, since the
-stream is still in sync and only that one spawn needs to fail.
+How long the retry runs depends on whether any byte of the frame has
+been written. While none has, the stream is still in sync and giving
+up only fails the step with the same ENOBUFS an unpatched siso would,
+so the write keeps retrying until the caller's context is done (the
+step is cancelled) or 60s elapse. send takes a context for this: Run's
+start uses the step's ctx, while the cancel message and the helper's
+replies use context.WithoutCancel so they still go out for a
+cancelled step. Once part of the frame is on the wire, only a further
+~2s of retrying is allowed, regardless of ctx.
+
+If it gives up (or a non-retryable error hits) after part of the frame
+has already reached the wire, the stream is permanently desynced and
+no later send could ever be parsed, so retire the connection: close it
+so both ends' readers fail with a clean net.ErrClosed/EOF
+(Client.readLoop fails all pending runs; the helper treats it as siso
+exiting) instead of leaving a poisoned stream whose next frame
+recreates the wire-format parse error. A failure before any byte is
+written leaves the connection open, since the stream is still in sync
+and only that one spawn needs to fail.
+
+Each retry episode is logged once when it ends, succeeded or not (via
+clog on the siso side, so it lands in siso.INFO, and the helper's own
+log file on the helper side), and a give-up error is wrapped as "after
+N retries over D: ..." while still matching errors.Is(err, ENOBUFS).
 
 Add a round-trip test that the manual framing stays compatible with
 recv's protodelim reader, including a multi-megabyte payload spanning
 many kernel-buffer-sized writes, plus tests that abandoning a
 partially written frame (retry exhaustion or a hard error) closes the
-connection while a failure before any byte is written leaves it open.
+connection while a failure before any byte is written leaves it open,
+that an unsent frame keeps retrying past the partial-frame budget,
+and that its retry stops when the context is done.
+
+Follow-up (Electron CI): the original version gave up after ~2s of
+accumulated waiting even when nothing had been written; on 2026-11-16 a
+macOS release build still failed with ENOBUFS after that budget ran
+out, so unsent frames now wait for the step instead.
 ---
- siso/execute/spawnhelper/spawn_wire.go      |  77 +++++++++-
- siso/execute/spawnhelper/spawn_wire_test.go | 157 ++++++++++++++++++++
- 2 files changed, 231 insertions(+), 3 deletions(-)
+ siso/execute/spawnhelper/spawn_client.go    |   5 +-
+ siso/execute/spawnhelper/spawn_server.go    |   6 +-
+ siso/execute/spawnhelper/spawn_wire.go      | 142 +++++++++++++-
+ siso/execute/spawnhelper/spawn_wire_test.go | 204 ++++++++++++++++++++
+ 4 files changed, 350 insertions(+), 7 deletions(-)
  create mode 100644 siso/execute/spawnhelper/spawn_wire_test.go
 
+diff --git a/siso/execute/spawnhelper/spawn_client.go b/siso/execute/spawnhelper/spawn_client.go
+index 0e29690..38ad4fd 100644
+--- a/siso/execute/spawnhelper/spawn_client.go
++++ b/siso/execute/spawnhelper/spawn_client.go
+@@ -165,7 +165,7 @@ func (c *Client) Run(ctx context.Context, req *epb.SpawnRequest) (*epb.SpawnResu
+ 	c.mu.Unlock()
+ 
+ 	start := &epb.SpawnMessage{Id: id, Payload: &epb.SpawnMessage_Start{Start: req}}
+-	if err := c.conn.send(start); err != nil {
++	if err := c.conn.send(ctx, start); err != nil {
+ 		c.mu.Lock()
+ 		delete(c.pending, id)
+ 		c.mu.Unlock()
+@@ -179,7 +179,8 @@ func (c *Client) Run(ctx context.Context, req *epb.SpawnRequest) (*epb.SpawnResu
+ 		// The helper owns and reaps the child, so let it cancel and report back;
+ 		// signalling here would risk a pid-reuse race.
+ 		cancel := &epb.SpawnMessage{Id: id, Payload: &epb.SpawnMessage_Cancel{Cancel: &epb.SpawnCancel{}}}
+-		if err := c.conn.send(cancel); err != nil {
++		// ctx is already done; the cancel must still get through.
++		if err := c.conn.send(context.WithoutCancel(ctx), cancel); err != nil {
+ 			// Socket is dead; readLoop's failAll will also fail this Run. A late
+ 			// failAll send to the cap-1 ch after we return is harmlessly discarded.
+ 			c.mu.Lock()
+diff --git a/siso/execute/spawnhelper/spawn_server.go b/siso/execute/spawnhelper/spawn_server.go
+index 44fc898..bf1fb49 100644
+--- a/siso/execute/spawnhelper/spawn_server.go
++++ b/siso/execute/spawnhelper/spawn_server.go
+@@ -76,6 +76,7 @@ func (s *Server) Serve(ctx context.Context, spawner Spawner) error {
+ 		return fmt.Errorf("spawn helper: unexpected conn type %T", conn)
+ 	}
+ 	s.conn = newSpawnConn(uc)
++	s.conn.logf = func(_ context.Context, format string, args ...any) { log.Printf(format, args...) }
+ 
+ 	// Diagnostics go to the helper's own log file (siso_spawn_helper), so they
+ 	// never clash with siso's stdout-based progress UI. Fall back to stderr when
+@@ -172,8 +173,11 @@ func (s *Server) handleStart(ctx context.Context, id uint64, req *epb.SpawnReque
+ 	// reply sends one helper->client message. A send failure means siso (our
+ 	// parent) is gone: record it and close the conn so serve()'s recv() unblocks
+ 	// and drains. The log goes to the helper's own file, never siso's progress UI.
++	// The reply goes out even if the action was cancelled, so it does not
++	// inherit ctx's cancellation; Serve's shutdown closes the conn instead.
++	replyCtx := context.WithoutCancel(ctx)
+ 	reply := func(msg *epb.SpawnMessage) {
+-		if err := s.conn.send(msg); err != nil {
++		if err := s.conn.send(replyCtx, msg); err != nil {
+ 			log.Printf("send id=%d: %v", id, err)
+ 			_ = s.conn.close()
+ 		}
 diff --git a/siso/execute/spawnhelper/spawn_wire.go b/siso/execute/spawnhelper/spawn_wire.go
-index 5b8048d..a3869d3 100644
+index 5b8048d..8af61f3 100644
 --- a/siso/execute/spawnhelper/spawn_wire.go
 +++ b/siso/execute/spawnhelper/spawn_wire.go
-@@ -8,10 +8,15 @@ package spawnhelper
+@@ -8,12 +8,20 @@ package spawnhelper
  
  import (
  	"bufio"
++	"context"
 +	"errors"
++	"fmt"
  	"net"
  	"sync"
 +	"syscall"
@@ -66,8 +139,11 @@ index 5b8048d..a3869d3 100644
 +	"google.golang.org/protobuf/proto"
  
  	epb "go.chromium.org/build/siso/execute/proto"
++	"go.chromium.org/build/siso/o11y/clog"
  )
-@@ -23,8 +28,11 @@ var spawnUnmarshalOpts = protodelim.UnmarshalOptions{MaxSize: -1}
+ 
+ // spawnUnmarshalOpts disables protodelim's default 4 MiB message cap: we control
+@@ -23,10 +31,17 @@ var spawnUnmarshalOpts = protodelim.UnmarshalOptions{MaxSize: -1}
  
  // spawnConn is a framed transport over a unix socket. recv is called by one
  // goroutine; send may be concurrent and serializes writes.
@@ -79,17 +155,27 @@ index 5b8048d..a3869d3 100644
 +	c   net.Conn
  	r   *bufio.Reader
  	wmu sync.Mutex
++
++	// logf records write-retry episodes. nil means clog.Infof, which lands
++	// in siso.INFO on the siso side; the helper points it at its own log.
++	logf func(ctx context.Context, format string, args ...any)
  }
-@@ -42,11 +50,74 @@ func (s *spawnConn) close() error {
+ 
+ func newSpawnConn(c *net.UnixConn) *spawnConn {
+@@ -42,11 +57,130 @@ func (s *spawnConn) close() error {
  
  // send writes one length-delimited SpawnMessage. Concurrent sends serialize on
  // wmu so messages never interleave on the stream.
+-func (s *spawnConn) send(msg *epb.SpawnMessage) error {
 +//
 +// The whole frame (varint length prefix + payload) is marshaled into a single
 +// buffer and written by one retry loop, so a transient write error can never
 +// leave the stream desynced mid-frame: the peer's protodelim reader would fail
 +// with a wire-format error and take down every in-flight spawn with it.
- func (s *spawnConn) send(msg *epb.SpawnMessage) error {
++//
++// ctx bounds how long send keeps retrying a frame the kernel has not accepted
++// any of yet (see writeFull); it is also used for logging.
++func (s *spawnConn) send(ctx context.Context, msg *epb.SpawnMessage) error {
  	s.wmu.Lock()
  	defer s.wmu.Unlock()
 -	_, err := protodelim.MarshalTo(s.c, msg)
@@ -100,7 +186,7 @@ index 5b8048d..a3869d3 100644
 +	}
 +	frame := protowire.AppendVarint(make([]byte, 0, protowire.SizeVarint(uint64(len(body)))+len(body)), uint64(len(body)))
 +	frame = append(frame, body...)
-+	return s.writeFull(frame)
++	return s.writeFull(ctx, frame)
 +}
 +
 +// writeFull writes b completely to the socket, retrying transient kernel
@@ -121,30 +207,72 @@ index 5b8048d..a3869d3 100644
 +// treats it as siso exiting) rather than a wire-format parse error mid-build.
 +// A failure before any byte was written leaves the stream in sync, so the
 +// connection stays usable and only this send fails.
-+func (s *spawnConn) writeFull(b []byte) error {
++//
++// How long the retry runs therefore depends on whether any byte of the frame
++// has been written. While none has, giving up gains nothing over waiting: it
++// fails the step with the same ENOBUFS an unpatched siso would, and ENOBUFS
++// has been seen to persist for several seconds on loaded macOS builders. So
++// an unsent frame keeps retrying (backoff capped at maxDelay) until ctx is
++// done or maxUnsentWait elapses. Once part of the frame is on the wire, only
++// maxPartialWait more is allowed before the connection is retired, and ctx is
++// ignored, so a half-written frame never holds the stream for long and a
++// cancelled step cannot take every in-flight spawn down with it.
++//
++// Each retry episode is logged once when it ends, and a give-up error says
++// how many retries it made over how long, still wrapping the write error so
++// errors.Is(err, syscall.ENOBUFS) holds.
++func (s *spawnConn) writeFull(ctx context.Context, b []byte) error {
 +	const (
-+		maxDelay = 100 * time.Millisecond
-+		maxWait  = 2 * time.Second
++		maxDelay       = 100 * time.Millisecond
++		maxUnsentWait  = 60 * time.Second
++		maxPartialWait = 2 * time.Second
 +	)
 +	total := len(b)
 +	delay := time.Millisecond
-+	var waited time.Duration
++	retries := 0
++	var start, partialStart time.Time
 +	for len(b) > 0 {
 +		n, err := s.c.Write(b)
 +		b = b[n:]
 +		if err == nil {
 +			continue
 +		}
-+		if (errors.Is(err, syscall.ENOBUFS) || errors.Is(err, syscall.EAGAIN)) && waited < maxWait {
-+			time.Sleep(delay)
-+			waited += delay
-+			delay *= 2
-+			if delay > maxDelay {
-+				delay = maxDelay
++		partial := len(b) < total
++		if errors.Is(err, syscall.ENOBUFS) || errors.Is(err, syscall.EAGAIN) {
++			now := time.Now()
++			if start.IsZero() {
++				start = now
 +			}
-+			continue
++			var retry bool
++			var done <-chan struct{} // nil (never ready) once the frame is partial
++			if partial {
++				if partialStart.IsZero() {
++					partialStart = now
++				}
++				retry = now.Sub(partialStart) < maxPartialWait
++			} else {
++				retry = now.Sub(start) < maxUnsentWait
++				done = ctx.Done()
++			}
++			if retry {
++				retries++
++				t := time.NewTimer(delay)
++				select {
++				case <-t.C:
++					delay = min(2*delay, maxDelay)
++					continue
++				case <-done:
++					t.Stop()
++					err = fmt.Errorf("%w: %w", context.Cause(ctx), err)
++				}
++			}
 +		}
-+		if len(b) < total {
++		if retries > 0 {
++			waited := time.Since(start).Round(time.Millisecond)
++			s.logRetry(ctx, "spawn conn: write gave up after %d retries over %s (%d/%d frame bytes written): %v", retries, waited, total-len(b), total, err)
++			err = fmt.Errorf("after %d retries over %s: %w", retries, waited, err)
++		}
++		if partial {
 +			// Frame abandoned mid-write; the stream can never resync.
 +			// Multiple closes are fine: net.Conn.Close is idempotent
 +			// (later calls just return net.ErrClosed), and close() /
@@ -153,16 +281,27 @@ index 5b8048d..a3869d3 100644
 +		}
 +		return err
 +	}
++	if retries > 0 {
++		s.logRetry(ctx, "spawn conn: write of %d-byte frame succeeded after %d ENOBUFS/EAGAIN retries over %s", total, retries, time.Since(start).Round(time.Millisecond))
++	}
 +	return nil
++}
++
++func (s *spawnConn) logRetry(ctx context.Context, format string, args ...any) {
++	if s.logf != nil {
++		s.logf(ctx, format, args...)
++		return
++	}
++	clog.Infof(ctx, format, args...)
  }
  
  // recv reads one length-delimited SpawnMessage.
 diff --git a/siso/execute/spawnhelper/spawn_wire_test.go b/siso/execute/spawnhelper/spawn_wire_test.go
 new file mode 100644
-index 0000000..8ba9063
+index 0000000..67a2a2a
 --- /dev/null
 +++ b/siso/execute/spawnhelper/spawn_wire_test.go
-@@ -0,0 +1,157 @@
+@@ -0,0 +1,204 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -174,10 +313,12 @@ index 0000000..8ba9063
 +import (
 +	"bufio"
 +	"bytes"
++	"context"
 +	"errors"
 +	"io"
 +	"net"
 +	"os"
++	"strings"
 +	"syscall"
 +	"testing"
 +	"time"
@@ -231,7 +372,7 @@ index 0000000..8ba9063
 +		},
 +	}
 +	done := make(chan error, 1)
-+	go func() { done <- a.send(want) }()
++	go func() { done <- a.send(t.Context(), want) }()
 +	got, err := b.recv()
 +	if err != nil {
 +		t.Fatalf("recv: %v", err)
@@ -246,15 +387,21 @@ index 0000000..8ba9063
 +
 +// stubConn is a net.Conn whose Write accepts up to accept bytes in total and
 +// then persistently fails with werr, like a macOS AF_UNIX socket whose kernel
-+// buffers never drain. It records whether the conn was closed.
++// buffers never drain. If failUntil is set, every Write before then instead
++// fails with werr having written nothing. It records whether the conn was
++// closed.
 +type stubConn struct {
-+	accept int   // total bytes Write accepts before failing
-+	werr   error // error returned once accept is exhausted
-+	wrote  int
-+	closed bool
++	accept    int   // total bytes Write accepts before failing
++	werr      error // error returned once accept is exhausted
++	failUntil time.Time
++	wrote     int
++	closed    bool
 +}
 +
 +func (f *stubConn) Write(p []byte) (int, error) {
++	if time.Now().Before(f.failUntil) {
++		return 0, f.werr
++	}
 +	n := min(f.accept-f.wrote, len(p))
 +	f.wrote += n
 +	if n == len(p) {
@@ -285,9 +432,12 @@ index 0000000..8ba9063
 +// Takes ~2s: it deliberately exhausts writeFull's real backoff budget.
 +func TestSpawnConnSendRetryExhaustionClosesConn(t *testing.T) {
 +	sc, fc := stubSpawnConn(1, syscall.ENOBUFS) // first write is partial, then ENOBUFS forever
-+	err := sc.send(&epb.SpawnMessage{Id: 42})
++	err := sc.send(t.Context(), &epb.SpawnMessage{Id: 42})
 +	if !errors.Is(err, syscall.ENOBUFS) {
 +		t.Fatalf("send: got %v, want ENOBUFS after retry exhaustion", err)
++	}
++	if !strings.Contains(err.Error(), "retries over") {
++		t.Errorf("send: got %q, want the error to say how long it retried", err)
 +	}
 +	if !fc.closed {
 +		t.Errorf("connection left open after abandoning a partially written frame; later sends would desync the stream")
@@ -298,7 +448,7 @@ index 0000000..8ba9063
 +// non-retryable write failure mid-frame also retires the connection.
 +func TestSpawnConnSendErrorAfterPartialWriteClosesConn(t *testing.T) {
 +	sc, fc := stubSpawnConn(1, syscall.EPIPE)
-+	err := sc.send(&epb.SpawnMessage{Id: 42})
++	err := sc.send(t.Context(), &epb.SpawnMessage{Id: 42})
 +	if !errors.Is(err, syscall.EPIPE) {
 +		t.Fatalf("send: got %v, want EPIPE", err)
 +	}
@@ -312,9 +462,45 @@ index 0000000..8ba9063
 +// still in sync, so only this send should fail.
 +func TestSpawnConnSendErrorBeforeAnyWriteKeepsConn(t *testing.T) {
 +	sc, fc := stubSpawnConn(0, syscall.EPIPE)
-+	err := sc.send(&epb.SpawnMessage{Id: 42})
++	err := sc.send(t.Context(), &epb.SpawnMessage{Id: 42})
 +	if !errors.Is(err, syscall.EPIPE) {
 +		t.Fatalf("send: got %v, want EPIPE", err)
++	}
++	if fc.closed {
++		t.Errorf("connection closed even though no frame bytes were written; stream was still in sync")
++	}
++}
++
++// TestSpawnConnSendRetriesUnsentFrameLonger verifies that ENOBUFS lasting
++// longer than the partial-frame budget does not fail a send while no byte of
++// the frame has been written: the stream is still in sync, so it keeps
++// retrying instead of failing the step.
++// Takes ~2.5s: the stall has to outlast the 2s partial-frame budget.
++func TestSpawnConnSendRetriesUnsentFrameLonger(t *testing.T) {
++	sc, fc := stubSpawnConn(1<<20, syscall.ENOBUFS)
++	fc.failUntil = time.Now().Add(2500 * time.Millisecond)
++	if err := sc.send(t.Context(), &epb.SpawnMessage{Id: 42}); err != nil {
++		t.Fatalf("send: %v, want success once ENOBUFS clears", err)
++	}
++	if fc.closed {
++		t.Errorf("connection closed after a successful send")
++	}
++}
++
++// TestSpawnConnSendUnsentFrameStopsOnCancel verifies that retrying an unsent
++// frame ends when ctx is done, keeps the connection open, and reports both
++// the cancellation and the write error.
++func TestSpawnConnSendUnsentFrameStopsOnCancel(t *testing.T) {
++	sc, fc := stubSpawnConn(0, syscall.ENOBUFS) // ENOBUFS forever, nothing written
++	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
++	defer cancel()
++	start := time.Now()
++	err := sc.send(ctx, &epb.SpawnMessage{Id: 42})
++	if elapsed := time.Since(start); elapsed > time.Second {
++		t.Errorf("send took %s after ctx was done, want it to stop promptly", elapsed)
++	}
++	if !errors.Is(err, syscall.ENOBUFS) || !errors.Is(err, context.DeadlineExceeded) {
++		t.Fatalf("send: got %v, want ENOBUFS and DeadlineExceeded", err)
 +	}
 +	if fc.closed {
 +		t.Errorf("connection closed even though no frame bytes were written; stream was still in sync")
