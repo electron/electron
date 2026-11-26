@@ -14,14 +14,21 @@ JavaScript even when V8 does not enforce it.
 Backported from https://github.com/nodejs/node/pull/66740
 (upstream commit 5dca62fd674c2fa5eb5e93404dd7e8f130988e7b).
 
+Unlike upstream, the script is told to stop its busy loop through a
+file and reports the count with console.log, instead of the test
+calling Runtime.evaluate from the interrupt: V8 no longer lets
+inspector dispatch run JavaScript inside an API interrupt
+(https://chromium-review.googlesource.com/c/v8/v8/+/8775587), and
+Electron builds with v8_disallow_js_in_api_interrupts_is_checked.
+
 Signed-off-by: Christian Aurich Zanettini Martins <christian.aurichzm@gmail.com>
 
 diff --git a/test/parallel/test-inspector-dom-storage-interrupt.js b/test/parallel/test-inspector-dom-storage-interrupt.js
 new file mode 100644
-index 0000000000000000000000000000000000000000..fc426beddee6032200064d04f8c759143aa2ad5e
+index 0000000000000000000000000000000000000000..c1113ab06ebd33379dce4a06c5e18109044b5b80
 --- /dev/null
 +++ b/test/parallel/test-inspector-dom-storage-interrupt.js
-@@ -0,0 +1,138 @@
+@@ -0,0 +1,145 @@
 +'use strict';
 +const common = require('../common');
 +common.skipIfSQLiteMissing();
@@ -29,6 +36,7 @@ index 0000000000000000000000000000000000000000..fc426beddee6032200064d04f8c75914
 +
 +const assert = require('assert');
 +const { spawnSync } = require('child_process');
++const { writeFileSync } = require('fs');
 +const { join } = require('path');
 +const { DatabaseSync } = require('node:sqlite');
 +const { NodeInstance } = require('../common/inspector-helper.js');
@@ -40,8 +48,13 @@ index 0000000000000000000000000000000000000000..fc426beddee6032200064d04f8c75914
 +// from there, whether or not the application has touched it yet. The script
 +// counts calls to the storage getters and to a setter that a JavaScript error
 +// created by Node.js would hit, and reports the count once the reads are done.
++let runs = 0;
 +async function getItemsWhileBusy(localStorageFile, prelude, storageIds) {
++  // Runtime.evaluate runs JavaScript, so it cannot be used to stop the loop
++  // from within the interrupt. Signal the script through a file instead.
++  const doneFile = join(tmpdir.path, `done-${runs++}`);
 +  const script = `
++  const { existsSync } = require('fs');
 +  globalThis.jsCalls = 0;
 +  for (const name of ['localStorage', 'sessionStorage']) {
 +    const desc = Object.getOwnPropertyDescriptor(globalThis, name);
@@ -57,7 +70,8 @@ index 0000000000000000000000000000000000000000..fc426beddee6032200064d04f8c75914
 +  globalThis.jsCalls = 0;
 +  console.log('Ready');
 +  const deadline = Date.now() + ${common.platformTimeout(10000)};
-+  while (!globalThis.done && Date.now() < deadline);
++  while (!existsSync(${JSON.stringify(doneFile)}) && Date.now() < deadline);
++  console.log('Done', globalThis.jsCalls);
 +  `;
 +  const child = new NodeInstance([
 +    '--inspect-brk=0',
@@ -88,11 +102,11 @@ index 0000000000000000000000000000000000000000..fc426beddee6032200064d04f8c75914
 +    }).catch((err) => err));
 +  }
 +
-+  const { result } = await session.send({
-+    method: 'Runtime.evaluate',
-+    params: { expression: 'globalThis.done = true; globalThis.jsCalls' },
-+  });
-+  assert.strictEqual(result.value, 0);
++  writeFileSync(doneFile, '');
++  const { params } = await session.waitForNotification(
++    (n) => n.method === 'Runtime.consoleAPICalled' &&
++           n.params.args[0].value === 'Done');
++  assert.strictEqual(params.args[1].value, 0);
 +  await session.waitForDisconnect();
 +  assert.strictEqual((await child.expectShutdown()).exitCode, 0);
 +  return results;
