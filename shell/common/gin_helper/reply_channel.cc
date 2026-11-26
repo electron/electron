@@ -27,14 +27,15 @@ ReplyChannel::~ReplyChannel() {
   // Post a task because we cannot allocate on the V8 heap during cppgc
   // sweeping, which ReplyChannel::SendError requires.
   base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
-      FROM_HERE, base::BindOnce(
-                     [](InvokeCallback callback) {
-                       if (v8::Isolate* isolate = v8::Isolate::TryGetCurrent()) {
-                         ReplyChannel::SendError(isolate, std::move(callback),
-                                                 "reply was never sent");
-                       }
-                     },
-                     std::move(callback_)));
+      FROM_HERE,
+      base::BindOnce(
+          [](InvokeCallback callback) {
+            if (v8::Isolate* isolate = v8::Isolate::TryGetCurrent()) {
+              ReplyChannel::SendError(isolate, std::move(callback),
+                                      "reply was never sent");
+            }
+          },
+          std::move(callback_)));
 }
 
 // static
