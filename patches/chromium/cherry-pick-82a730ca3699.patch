@@ -23,7 +23,7 @@ Reviewed-by: Joey Arhar <jarhar@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1715673}
 
 diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
-index 58059e172e7f6fa4b838a34734fe1467eeef6b5e..1a5a99c443153900811afe3475684f7594275ad7 100644
+index f0bdb80d524edce90ba1048b42173fd2723ba702..fd286b20e8391d932b5e765f78f870c71b4e4447 100644
 --- a/third_party/blink/renderer/core/dom/element.cc
 +++ b/third_party/blink/renderer/core/dom/element.cc
 @@ -8317,8 +8317,7 @@ void Element::setAttributeNS(const AtomicString& namespace_uri,

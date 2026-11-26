@@ -29,7 +29,7 @@ Reviewed-by: Joey Arhar <jarhar@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1727352}
 
 diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
-index 1a5a99c443153900811afe3475684f7594275ad7..42f83455771118d7bcca15ef21191764ca561cbc 100644
+index fd286b20e8391d932b5e765f78f870c71b4e4447..4384656d2d63b5ba1363c864fac31b1ca24c1899 100644
 --- a/third_party/blink/renderer/core/dom/element.cc
 +++ b/third_party/blink/renderer/core/dom/element.cc
 @@ -8340,7 +8340,8 @@ void Element::RemoveAttributeInternal(wtf_size_t index,

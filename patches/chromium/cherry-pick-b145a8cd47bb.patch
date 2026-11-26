@@ -47,7 +47,7 @@ index 1c3376ff87b8f3b714f32a4e5203725d3bceeba9..499fa3432b846145903b7bb0e98fe75c
        To<CompositorKeyframeFilterOperations>(value)->Operations(),
        is_backdrop_filter);
 diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
-index 722b49b92bd993b665aba01cde458ce27f46a68b..2b60796e00210b3e22a3ce450f12bd2e1fb647cc 100644
+index bc6671cabbba1becfb2915f7865ea181da712ab4..d761050ed79a8f1e705625d491808a2730ad884f 100644
 --- a/third_party/blink/renderer/core/dom/element.cc
 +++ b/third_party/blink/renderer/core/dom/element.cc
 @@ -4549,9 +4549,9 @@ void Element::DidChangeIsInCanvasSubtree() {

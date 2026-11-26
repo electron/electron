@@ -27,7 +27,7 @@ Commit-Queue: Mason Freed <masonf@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1729189}
 
 diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
-index ecd098a9d684446739bad197f7ce8983339b2a64..a6cdf72ea1a806de1a54beafe8ab82aff023db40 100644
+index c015f4aa5b0ac57047d701a2fd4c0d80b5610d34..509ad5092fc24ebbbb8db229d4ea6ea457d38c4a 100644
 --- a/third_party/blink/renderer/core/dom/element.cc
 +++ b/third_party/blink/renderer/core/dom/element.cc
 @@ -13915,18 +13915,26 @@ ALWAYS_INLINE void Element::SetAttributeInternal(
