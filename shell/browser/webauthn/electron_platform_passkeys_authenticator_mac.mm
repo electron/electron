@@ -724,9 +724,8 @@ void ElectronPlatformPasskeysAuthenticator::OnMakeCredentialComplete(
   }
 
   response.is_resident_key = true;
-  response.transports.emplace();
-  response.transports->insert(device::FidoTransportProtocol::kInternal);
-  response.transports->insert(device::FidoTransportProtocol::kHybrid);
+  response.transports = {device::FidoTransportProtocol::kInternal,
+                         device::FidoTransportProtocol::kHybrid};
   response.transport_used = device::FidoTransportProtocol::kInternal;
 
   // Verify Apple's returned JSON echoes the challenge, origin, and type we
