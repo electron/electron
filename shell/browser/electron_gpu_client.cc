@@ -14,7 +14,7 @@ namespace electron {
 
 ElectronGpuClient::ElectronGpuClient() = default;
 
-void ElectronGpuClient::PreCreateMessageLoop() {
+void ElectronGpuClient::PostSandboxInitialized() {
 #if BUILDFLAG(IS_WIN)
   auto env = base::Environment::Create();
   if (env->HasVar("ELECTRON_DEFAULT_ERROR_MODE"))

@@ -22,10 +22,10 @@ WebContentsImpl::CenterSelection() is no longer guarded by
 BUILDFLAG(IS_MAC).
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 094ed47b0429a5d8179c479ac75021b717737d71..5a96b2d3b9de01784ec0ee7ab943e2270d56cb6d 100644
+index 4649c12cfaf2fc8cb66c0f30aad652c8153c7c48..90d55e6bd36836bd389f129dd35ec83177b35ef6 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -7211,7 +7211,6 @@ void WebContentsImpl::CopyToFindPboard() {
+@@ -7205,7 +7205,6 @@ void WebContentsImpl::CopyToFindPboard() {
  
  void WebContentsImpl::CenterSelection() {
    OPTIONAL_TRACE_EVENT0("content", "WebContentsImpl::CenterSelection");
@@ -33,7 +33,7 @@ index 094ed47b0429a5d8179c479ac75021b717737d71..5a96b2d3b9de01784ec0ee7ab943e227
    auto* input_handler = GetFocusedFrameWidgetInputHandler();
    if (!input_handler) {
      return;
-@@ -7219,7 +7218,6 @@ void WebContentsImpl::CenterSelection() {
+@@ -7213,7 +7212,6 @@ void WebContentsImpl::CenterSelection() {
  
    last_interaction_time_ = ui::EventTimeForNow();
    input_handler->CenterSelection();
