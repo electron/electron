@@ -613,6 +613,27 @@ describe('node feature', () => {
       expect(errors).toEqual([]);
     });
 
+    it('keeps Node timers firing after a reload interrupts a busy timer', async () => {
+      const { w, errors } = await openWindow();
+      const startBusyTimer = `require('node:timers').setInterval(() => {
+        window.ticks = (window.ticks ?? 0) + 1;
+        const end = performance.now() + 5;
+        while (performance.now() < end) {}
+      }, 0); undefined`;
+      const sampleTicks = `new Promise((resolve) => setTimeout(() => {
+        const before = window.ticks;
+        setTimeout(() => resolve([before, window.ticks]), 250);
+      }, 250))`;
+      for (let i = 0; i < 10; i++) {
+        await w.webContents.executeJavaScript(startBusyTimer);
+        const [before, after] = await w.webContents.executeJavaScript(sampleTicks);
+        expect(after).toBeGreaterThan(before);
+        w.webContents.reload();
+        await once(w.webContents, 'did-finish-load');
+      }
+      expect(errors).toEqual([]);
+    });
+
     it('keeps the opener working when a same-process child window closes', async () => {
       const { w, errors } = await openWindow();
       for (let i = 0; i < 3; i++) {
