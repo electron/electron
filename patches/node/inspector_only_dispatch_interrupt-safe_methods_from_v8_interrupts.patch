@@ -20,13 +20,21 @@ interrupts, Storage.getStorageKey and NodeWorker.sendMessageToWorker.
 Keep any other message queued, together with every later request for
 the same session so that a session sees its messages handled in order,
 and dispatch them once the thread yields to the event loop or enters a
-pause. Other sessions are not held up.
+pause. Other sessions are not held up. Debugger.pause and
+Runtime.terminateExecution exist to interrupt the thread, so like on
+Blink's IO channel they are dispatched even when earlier messages of
+the session are deferred.
 
 The deferred requests are dispatched from an immediate that keeps the
 event loop alive, or from a thread-safe immediate when JavaScript runs
 before the libuv handles exist, as while a Worker bootstraps.
 WaitForFrontendEvent() dispatches queued requests instead of waiting,
 because no interrupt is pending for them.
+
+Known limitation: as in Chrome, Runtime.enable and Debugger.enable are
+not on the allow-list, so a frontend that attaches to a process that is
+already stuck in JavaScript cannot pause it, since Debugger.pause fails
+while Debugger.enable is deferred.
 
 diff --git a/src/env-inl.h b/src/env-inl.h
 index 12ffdb48a0b44b6fad695197d037fcccb138634b..8e340a82f2831bb8f87b0238b36ceeaea88e9938 100644
@@ -59,7 +67,7 @@ index 4aadd63536e85e06b90fac290422d72739b666af..9418417043f43b36d8d1f10acaf3fb31
    // keeps the event loop alive on its own or not. The counter starts out at 0,
    // meaning it does not, and any positive value will make it keep the event
 diff --git a/src/inspector/main_thread_interface.cc b/src/inspector/main_thread_interface.cc
-index 0fca7483e95c65aab8da69eb128b275a12858666..ece81a56dd10d390dee3c66bc9bfdd166029a615 100644
+index 0fca7483e95c65aab8da69eb128b275a12858666..cc0f27b43244faf7f1ae19c57e30d73e4ceae457 100644
 --- a/src/inspector/main_thread_interface.cc
 +++ b/src/inspector/main_thread_interface.cc
 @@ -1,11 +1,18 @@
@@ -81,7 +89,7 @@ index 0fca7483e95c65aab8da69eb128b275a12858666..ece81a56dd10d390dee3c66bc9bfdd16
  
  namespace node {
  namespace inspector {
-@@ -14,6 +21,47 @@ namespace {
+@@ -14,6 +21,58 @@ namespace {
  using v8_inspector::StringBuffer;
  using v8_inspector::StringView;
  
@@ -92,7 +100,15 @@ index 0fca7483e95c65aab8da69eb128b275a12858666..ece81a56dd10d390dee3c66bc9bfdd16
 +// microtasks) from the interrupt, and defer the rest until the thread yields.
 +// Next to the methods that Blink allows, this has Node.js methods that only
 +// read native state or forward a message to a worker thread.
-+bool CanDispatchFromV8Interrupt(const StringView& message) {
++//
++// Like Blink, which sends these methods on a separate channel, the methods
++// that exist to interrupt the thread are dispatched even when earlier
++// messages of the session are deferred. The other ones keep their order.
++V8InterruptDispatch GetV8InterruptDispatch(const StringView& message) {
++  static constexpr std::string_view kOvertakingMethods[] = {
++      "Debugger.pause",
++      "Runtime.terminateExecution",
++  };
 +  static constexpr std::string_view kMethods[] = {
 +      "DOMStorage.disable",
 +      "DOMStorage.enable",
@@ -100,36 +116,39 @@ index 0fca7483e95c65aab8da69eb128b275a12858666..ece81a56dd10d390dee3c66bc9bfdd16
 +      "Debugger.getPossibleBreakpoints",
 +      "Debugger.getScriptSource",
 +      "Debugger.getStackTrace",
-+      "Debugger.pause",
 +      "Debugger.removeBreakpoint",
 +      "Debugger.resume",
 +      "Debugger.setBreakpoint",
 +      "Debugger.setBreakpointByUrl",
 +      "Debugger.setBreakpointsActive",
 +      "NodeWorker.sendMessageToWorker",
-+      "Runtime.terminateExecution",
 +      "Storage.getStorageKey",
 +  };
 +  // Parse the message the same way the session does when it dispatches it.
 +  std::string json = protocol::StringUtil::StringViewToUtf8(message);
 +  std::vector<uint8_t> cbor;
 +  if (!crdtp::json::ConvertJSONToCBOR(crdtp::SpanFrom(json), &cbor).ok()) {
-+    return false;
++    return V8InterruptDispatch::kDefer;
 +  }
 +  crdtp::Dispatchable dispatchable(
 +      crdtp::SpanFrom(cbor), std::string_view(), crdtp::FallthroughCallback());
-+  if (!dispatchable.ok()) return false;
++  if (!dispatchable.ok()) return V8InterruptDispatch::kDefer;
 +  crdtp::span<uint8_t> method = dispatchable.Method();
 +  std::string_view method_name(reinterpret_cast<const char*>(method.data()),
 +                               method.size());
-+  return std::find(std::begin(kMethods), std::end(kMethods), method_name) !=
-+         std::end(kMethods);
++  auto contains = [&](const auto& methods) {
++    return std::find(std::begin(methods), std::end(methods), method_name) !=
++           std::end(methods);
++  };
++  if (contains(kOvertakingMethods)) return V8InterruptDispatch::kOvertake;
++  if (contains(kMethods)) return V8InterruptDispatch::kInOrder;
++  return V8InterruptDispatch::kDefer;
 +}
 +
  template <typename T>
  class DeletableWrapper : public Deletable {
   public:
-@@ -46,6 +94,8 @@ class CreateObjectRequest : public Request {
+@@ -46,6 +105,8 @@ class CreateObjectRequest : public Request {
      thread->AddObject(object_id_, WrapInDeletable(factory_(thread)));
    }
  
@@ -138,7 +157,7 @@ index 0fca7483e95c65aab8da69eb128b275a12858666..ece81a56dd10d390dee3c66bc9bfdd16
   private:
    int object_id_;
    Factory factory_;
-@@ -65,6 +115,8 @@ class DeleteRequest : public Request {
+@@ -65,6 +126,8 @@ class DeleteRequest : public Request {
      thread->RemoveObject(object_id_);
    }
  
@@ -147,15 +166,15 @@ index 0fca7483e95c65aab8da69eb128b275a12858666..ece81a56dd10d390dee3c66bc9bfdd16
   private:
    int object_id_;
  };
-@@ -72,15 +124,25 @@ class DeleteRequest : public Request {
+@@ -72,15 +135,25 @@ class DeleteRequest : public Request {
  template <typename Target, typename Fn>
  class CallRequest : public Request {
   public:
 -  CallRequest(int id, Fn fn) : id_(id), fn_(std::move(fn)) {}
-+  CallRequest(int id, Fn fn, bool can_run_in_v8_interrupt)
++  CallRequest(int id, Fn fn, V8InterruptDispatch v8_interrupt_dispatch)
 +      : id_(id),
 +        fn_(std::move(fn)),
-+        can_run_in_v8_interrupt_(can_run_in_v8_interrupt) {}
++        v8_interrupt_dispatch_(v8_interrupt_dispatch) {}
  
    void Call(MainThreadInterface* thread) override {
      fn_(DeletableWrapper<Target>::get(thread, id_));
@@ -163,27 +182,29 @@ index 0fca7483e95c65aab8da69eb128b275a12858666..ece81a56dd10d390dee3c66bc9bfdd16
  
 +  int object_id() const override { return id_; }
 +
-+  bool CanRunInV8Interrupt() const override {
-+    return can_run_in_v8_interrupt_;
++  V8InterruptDispatch v8_interrupt_dispatch() const override {
++    return v8_interrupt_dispatch_;
 +  }
 +
   private:
    int id_;
    Fn fn_;
-+  bool can_run_in_v8_interrupt_;
++  V8InterruptDispatch v8_interrupt_dispatch_;
  };
  
  template <typename T>
-@@ -104,15 +166,18 @@ class AnotherThreadObjectReference {
+@@ -104,15 +177,21 @@ class AnotherThreadObjectReference {
    }
  
    template <typename Fn>
 -  void Call(Fn fn) const {
-+  void Call(Fn fn, bool can_run_in_v8_interrupt = true) const {
++  void Call(Fn fn,
++            V8InterruptDispatch v8_interrupt_dispatch =
++                V8InterruptDispatch::kInOrder) const {
      using Request = CallRequest<T, Fn>;
      thread_->Post(std::unique_ptr<Request>(
 -        new Request(object_id_, std::move(fn))));
-+        new Request(object_id_, std::move(fn), can_run_in_v8_interrupt)));
++        new Request(object_id_, std::move(fn), v8_interrupt_dispatch)));
    }
  
    template <typename Arg>
@@ -191,23 +212,24 @@ index 0fca7483e95c65aab8da69eb128b275a12858666..ece81a56dd10d390dee3c66bc9bfdd16
 -    Call(std::bind(Apply<Arg>, std::placeholders::_1, fn, std::move(argument)));
 +  void Call(void (T::*fn)(Arg),
 +            Arg argument,
-+            bool can_run_in_v8_interrupt = true) const {
++            V8InterruptDispatch v8_interrupt_dispatch =
++                V8InterruptDispatch::kInOrder) const {
 +    Call(std::bind(Apply<Arg>, std::placeholders::_1, fn, std::move(argument)),
-+         can_run_in_v8_interrupt);
++         v8_interrupt_dispatch);
    }
  
   private:
-@@ -170,7 +235,8 @@ class CrossThreadInspectorSession : public InspectorSession {
+@@ -170,7 +249,8 @@ class CrossThreadInspectorSession : public InspectorSession {
  
    void Dispatch(const StringView& message) override {
      state_.Call(&MainThreadSessionState::Dispatch,
 -                StringBuffer::create(message));
 +                StringBuffer::create(message),
-+                CanDispatchFromV8Interrupt(message));
++                GetV8InterruptDispatch(message));
    }
  
   private:
-@@ -229,6 +295,10 @@ bool MainThreadInterface::WaitForFrontendEvent() {
+@@ -229,6 +309,10 @@ bool MainThreadInterface::WaitForFrontendEvent() {
        incoming_message_cond_.Wait(scoped_lock);
      }
      stop_waiting_for_frontend_event_requested_ = false;
@@ -218,27 +240,29 @@ index 0fca7483e95c65aab8da69eb128b275a12858666..ece81a56dd10d390dee3c66bc9bfdd16
    }
    return true;
  }
-@@ -243,6 +313,12 @@ void MainThreadInterface::DispatchMessages() {
+@@ -243,6 +327,12 @@ void MainThreadInterface::DispatchMessages() {
    if (dispatching_messages_)
      return;
    dispatching_messages_ = true;
 +  // From a V8 interrupt, handle only the requests that cannot run JavaScript,
-+  // and keep the rest, along with any later request for the same object, in
-+  // their original order until the thread yields.
++  // and keep the rest, along with any later request for the same object that
++  // does not overtake them, in their original order until the thread yields.
 +  const bool in_v8_interrupt = agent_->env()->is_processing_v8_interrupt();
 +  MessageQueue deferred;
 +  std::unordered_set<int> deferred_objects;
    bool had_messages = false;
    do {
      if (dispatching_message_queue_.empty()) {
-@@ -255,13 +331,49 @@ void MainThreadInterface::DispatchMessages() {
+@@ -255,13 +345,51 @@ void MainThreadInterface::DispatchMessages() {
        std::swap(dispatching_message_queue_.front(), task);
        dispatching_message_queue_.pop_front();
  
 +      if (in_v8_interrupt) {
 +        int object_id = task->object_id();
-+        if (!task->CanRunInV8Interrupt() ||
-+            deferred_objects.count(object_id) > 0) {
++        V8InterruptDispatch dispatch = task->v8_interrupt_dispatch();
++        if (dispatch == V8InterruptDispatch::kDefer ||
++            (dispatch == V8InterruptDispatch::kInOrder &&
++             deferred_objects.count(object_id) > 0)) {
 +          CHECK_NE(object_id, 0);
 +          deferred_objects.insert(object_id);
 +          deferred.push_back(std::move(task));
@@ -282,24 +306,39 @@ index 0fca7483e95c65aab8da69eb128b275a12858666..ece81a56dd10d390dee3c66bc9bfdd16
    if (handle_ == nullptr)
      handle_ = std::make_shared<MainThreadHandle>(this);
 diff --git a/src/inspector/main_thread_interface.h b/src/inspector/main_thread_interface.h
-index 3311f9df014a3930bbd2593641c88cb6d2405720..23f4406ee278d4fc9871af6852d9cc262bf16858 100644
+index 3311f9df014a3930bbd2593641c88cb6d2405720..d804646ed74523926b1d34417410cf8cdd293889 100644
 --- a/src/inspector/main_thread_interface.h
 +++ b/src/inspector/main_thread_interface.h
-@@ -25,6 +25,13 @@ class MainThreadInterface;
+@@ -22,9 +22,28 @@ namespace node {
+ namespace inspector {
+ class MainThreadInterface;
+ 
++// How a request is handled from a V8 API interrupt, where JavaScript must
++// not run.
++enum class V8InterruptDispatch {
++  // It may run JavaScript, so it waits until the thread yields.
++  kDefer,
++  // It does not run JavaScript, but waits behind deferred requests for the
++  // same object, so that they are handled in order.
++  kInOrder,
++  // It does not run JavaScript and is handled even when requests for the
++  // same object are deferred, because its purpose is to interrupt them.
++  kOvertake,
++};
++
  class Request {
   public:
    virtual void Call(MainThreadInterface*) = 0;
 +  // The id of the object that this request acts on, or 0 if it does not act
-+  // on a managed object. Requests for an object that has a request deferred
-+  // from a V8 interrupt are deferred as well, so they are handled in order.
++  // on a managed object.
 +  virtual int object_id() const { return 0; }
-+  // Whether this request may be handled from a V8 API interrupt, where
-+  // JavaScript must not run.
-+  virtual bool CanRunInV8Interrupt() const { return true; }
++  virtual V8InterruptDispatch v8_interrupt_dispatch() const {
++    return V8InterruptDispatch::kInOrder;
++  }
    virtual ~Request() = default;
  };
  
-@@ -94,12 +101,16 @@ class MainThreadInterface :
+@@ -94,12 +113,16 @@ class MainThreadInterface :
    void RemoveObject(int handle);
  
   private:
@@ -319,10 +358,10 @@ index 3311f9df014a3930bbd2593641c88cb6d2405720..23f4406ee278d4fc9871af6852d9cc26
    // StopWaitingForFrontendEvent().
 diff --git a/test/parallel/test-inspector-interrupt-deferred-dispatch.js b/test/parallel/test-inspector-interrupt-deferred-dispatch.js
 new file mode 100644
-index 0000000000000000000000000000000000000000..85977179921585915a9815819928b93fe5d552c5
+index 0000000000000000000000000000000000000000..db99cc0b9e2dc6d0c22396cc130810642d797a38
 --- /dev/null
 +++ b/test/parallel/test-inspector-interrupt-deferred-dispatch.js
-@@ -0,0 +1,98 @@
+@@ -0,0 +1,135 @@
 +'use strict';
 +const common = require('../common');
 +common.skipIfSQLiteMissing();
@@ -341,17 +380,30 @@ index 0000000000000000000000000000000000000000..85977179921585915a9815819928b93f
 +// methods that may run JavaScript, such as Runtime.evaluate, have to wait until
 +// the main thread yields. Later messages of the same session wait with them so
 +// that the session sees its messages handled in order, but other sessions are
-+// not held up.
++// not held up. Debugger.pause, which exists to interrupt the thread, does not
++// wait behind them.
 +async function runTest() {
 +  const doneFile = join(tmpdir.path, 'done');
++  const pauseStartFile = join(tmpdir.path, 'pause-start');
++  const pauseDoneFile = join(tmpdir.path, 'pause-done');
 +  const script = `
 +  const { existsSync } = require('fs');
++  function busyUntil(file) {
++    const deadline = Date.now() + ${common.platformTimeout(10000)};
++    while (!existsSync(file) && Date.now() < deadline);
++    return existsSync(file) ? 'done' : 'timeout';
++  }
 +  localStorage.setItem('key', 'value');
 +  console.log('Ready');
-+  const deadline = Date.now() + ${common.platformTimeout(10000)};
-+  while (!existsSync(${JSON.stringify(doneFile)}) && Date.now() < deadline);
-+  globalThis.loopEnd = existsSync(${JSON.stringify(doneFile)}) ?
-+    'done' : 'timeout';
++  globalThis.loopEnd = busyUntil(${JSON.stringify(doneFile)});
++  // Yield to the event loop until the test starts the second loop.
++  const timer = setInterval(() => {
++    if (!existsSync(${JSON.stringify(pauseStartFile)})) return;
++    clearInterval(timer);
++    console.log('Pause');
++    globalThis.pauseLoopEnd = busyUntil(${JSON.stringify(pauseDoneFile)});
++    console.log('Pause loop end', globalThis.pauseLoopEnd);
++  }, 10);
 +  `;
 +  const child = new NodeInstance([
 +    '--inspect-brk=0',
@@ -413,6 +465,30 @@ index 0000000000000000000000000000000000000000..85977179921585915a9815819928b93f
 +  assert.deepStrictEqual(await queuedRead, expected);
 +  assert.deepStrictEqual(order,
 +                         ['Runtime.evaluate', 'DOMStorage.getDOMStorageItems']);
++
++  // Debugger.pause is dispatched from the interrupt even though the session
++  // has a deferred Runtime.evaluate, and the evaluation runs in the pause.
++  writeFileSync(pauseStartFile, '');
++  await session.waitForConsoleOutput('log', ['Pause']);
++  const pauseOrder = [];
++  const evaluatedInPause = session.send({
++    method: 'Runtime.evaluate',
++    params: { expression: 'globalThis.pauseLoopEnd' },
++  }).then((result) => {
++    pauseOrder.push('Runtime.evaluate');
++    return result;
++  });
++  await session.send({ method: 'Debugger.pause' });
++  pauseOrder.push('Debugger.pause');
++  const { params: { reason } } =
++    await session.waitForNotification('Debugger.paused');
++  assert.strictEqual(reason, 'other');
++  assert.deepStrictEqual((await evaluatedInPause).result,
++                         { type: 'undefined' });
++  assert.deepStrictEqual(pauseOrder, ['Debugger.pause', 'Runtime.evaluate']);
++  await session.send({ method: 'Debugger.resume' });
++  writeFileSync(pauseDoneFile, '');
++  await session.waitForConsoleOutput('log', ['Pause loop end', 'done']);
 +
 +  await other.disconnect();
 +  await session.waitForDisconnect();
