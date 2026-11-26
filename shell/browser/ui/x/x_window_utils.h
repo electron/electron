@@ -14,6 +14,10 @@ namespace electron {
 // Sets the _NET_WM_WINDOW_TYPE of window.
 void SetWindowType(x11::Window window, const std::string& type);
 
+// Returns true when ELECTRON_FORCE_WINDOW_MENU_BAR is set. That disables the
+// global menu bar even if a registrar is running.
+bool ShouldForceWindowMenuBar();
+
 // Returns true if the bus name "com.canonical.AppMenu.Registrar" is available.
 bool ShouldUseGlobalMenuBar();
 

@@ -27,11 +27,16 @@ void SetWindowType(x11::Window window, const std::string& type) {
                           x11::Atom::ATOM, window_type);
 }
 
-bool ShouldUseGlobalMenuBar() {
-  ScopedAllowBlockingForElectron allow_blocking;
+bool ShouldForceWindowMenuBar() {
   auto env = base::Environment::Create();
-  if (env->HasVar("ELECTRON_FORCE_WINDOW_MENU_BAR"))
+  return env->HasVar("ELECTRON_FORCE_WINDOW_MENU_BAR");
+}
+
+bool ShouldUseGlobalMenuBar() {
+  if (ShouldForceWindowMenuBar())
     return false;
+
+  ScopedAllowBlockingForElectron allow_blocking;
 
   auto bus = base::MakeRefCounted<dbus::Bus>(dbus::Bus::Options{});
 

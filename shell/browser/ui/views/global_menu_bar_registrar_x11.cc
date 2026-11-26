@@ -40,6 +40,14 @@ void GlobalMenuBarRegistrarX11::OnWindowUnmapped(x11::Window window) {
   live_windows_.erase(window);
 }
 
+void GlobalMenuBarRegistrarX11::AddObserver(Observer* observer) {
+  observers_.AddObserver(observer);
+}
+
+void GlobalMenuBarRegistrarX11::RemoveObserver(Observer* observer) {
+  observers_.RemoveObserver(observer);
+}
+
 GlobalMenuBarRegistrarX11::GlobalMenuBarRegistrarX11() {
   // libdbusmenu uses the gio version of dbus; I tried using the code in dbus/,
   // but it looks like that's isn't sharing the bus name with the gio version,
@@ -127,9 +135,20 @@ void GlobalMenuBarRegistrarX11::SetRegistrarProxy(GDBusProxy* proxy) {
 
 void GlobalMenuBarRegistrarX11::OnNameOwnerChanged(GDBusProxy* /* ignored */,
                                                    GParamSpec* /* ignored */) {
-  // If the name owner changed, we need to reregister all the live x11::Window
-  // with the system.
-  for (const auto& window : live_windows_) {
-    RegisterXWindow(window);
+  gchar* owner = nullptr;
+  if (registrar_proxy_)
+    owner = g_dbus_proxy_get_name_owner(registrar_proxy_);
+  const bool has_owner = owner != nullptr;
+  g_free(owner);
+
+  // A live registrar needs every window registered again, including when a
+  // new process takes over the name. With no owner the call cannot land, and
+  // windows fall back to their own menu bar instead.
+  if (has_owner) {
+    for (const auto& window : live_windows_) {
+      RegisterXWindow(window);
+    }
   }
+
+  observers_.Notify(&Observer::OnMenuBarRegistrarOwnerChanged, has_owner);
 }
