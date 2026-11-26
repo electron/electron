@@ -216,14 +216,15 @@ class NodeBindings {
   virtual void PollEvents() = 0;
 
   // Make the main thread run libuv loop.
-  void WakeupMainThread();
+  void WakeupMainThread(uint64_t polling_generation);
 
   // Interrupt the PollEvents.
   void WakeupEmbedThread();
 
  private:
-  // Run the libuv loop for once.
-  void UvRunOnce();
+  // Run the libuv loop for once, unless polling was stopped since
+  // |polling_generation| started.
+  void UvRunOnce(uint64_t polling_generation);
 
   // Which environment we are running.
   // "browser" / "renderer" / "worker" / "utility"; names process.type and
@@ -284,6 +285,8 @@ class NodeBindings {
 
   // Environment that to wrap the uv loop.
   raw_ptr<node::Environment, DanglingUntriaged> uv_env_ = nullptr;
+
+  uint64_t polling_generation_ = 0;
 
   base::WeakPtrFactory<NodeBindings> weak_factory_{this};
 };

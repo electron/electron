@@ -583,8 +583,6 @@ void NodeBindings::StopPolling() {
   // Wait for it to exit.
   uv_thread_join(&embed_thread_);
 
-  weak_factory_.InvalidateWeakPtrs();
-
   // Drain any leftover semaphore posts so the next embed thread starts
   // in a clean lock-step state. A stale count can occur if UvRunOnce
   // posted sem_post concurrently with our StopPolling sem_post — the
@@ -598,6 +596,7 @@ void NodeBindings::StopPolling() {
   // Allow PrepareEmbedThread + StartPolling to restart.
   embed_closed_ = false;
   initialized_ = false;
+  ++polling_generation_;
 }
 
 void NodeBindings::RegisterBuiltinBindings() {
@@ -1098,7 +1097,7 @@ void NodeBindings::StartPolling() {
   task_runner_ = base::SingleThreadTaskRunner::GetCurrentDefault();
 
   // Run uv loop for once to give the uv__io_poll a chance to add all events.
-  UvRunOnce();
+  UvRunOnce(polling_generation_);
 }
 
 void NodeBindings::SetAppCodeLoaded() {
@@ -1132,7 +1131,10 @@ void NodeBindings::JoinAppCode() {
   }
 }
 
-void NodeBindings::UvRunOnce() {
+void NodeBindings::UvRunOnce(uint64_t polling_generation) {
+  if (polling_generation != polling_generation_)
+    return;
+
   node::Environment* env = uv_env();
 
   // When doing navigation without restarting renderer process, it may happen
@@ -1166,14 +1168,18 @@ void NodeBindings::UvRunOnce() {
       base::RunLoop().QuitWhenIdle();  // Quit from uv.
   }
 
+  if (polling_generation != polling_generation_)
+    return;
+
   // Tell the worker thread to continue polling.
   uv_sem_post(&embed_sem_);
 }
 
-void NodeBindings::WakeupMainThread() {
+void NodeBindings::WakeupMainThread(uint64_t polling_generation) {
   DCHECK(task_runner_);
   task_runner_->PostTask(FROM_HERE, base::BindOnce(&NodeBindings::UvRunOnce,
-                                                   weak_factory_.GetWeakPtr()));
+                                                   weak_factory_.GetWeakPtr(),
+                                                   polling_generation));
 }
 
 void NodeBindings::WakeupEmbedThread() {
@@ -1183,6 +1189,7 @@ void NodeBindings::WakeupEmbedThread() {
 // static
 void NodeBindings::EmbedThreadRunner(void* arg) {
   auto* self = static_cast<NodeBindings*>(arg);
+  const uint64_t polling_generation = self->polling_generation_;
 
   while (true) {
     // Wait for the main loop to deal with events.
@@ -1200,7 +1207,7 @@ void NodeBindings::EmbedThreadRunner(void* arg) {
       break;
 
     // Deal with event in main thread.
-    self->WakeupMainThread();
+    self->WakeupMainThread(polling_generation);
   }
 }
 
