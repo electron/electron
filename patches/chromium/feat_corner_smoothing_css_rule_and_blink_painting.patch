@@ -204,10 +204,10 @@ index 3a378e7ad63d2b5c9bdaae6606ade1e10d16e5b1..9bc870fcaa5eedaf70399822bf0976f4
      // Keep the border box as the origin rect so that inset/outset contours
      // derived from it (e.g. the inner border) remain aligned to it.
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index 868ee66ed2e9be8a89a91ec4c16892ebd5bb60b2..47e4717e226670ef91c01bec4b39038db26a357b 100644
+index de67e021bd497067d63a791b2cb8d96785b2ade3..f8146d69e64b1cccab2daffa6bde48bd1ad7bde0 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
-@@ -1748,6 +1748,8 @@ component("platform") {
+@@ -1755,6 +1755,8 @@ component("platform") {
      "widget/widget_base.h",
      "widget/widget_base_client.h",
      "windows_keyboard_codes.h",
@@ -315,7 +315,7 @@ index aac33fed6b728961596ed73ef40caa1c711c5206..49cc2c8260ada3a5370e6cf47016b699
  
    auto draw_as_single_path = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 747f2112411bdd3853fdaa16757fe728dbd1ec62..31bb6fec7948996a6f50cf91670be877039e49f5 100644
+index 68f0a4b2c2220ca3556d68b1f07edbbaadc7e843..55c61569454bddd0f52a9eccc7dc86c37a7aa06f 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -237,6 +237,10 @@

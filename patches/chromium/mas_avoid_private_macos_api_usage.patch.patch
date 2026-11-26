@@ -58,7 +58,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 7b8d874af52db5df576479bfefd3ea4fda9b1611..4bfa33a100eae57215471cfc366b67331119db8e 100644
+index 5eaab4100a7ec4f9ad8b6bd67310438b3af4aae0..4415c3e04f504f74ecae40dd74187f8dfb82cefd 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1172,6 +1172,7 @@ component("base") {
@@ -1013,10 +1013,10 @@ index 5b2d4c2531a37e0b99bc31dffb46e8d3ff94a0b0..2d5c9e1e8ab5e6eace41ee66bb6c9d6c
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 9cdea557cd2e69aa72a85934f4f8c65a9d08c8c5..352fd2c8c89a902c80c4025901ce6979b8e430e9 100644
+index 6abcc74e2b35bf8ac60157eb15f94abf4c34becb..8b1eaafca498b15b1b6c6be2655a74e2b3f9ab27 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -394,6 +394,7 @@ source_set("browser") {
+@@ -393,6 +393,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -1825,7 +1825,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 4fe9dcea03d3df9c2a44bd8c1261da8677cffaf4..851a48bae36247475fef6a86a6dc91afffc19c98 100644
+index 97686c992689d84d54ecea5d62eebc9c28050ec3..e402654a7851d6bae9d2051345992851c800a3bd 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -447,6 +447,7 @@ component("core") {

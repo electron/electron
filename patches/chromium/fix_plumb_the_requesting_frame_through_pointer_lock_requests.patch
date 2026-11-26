@@ -122,7 +122,7 @@ index 5e736e2267649c5d13395ed09a5333e9999860b8..d7022f291b0ac436f76c287e7d3fd0b8
        bool unadjusted_movement,
        blink::mojom::WidgetInputHandlerHost::RequestMouseLockCallback
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index 5b87ed5def8b6ff737cdc59aa577fd49f7ab257a..a9b3a67e80a325079b9519da1a6436d56783e6c9 100644
+index 0f7bd9afaad54ae646d47b68d1bda4ae90732f14..22fc13c747c9dc306cdf7b1d6550de32dda2e1cc 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -21,6 +21,7 @@
@@ -133,7 +133,7 @@ index 5b87ed5def8b6ff737cdc59aa577fd49f7ab257a..a9b3a67e80a325079b9519da1a6436d5
  #include "third_party/blink/public/mojom/frame/lifecycle.mojom.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom-shared.h"
  #include "third_party/blink/public/mojom/manifest/application_context.mojom.h"
-@@ -227,10 +228,13 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
+@@ -229,10 +230,13 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
  
    // Requests to lock the mouse. Once the request is approved or rejected,
    // GotResponseToLockPointerRequest() will be called on the requesting render
@@ -240,7 +240,7 @@ index 49f371c264f10a8de78c7ef70a14bde00adb39ea..dabb7add7998874dede2238c612dce63
      static_cast<SurfaceEmbedConnectorImpl*>(connector)
          ->SetPointerLockWidgetInParentChain(widget);
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index fcd3991eb018fdd45d6b017692a35ec0f0de5bf7..232023253d40251077da605abb50e58ccac87c59 100644
+index bc883efc94739cfc461e7450e5d016696855c6d9..1d31abf951546dbe0b414c62049404c3ae425069 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -1240,6 +1240,7 @@ class CONTENT_EXPORT WebContentsImpl
