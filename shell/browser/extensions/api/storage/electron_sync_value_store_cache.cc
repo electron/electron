@@ -21,7 +21,7 @@ namespace {
 
 // Returns the quota limits for sync storage, taken from the schema in
 // extensions/common/api/storage.json.
-SettingsStorageQuotaEnforcer::Limits GetSyncQuotaLimits() {
+value_store::QuotaEnforcer::Limits GetSyncQuotaLimits() {
   return {static_cast<size_t>(api::storage::sync::QUOTA_BYTES),
           static_cast<size_t>(api::storage::sync::QUOTA_BYTES_PER_ITEM),
           static_cast<size_t>(api::storage::sync::MAX_ITEMS)};
@@ -71,16 +71,15 @@ value_store::ValueStore* ElectronSyncValueStoreCache::GetStorage(
   value_store_util::ModelType model_type =
       extension->is_app() ? value_store_util::ModelType::APP
                           : value_store_util::ModelType::EXTENSION;
-  std::unique_ptr<value_store::ValueStore> store =
+  std::unique_ptr<value_store::QuotaEnforcer> store =
       value_store_util::CreateSettingsStore(settings_namespace::SYNC,
                                             model_type, extension->id(),
                                             storage_factory_);
-  auto storage =
-      std::make_unique<SettingsStorageQuotaEnforcer>(quota_, std::move(store));
-  DCHECK(storage);
+  DCHECK(store);
+  store->SetQuotaLimits(quota_);
 
-  value_store::ValueStore* storage_ptr = storage.get();
-  storage_map_[extension->id()] = std::move(storage);
+  value_store::ValueStore* storage_ptr = store.get();
+  storage_map_[extension->id()] = std::move(store);
   return storage_ptr;
 }
 
