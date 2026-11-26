@@ -159,10 +159,10 @@ api::IpcMainEvent* ElectronApiIPCHandlerImpl::MakeIPCEvent(
     v8::Isolate* isolate,
     api::Session* session,
     bool internal,
-    electron::mojom::ElectronApiIPC::InvokeCallback callback) {
+    gin_helper::internal::ReplyChannel::Callback callback) {
   if (!session) {
     // We must always invoke the callback if present.
-    gin_helper::internal::ReplyChannel::SendError(isolate, std::move(callback),
+    gin_helper::internal::ReplyChannel::SendError(std::move(callback),
                                                   "Session does not exist");
     return {};
   }
@@ -170,7 +170,7 @@ api::IpcMainEvent* ElectronApiIPCHandlerImpl::MakeIPCEvent(
   api::WebContents* api_web_contents = api::WebContents::From(web_contents());
   if (!api_web_contents) {
     // We must always invoke the callback if present.
-    gin_helper::internal::ReplyChannel::SendError(isolate, std::move(callback),
+    gin_helper::internal::ReplyChannel::SendError(std::move(callback),
                                                   "WebContents does not exist");
     return {};
   }
@@ -178,7 +178,7 @@ api::IpcMainEvent* ElectronApiIPCHandlerImpl::MakeIPCEvent(
   v8::Local<v8::Object> wrapper;
   if (!api_web_contents->GetWrapper(isolate).ToLocal(&wrapper)) {
     // We must always invoke the callback if present.
-    gin_helper::internal::ReplyChannel::SendError(isolate, std::move(callback),
+    gin_helper::internal::ReplyChannel::SendError(std::move(callback),
                                                   "WebContents was destroyed");
     return {};
   }

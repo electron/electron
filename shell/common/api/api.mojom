@@ -97,6 +97,11 @@ interface ElectronAutofillDriver {
   HideAutofillPopup();
 };
 
+union InvokeResult {
+  SerializedValue result;
+  string error;
+};
+
 interface ElectronApiIPC {
   // Emits an event on |channel| from the ipcMain JavaScript object in the main
   // process.
@@ -110,7 +115,7 @@ interface ElectronApiIPC {
   Invoke(
       bool internal,
       string channel,
-      SerializedValue arguments) => (SerializedValue result);
+      SerializedValue arguments) => (InvokeResult result);
 
   ReceivePostMessage(string channel, blink.mojom.TransferableMessage message);
 

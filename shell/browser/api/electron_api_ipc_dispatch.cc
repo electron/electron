@@ -254,22 +254,23 @@ void ReplyWithError(v8::Local<v8::Context> context,
     if (try_catch.HasCaught() && !try_catch.HasTerminated())
       try_catch.Reset();
   }
-  v8::Local<v8::Object> reply = v8::Object::New(isolate);
-  std::ignore = reply->Set(context, Str(isolate, "error"), message);
-  SendReply(context, event, reply);
+  std::string message_str;
+  gin::ConvertFromV8(isolate, message, &message_str);
+  if (gin_helper::internal::ReplyChannel* reply_channel =
+          api::ReplyChannelOf(isolate, event)) {
+    reply_channel->SendError(message_str);
+  }
 }
 
-// Replies {result}, or {error} if the result cannot be serialised (the
-// "An object could not be cloned" case), as the JS try/catch did.
+// Replies with |result|, or with an error if |result| cannot be serialized (the
+// "An object could not be cloned" case).
 void ReplyWithResult(v8::Local<v8::Context> context,
                      v8::Local<v8::Object> event,
                      v8::Local<v8::Value> channel,
                      v8::Local<v8::Value> result) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::Local<v8::Object> reply = v8::Object::New(isolate);
-  std::ignore = reply->Set(context, Str(isolate, "result"), result);
   v8::TryCatch try_catch(isolate);
-  SendReply(context, event, reply);
+  SendReply(context, event, result);
   if (try_catch.HasCaught() && !try_catch.HasTerminated()) {
     v8::Local<v8::Value> error = try_catch.Exception();
     try_catch.Reset();

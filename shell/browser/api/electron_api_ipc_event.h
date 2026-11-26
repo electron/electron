@@ -9,17 +9,13 @@
 
 #include "content/public/browser/global_routing_id.h"
 #include "gin/wrappable.h"
-#include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_helper/constructible.h"
+#include "shell/common/gin_helper/reply_channel.h"
 #include "v8/include/cppgc/member.h"
 #include "v8/include/v8-traced-handle.h"
 
 namespace content {
 class RenderFrameHost;
-}
-
-namespace gin_helper::internal {
-class ReplyChannel;
 }
 
 namespace electron::api {
@@ -32,7 +28,7 @@ class Session;
 class IpcMainEvent final : public gin::Wrappable<IpcMainEvent>,
                            public gin_helper::Constructible<IpcMainEvent> {
  public:
-  using ReplyCallback = electron::mojom::ElectronApiIPC::InvokeCallback;
+  using ReplyCallback = gin_helper::internal::ReplyChannel::Callback;
 
   // |frame| may be null. |callback| is set for sendSync / invoke.
   static IpcMainEvent* Create(v8::Isolate* isolate,
@@ -79,7 +75,7 @@ class IpcMainServiceWorkerEvent final
     : public gin::Wrappable<IpcMainServiceWorkerEvent>,
       public gin_helper::Constructible<IpcMainServiceWorkerEvent> {
  public:
-  using ReplyCallback = electron::mojom::ElectronApiIPC::InvokeCallback;
+  using ReplyCallback = gin_helper::internal::ReplyChannel::Callback;
 
   static IpcMainServiceWorkerEvent* Create(v8::Isolate* isolate,
                                            Session* session,

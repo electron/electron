@@ -98,7 +98,7 @@ IpcMainEvent* IpcMainEvent::Create(v8::Isolate* isolate,
     event->frame_id_ = frame->GetGlobalId();
     event->frame_tree_node_id_ = frame->GetFrameTreeNodeId().value();
   }
-  if (callback) {
+  if (!std::holds_alternative<std::monostate>(callback)) {
     event->reply_channel_ = gin_helper::internal::ReplyChannel::Create(
         isolate, std::move(callback));
   }
@@ -248,7 +248,7 @@ IpcMainServiceWorkerEvent* IpcMainServiceWorkerEvent::Create(
   event->session_ = session;
   event->version_id_ = version_id;
   event->process_id_ = process_id;
-  if (callback) {
+  if (!std::holds_alternative<std::monostate>(callback)) {
     event->reply_channel_ = gin_helper::internal::ReplyChannel::Create(
         isolate, std::move(callback));
   }
