@@ -75,6 +75,7 @@
 #include "ui/views/window/native_frame_view.h"
 
 #if BUILDFLAG(SUPPORTS_OZONE_X11)
+#include "shell/browser/ui/views/global_menu_bar_registrar_x11.h"
 #include "shell/browser/ui/views/global_menu_bar_x11.h"
 #include "shell/browser/ui/x/x_window_utils.h"
 #include "ui/gfx/x/connection.h"
@@ -482,7 +483,36 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
     window->AddPreTargetHandler(this);
 }
 
+#if BUILDFLAG(IS_LINUX)
+class NativeWindowViews::AppMenuRegistrarObserver
+    : public GlobalMenuBarRegistrarX11::Observer {
+ public:
+  explicit AppMenuRegistrarObserver(NativeWindowViews* window)
+      : window_(window) {
+    GlobalMenuBarRegistrarX11::GetInstance()->AddObserver(this);
+  }
+
+  ~AppMenuRegistrarObserver() override {
+    GlobalMenuBarRegistrarX11::GetInstance()->RemoveObserver(this);
+  }
+
+  void OnMenuBarRegistrarOwnerChanged(bool has_owner) override {
+    // Applying the menu can destroy this observer, so don't touch it after.
+    NativeWindowViews* const window = window_;
+    window->OnAppMenuRegistrarOwnerChanged(has_owner);
+  }
+
+ private:
+  raw_ptr<NativeWindowViews> window_;
+};
+#endif
+
 NativeWindowViews::~NativeWindowViews() {
+#if BUILDFLAG(IS_LINUX)
+  // Stop registrar notifications before the rest of teardown.
+  app_menu_registrar_observer_.reset();
+#endif
+
   widget()->RemoveObserver(this);
 
 #if BUILDFLAG(IS_WIN)
@@ -1479,15 +1509,30 @@ bool NativeWindowViews::IsFocusable() const {
 
 void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
 #if BUILDFLAG(IS_LINUX)
+  ApplyMenuModel(menu_model, std::nullopt);
+#else
+  SetRootViewMenu(menu_model);
+#endif
+}
+
+#if BUILDFLAG(IS_LINUX)
+void NativeWindowViews::ApplyMenuModel(
+    ElectronMenuModel* menu_model,
+    std::optional<bool> registrar_present) {
+  menu_model_ = menu_model;
+
   // Remove global menu bar.
   bool try_global_menu_bar = true;
   if (global_menu_bar_ && menu_model == nullptr) {
     const bool used_global_menu_bar = global_menu_bar_->IsServerStarted();
+    // The in-window bar is showing again after the registrar disappeared.
+    const bool has_window_menu = root_view_.HasMenu();
     global_menu_bar_.reset();
+    app_menu_registrar_observer_.reset();
     root_view_.UnregisterAcceleratorsWithFocusManager();
-    if (used_global_menu_bar)
+    if (used_global_menu_bar && !has_window_menu)
       return;
-    // No global menu server: the menu went in-window; fall through to clear.
+    // No exported menu, or the window bar was restored: clear it below.
     try_global_menu_bar = false;
   }
 
@@ -1495,11 +1540,26 @@ void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
   const bool can_use_global_menus = ui::OzonePlatform::GetInstance()
                                         ->GetPlatformRuntimeProperties()
                                         .supports_global_application_menus;
-  if (try_global_menu_bar && can_use_global_menus && ShouldUseGlobalMenuBar()) {
+  bool use_global_menu_bar = false;
+  if (try_global_menu_bar && can_use_global_menus) {
+    if (registrar_present.has_value()) {
+      // The name-owner signal already knows; don't look the name up again
+      // from inside the D-Bus callback.
+      use_global_menu_bar =
+          *registrar_present && !ShouldForceWindowMenuBar();
+    } else {
+      use_global_menu_bar = ShouldUseGlobalMenuBar();
+    }
+  }
+  if (use_global_menu_bar) {
     if (!global_menu_bar_)
       global_menu_bar_ =
           std::make_unique<GlobalMenuBarX11>(GetAcceleratedWidget());
     if (global_menu_bar_->IsServerStarted()) {
+      if (!app_menu_registrar_observer_) {
+        app_menu_registrar_observer_ =
+            std::make_unique<AppMenuRegistrarObserver>(this);
+      }
       // The registrar can appear between calls; drop any in-window bar.
       if (root_view_.HasMenu())
         SetRootViewMenu(nullptr);
@@ -1508,10 +1568,32 @@ void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
       return;
     }
   }
-#endif
 
   SetRootViewMenu(menu_model);
 }
+
+void NativeWindowViews::OnAppMenuRegistrarOwnerChanged(bool has_owner) {
+  if (!menu_model_ || in_registrar_menu_update_ || widget_destroyed_)
+    return;
+
+  // Choosing a menu can run app JS (for example a resize) and close the
+  // window. Don't touch this object if that happens.
+  in_registrar_menu_update_ = true;
+  const base::WeakPtr<NativeWindowViews> weak_this =
+      mouse_forwarding_weak_factory_.GetWeakPtr();
+  ApplyMenuModel(menu_model_, has_owner);
+  if (!weak_this)
+    return;
+
+  // Fullscreen hides the menu bar. Keep it hidden if the registrar just
+  // dropped and the window bar was installed, and show it again on exit.
+  if (IsFullscreen() && IsMenuBarVisible()) {
+    menu_bar_visible_before_fullscreen_ = !IsMenuBarAutoHide();
+    SetMenuBarVisibility(false);
+  }
+  in_registrar_menu_update_ = false;
+}
+#endif
 
 void NativeWindowViews::SetRootViewMenu(ElectronMenuModel* menu_model) {
   // Should reset content size when setting menu.

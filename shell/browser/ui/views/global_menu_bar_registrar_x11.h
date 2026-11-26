@@ -9,6 +9,8 @@
 
 #include "base/memory/raw_ptr.h"
 #include "base/memory/singleton.h"
+#include "base/observer_list.h"
+#include "base/observer_list_types.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "ui/base/glib/scoped_gsignal.h"
 #include "ui/gfx/x/xproto.h"
@@ -21,10 +23,21 @@
 // between a x11::Window and the DbusmenuServer instance we are offering.
 class GlobalMenuBarRegistrarX11 {
  public:
+  class Observer : public base::CheckedObserver {
+   public:
+    ~Observer() override = default;
+
+    // |has_owner| is false when com.canonical.AppMenu.Registrar has no owner.
+    virtual void OnMenuBarRegistrarOwnerChanged(bool has_owner) = 0;
+  };
+
   static GlobalMenuBarRegistrarX11* GetInstance();
 
   void OnWindowMapped(x11::Window window);
   void OnWindowUnmapped(x11::Window window);
+
+  void AddObserver(Observer* observer);
+  void RemoveObserver(Observer* observer);
 
   // disable copy
   GlobalMenuBarRegistrarX11(const GlobalMenuBarRegistrarX11&) = delete;
@@ -53,6 +66,13 @@ class GlobalMenuBarRegistrarX11 {
   // we're waiting for the proxy to become available.
   absl::flat_hash_set<x11::Window> live_windows_;
   ScopedGSignal signal_;
+
+  // Windows that exported a menu and need to show or hide their own menu bar
+  // when the registrar appears or disappears.
+  base::ObserverList<Observer,
+                     false,
+                     base::ObserverListReentrancyPolicy::kAllowReentrancy>
+      observers_;
 };
 
 #endif  // ELECTRON_SHELL_BROWSER_UI_VIEWS_GLOBAL_MENU_BAR_REGISTRAR_X11_H_

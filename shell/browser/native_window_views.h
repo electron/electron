@@ -222,6 +222,13 @@ class NativeWindowViews : public NativeWindow,
  private:
   // Applies |menu_model| to the in-window menu bar.
   void SetRootViewMenu(ElectronMenuModel* menu_model);
+#if BUILDFLAG(IS_LINUX)
+  // |registrar_present| is set when the global menu registrar has just gained
+  // or lost its name owner. Otherwise the D-Bus name is looked up.
+  void ApplyMenuModel(ElectronMenuModel* menu_model,
+                      std::optional<bool> registrar_present);
+  void OnAppMenuRegistrarOwnerChanged(bool has_owner);
+#endif
   void SetGTKDarkThemeEnabled(bool use_dark_theme);
   void set_overlay_button_color(std::optional<SkColor> color) {
     overlay_button_color_ = color;
@@ -298,7 +305,15 @@ class NativeWindowViews : public NativeWindow,
   extensions::SizeConstraints old_size_constraints_;
 
 #if BUILDFLAG(IS_LINUX)
+  class AppMenuRegistrarObserver;
+
   std::unique_ptr<GlobalMenuBarX11> global_menu_bar_;
+  // Subscribed while a global menu is exported, including after the registrar
+  // has gone away and the in-window bar is showing again.
+  std::unique_ptr<AppMenuRegistrarObserver> app_menu_registrar_observer_;
+  // Last menu passed to SetMenu, replayed when the registrar owner changes.
+  raw_ptr<ElectronMenuModel> menu_model_ = nullptr;
+  bool in_registrar_menu_update_ = false;
 
   // Set while the window is disabled; running it re-enables event dispatch.
   base::ScopedClosureRunner enable_event_listening_;
