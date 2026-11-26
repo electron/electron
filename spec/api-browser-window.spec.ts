@@ -2,6 +2,7 @@ import { nativeImage } from 'electron/common';
 import {
   app,
   BrowserWindow,
+  Menu,
   BaseWindow,
   type BrowserWindowConstructorOptions,
   BrowserView,
@@ -2838,6 +2839,55 @@ describe('BrowserWindow module', { retry: 0 }, () => {
         expect(w.isMenuBarAutoHide(), 'autoHideMenuBar').toBe(true);
         w.setAutoHideMenuBar(false);
         expect(w.isMenuBarAutoHide(), 'autoHideMenuBar').toBe(false);
+      });
+    });
+
+    describe('for menu bar toggle', () => {
+      it('does not toggle menu bar visibility when Alt is pressed and released with another modifier', { tags: ['serial'] }, async () => {
+        const w = new BrowserWindow({
+          show: true,
+          autoHideMenuBar: true
+        });
+        w.setMenu(Menu.buildFromTemplate([{ label: 'File' }]));
+
+        // 1. Wait for OS window activation so NativeWindowViews::OnWidgetActivationChanged
+        //    doesn't reset Alt state mid-test or hide the menu bar on focus loss.
+        if (!w.isFocused()) w.focus();
+        await waitUntil(() => w.isFocused());
+
+        expect(w.isMenuBarVisible()).toBe(false);
+
+        // 2. Dispatch keys over CDP so awaiting keyUp guarantees the renderer's input ack
+        w.webContents.debugger.attach();
+
+        const key = (type: 'rawKeyDown' | 'keyUp', name: 'Shift' | 'Alt', modifiers: number) => {
+          const windowsVirtualKeyCode = name === 'Alt' ? 18 : 16;
+          const nativeVirtualKeyCode = process.platform === 'linux'
+            ? (name === 'Alt' ? 0xffe9 : 0xffe1)
+            : windowsVirtualKeyCode;
+
+          return w.webContents.debugger.sendCommand('Input.dispatchKeyEvent', {
+            type,
+            key: name,
+            code: `${name}Left`,
+            windowsVirtualKeyCode,
+            nativeVirtualKeyCode,
+            modifiers
+          });
+        };
+
+        // Pressing and releasing Alt while Shift is held must NOT toggle the menu bar
+        await key('rawKeyDown', 'Shift', 8); // Shift = 8
+        await key('rawKeyDown', 'Alt', 9);   // Alt = 1 | Shift = 8
+        await key('keyUp', 'Alt', 8);
+        await key('keyUp', 'Shift', 0);      // Acked => preceding Alt↑ has already reached RootView
+        expect(w.isMenuBarVisible()).toBe(false);
+
+        // Standalone Alt press and release MUST toggle the auto-hidden menu bar
+        await key('rawKeyDown', 'Alt', 1);
+        await key('keyUp', 'Alt', 0);
+        await waitUntil(() => w.isMenuBarVisible());
+        expect(w.isMenuBarVisible()).toBe(true);
       });
     });
   });
