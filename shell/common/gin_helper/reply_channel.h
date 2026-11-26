@@ -9,7 +9,6 @@
 
 #include "gin/wrappable.h"
 #include "shell/common/api/api.mojom.h"
-#include "v8/include/cppgc/prefinalizer.h"
 
 namespace v8 {
 class Isolate;
@@ -23,8 +22,6 @@ namespace gin_helper::internal {
 // still call the callback and send an error. Not doing so causes a Mojo DCHECK,
 // since Mojo requires callbacks to be called before they are destroyed.
 class ReplyChannel : public gin::Wrappable<ReplyChannel> {
-  CPPGC_USING_PRE_FINALIZER(ReplyChannel, EnsureReplySent);
-
  public:
   using InvokeCallback = electron::mojom::ElectronApiIPC::InvokeCallback;
 
@@ -50,8 +47,6 @@ class ReplyChannel : public gin::Wrappable<ReplyChannel> {
   static void SendError(v8::Isolate* isolate,
                         InvokeCallback callback,
                         std::string_view errmsg);
-
-  void EnsureReplySent();
 
   // False if |arg| cannot be serialized (the channel stays usable) or a
   // reply was already sent.

@@ -7,11 +7,11 @@
 #include "base/task/single_thread_task_runner.h"
 #include "gin/data_object_builder.h"
 #include "gin/object_template_builder.h"
-#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/serialized_value_converter.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
+#include "v8/include/v8-isolate.h"
 
 namespace gin_helper::internal {
 
@@ -21,7 +21,21 @@ const gin::WrapperInfo ReplyChannel::kWrapperInfo =
 ReplyChannel::ReplyChannel(v8::Isolate* isolate, InvokeCallback callback)
     : callback_{std::move(callback)} {}
 
-ReplyChannel::~ReplyChannel() = default;
+ReplyChannel::~ReplyChannel() {
+  if (!callback_)
+    return;
+  // Post a task because we cannot allocate on the V8 heap during cppgc
+  // sweeping, which ReplyChannel::SendError requires.
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE, base::BindOnce(
+                     [](InvokeCallback callback) {
+                       if (v8::Isolate* isolate = v8::Isolate::TryGetCurrent()) {
+                         ReplyChannel::SendError(isolate, std::move(callback),
+                                                 "reply was never sent");
+                       }
+                     },
+                     std::move(callback_)));
+}
 
 // static
 void ReplyChannel::SendError(v8::Isolate* isolate,
@@ -83,19 +97,6 @@ gin::ObjectTemplateBuilder ReplyChannel::GetObjectTemplateBuilder(
 
 bool ReplyChannel::SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg) {
   return SendReplyImpl(isolate, callback_, arg);
-}
-
-void ReplyChannel::EnsureReplySent() {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  if (callback_) {
-    DCHECK(isolate);
-    // Create a task since we cannot allocate on V8 heap during GC
-    // which is needed by ReplyChannel::SendError implementation.
-    base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
-        FROM_HERE,
-        base::BindOnce(&ReplyChannel::SendError, isolate, std::move(callback_),
-                       "reply was never sent"));
-  }
 }
 
 }  // namespace gin_helper::internal
