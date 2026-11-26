@@ -22,7 +22,7 @@ WebContentsImpl::CenterSelection() is no longer guarded by
 BUILDFLAG(IS_MAC).
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index dabb7add7998874dede2238c612dce63520e723f..373a4c6a064cd16cce8500af2b6a5e20462a8cce 100644
+index 93283c348fe71dffa4e1e682e0911d75f211077a..3904b1531d28e654e6a71937cd8c68d61347729c 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -7276,7 +7276,6 @@ void WebContentsImpl::CopyToFindPboard() {

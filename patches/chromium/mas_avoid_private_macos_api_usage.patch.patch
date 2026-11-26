@@ -908,10 +908,10 @@ index e8ae750358dfc4e18b2b2644eb1e7df7d1f1d79a..5669df7c5cce10443909114fdc326368
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 9a368a27ee3d111530d60a006537f967f3bf38b4..ce248b65216c09a10b579db387f12745ae56483d 100644
+index dc982113385d805b9d58b1fbfadeef0b64de1f08..ab299965e4c24a0fd3ef120e996340c7266d0965 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -390,6 +390,7 @@ viz_component("service") {
+@@ -392,6 +392,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mojo_mac.h",
        ]
      }
@@ -919,7 +919,7 @@ index 9a368a27ee3d111530d60a006537f967f3bf38b4..ce248b65216c09a10b579db387f12745
    }
  
    if (is_ios) {
-@@ -751,6 +752,7 @@ viz_source_set("unit_tests") {
+@@ -754,6 +755,7 @@ viz_source_set("unit_tests") {
        "frame_sinks/external_begin_frame_source_mac_unittest.cc",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -1134,10 +1134,10 @@ index 031d41c19c84c4af95f701b56a6c1f4dd7dfa05b..716b5d4f51ba7eb28116055df9b6f59a
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index ad25062f3512eea90694daa08f0345c98836c55f..4f4d180f1ee3db91526ccf35fb916099c2238aba 100644
+index dcc12175129e939fc99b98976183030626b969ed..77730e3dc56785757fe724fdde321c76aa6ea878 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -278,6 +278,7 @@ source_set("common") {
+@@ -280,6 +280,7 @@ source_set("common") {
      "//ui/shell_dialogs",
      "//url",
      "//url/ipc:url_ipc",
@@ -1228,7 +1228,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 8512a9bb6e3791ccea4d412a4e8f7b357c2b4afc..490a57faff0bc8931c30105220ad51ecb0318c36 100644
+index 6dd2118595eca67dd8816fcdc631dd60a4e96c9a..d8ce9c90577e7919d3463a1b96aab16236e0d85f 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -649,6 +649,7 @@ static_library("test_support") {
@@ -1256,7 +1256,7 @@ index 8512a9bb6e3791ccea4d412a4e8f7b357c2b4afc..490a57faff0bc8931c30105220ad51ec
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3485,6 +3489,7 @@ test("content_unittests") {
+@@ -3486,6 +3490,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1825,10 +1825,10 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 97686c992689d84d54ecea5d62eebc9c28050ec3..e402654a7851d6bae9d2051345992851c800a3bd 100644
+index 73dcf3d9229dd2848124bdb266a26162b41e913a..d0c7fa3714a9ff9416d738ec4f9c40a8a699e677 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -447,6 +447,7 @@ component("core") {
+@@ -446,6 +446,7 @@ component("core") {
      "//ui/gfx/geometry",
      "//ui/gfx/geometry:geometry_skia",
      "//ui/strings",
@@ -2171,7 +2171,7 @@ index 9423a2891552e8df3ea5b05c720ab11795c4b92d..610c479ef03759d3082b42d7a402cbea
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 7a08f67404fe40995d9e186d00eff0cc9ddebc23..5ae0a77c17a0b06b6fbfe08152ecbcc747bbc011 100644
+index e8432d33f69299ce5a7c9d9eb8fc1d39e89ec223..b9b112239c17d0a35240d7160d0a49fd23488fd4 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -361,6 +361,13 @@ component("base") {

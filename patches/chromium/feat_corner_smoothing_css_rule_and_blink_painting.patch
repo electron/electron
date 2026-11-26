@@ -46,10 +46,10 @@ index 3df34fa489dd98ef126a6ccf304ef7cb484429d6..06cc8fb96fb0967113f39b0f6382885f
                  'internal-forced-visited-'
              ):
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index 071a099c08f68cfe296fe168a395e088d46c4493..31c5373cceb2ccb9df037aceda47b2b2f84da372 100644
+index bb3b3c1acb3fc5143e1a1d63a825a3fa4ac969d2..526c022fde2437e01ca383925dbed7f207af8267 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -10485,6 +10485,27 @@
+@@ -10486,6 +10486,27 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
@@ -92,10 +92,10 @@ index 5ccd2402ccd59679c65272154d67025adccfbb54..744cbe4692ff0cd35563db6dca59fcfa
        return ValueEquals(a.EmptyCells(), b.EmptyCells());
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index 2b89c428bbc61ee4764cd24d7c22fad019806db1..0584a05fc0e3f53cd6245b1532e02b94fe8102f2 100644
+index e8236c00b2231a5772f0bc601cd07774d8533a0f..48552df20a11ef0ef21aded12888ea8290081342 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-@@ -13095,5 +13095,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
+@@ -13104,5 +13104,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
                                           CSSValueID::kNone>(stream);
  }
  
@@ -315,7 +315,7 @@ index aac33fed6b728961596ed73ef40caa1c711c5206..49cc2c8260ada3a5370e6cf47016b699
  
    auto draw_as_single_path = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 68f0a4b2c2220ca3556d68b1f07edbbaadc7e843..55c61569454bddd0f52a9eccc7dc86c37a7aa06f 100644
+index 0354eaed42a585085ef1ceff66913a7c83cfa670..a532afbb1ba92ff7b9a4b42db2cbced18bebffd0 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -237,6 +237,10 @@

@@ -101,10 +101,10 @@ index a13cd92bc70a5eb20cfc46469a6be481766d793c..b26653958baa3a35b6f9a6b4f5deee2e
    // universal access privilege.
    WeakMember<WindowAgent> universal_access_agent_;
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index e2677da3c5fc35a47fb53bf8122996385ea7a757..79fcccacd68f73f31564d3ef74b938889a6814f7 100644
+index b40b0d5db947baefd13891b765458d4f377cf444..c48b3f92841e527668e3e3a0e5ca428999785f47 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
-@@ -2805,22 +2805,16 @@ bool ShouldReuseDOMWindow(LocalDOMWindow* window,
+@@ -2810,22 +2810,16 @@ bool ShouldReuseDOMWindow(LocalDOMWindow* window,
    return *window_coi_key == *navigation_coi_key;
  }
  
@@ -131,7 +131,7 @@ index e2677da3c5fc35a47fb53bf8122996385ea7a757..79fcccacd68f73f31564d3ef74b93888
  }
  
  // Inheriting cases use their agent's AgentClusterKey value, which is set
-@@ -2932,7 +2926,7 @@ void DocumentLoader::InitializeWindow(Document* owner_document) {
+@@ -2937,7 +2931,7 @@ void DocumentLoader::InitializeWindow(Document* owner_document) {
      // WindowAgentFactory::GetAgentForOrigin(), as the two conditions below hand
      // out universal WindowAgent objects, and thus override the AgentClusterKey
      // provided by the browser process.
