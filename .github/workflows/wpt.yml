@@ -1,0 +1,157 @@
+name: WPT
+
+# Builds Electron for Linux x64 and runs web-platform-tests against it. The
+# weekly run compares main and every supported release branch with the newest
+# Chrome Canary results on wpt.fyi, to catch web platform fixes a branch is
+# missing.
+# See script/wpt/README.md.
+
+run-name: WPT (${{ github.ref_name }}, ${{ inputs.wpt-revision || 'latest' }})
+
+on:
+  schedule:
+    - cron: '13 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      wpt-revision:
+        type: choice
+        description: 'WPT revision to run on Linux'
+        default: latest
+        required: false
+        options:
+          - latest
+          - pinned
+
+defaults:
+  run:
+    shell: bash
+
+permissions: {}
+
+jobs:
+  setup:
+    if: ${{ github.repository == 'electron/electron' }}
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+    outputs:
+      build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        persist-credentials: false
+    - name: Set Build Image SHA
+      id: build-image-sha
+      uses: ./.github/actions/build-image-sha
+
+  # Scheduled workflows only run on the default branch, so the weekly run on
+  # main starts the same workflow on each supported release branch.
+  release-branches:
+    name: Run on Release Branches
+    if: ${{ github.repository == 'electron/electron' && github.event_name == 'schedule' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+    - name: Dispatch WPT on supported release branches
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+      run: |
+        branches=$(curl -fsSL https://releases.electronjs.org/schedule.json |
+          jq -r '.[] | select(.status == "stable" or .status == "prerelease") | .branch')
+        for branch in $branches; do
+          if ! [[ "$branch" =~ ^[0-9]+-x-y$ ]]; then
+            continue
+          fi
+          echo "Dispatching WPT on $branch"
+          # A branch that does not have this workflow yet cannot be dispatched
+          # to; that should not fail the run on main.
+          if ! gh workflow run wpt.yml --ref "$branch" -f wpt-revision=latest; then
+            echo "::warning::Could not start WPT on $branch"
+          fi
+        done
+
+  # GCLIENT_EXTRA_ARGS feeds the DEPS hash, so these must match the values
+  # pipeline-segment-electron-build.yml sets or the src cache is missed.
+  checkout-linux:
+    needs: setup
+    runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
+    container:
+      image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
+      options: --user root --umask 0022
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+        - /var/run/sas:/var/run/sas
+    env:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
+    outputs:
+      build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        path: src/electron
+        fetch-depth: 0
+        persist-credentials: false
+    - name: Checkout & Sync & Save
+      uses: ./src/electron/.github/actions/checkout
+      with:
+        target-platform: linux
+
+  build-siso-linux:
+    needs: setup
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    with:
+      host: linux-amd64
+
+  # wptrunner drives Electron through ChromeDriver, so it is built too.
+  build-linux-x64:
+    needs: [checkout-linux, build-siso-linux]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    with:
+      build-runs-on: electron-arc-centralus-linux-amd64-32core
+      build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --umask 0022","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
+      target-platform: linux
+      target-arch: x64
+      is-release: false
+      gn-build-type: testing
+      generate-symbols: false
+      generate-chromedriver: true
+      generate-wpt-mojojs: true
+      generate-test-artifacts: false
+      upload-to-storage: '0'
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
+
+  wpt:
+    name: WPT
+    needs: [checkout-linux, build-linux-x64]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-wpt.yml
+    with:
+      # The inputs context is empty for scheduled runs.
+      wpt-revision: ${{ inputs.wpt-revision || 'latest' }}
+      test-runs-on: electron-arc-centralus-linux-amd64-4core
+      test-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init --umask 0022"}'
+      src-cache-runs-on: electron-arc-centralus-linux-amd64-8core
+      src-cache-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --umask 0022","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
+    secrets:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}

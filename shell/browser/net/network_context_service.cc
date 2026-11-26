@@ -6,7 +6,10 @@
 
 #include <utility>
 
+#include "base/command_line.h"
+#include "base/time/time.h"
 #include "chrome/common/chrome_constants.h"
+#include "components/embedder_support/switches.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/common/content_features.h"
 #include "electron/fuses.h"
@@ -70,6 +73,15 @@ void NetworkContextService::ConfigureNetworkContextParams(
   network_context_params->accept_language =
       net::HttpUtil::GenerateAcceptLanguageHeader(
           ElectronBrowserClient::Get()->GetApplicationLocale().tag_string());
+
+  // Chromium queues Reporting API reports and delivers them at most once a
+  // minute. Like Chrome and headless_shell, shorten that when asked to, so
+  // that tests (web-platform-tests among them) do not have to wait.
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          embedder_support::kShortReportingDelay)) {
+    network_context_params->reporting_delivery_interval =
+        base::Milliseconds(100);
+  }
 
   // Enable the HTTP cache.
   network_context_params->http_cache_enabled =

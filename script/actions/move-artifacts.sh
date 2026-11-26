@@ -121,6 +121,7 @@ mv_if_exist src/out/Default/gen/node_headers.tar.gz
 mv_if_exist src/out/Default/symbols.zip
 mv_if_exist src/out/Default/mksnapshot.zip
 mv_if_exist src/out/Default/chromedriver.zip
+mv_if_exist src/out/Default/mojojs.zip
 mv_if_exist src/out/ffmpeg/ffmpeg.zip
 mv_if_exist src/out/Default/hunspell_dictionaries.zip
 mv_if_exist src/out/Default/xcache.zip

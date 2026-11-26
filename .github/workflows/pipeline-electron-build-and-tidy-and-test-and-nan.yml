@@ -123,6 +123,8 @@ jobs:
       generate-symbols: ${{ inputs.generate-symbols }}
       upload-to-storage: ${{ inputs.upload-to-storage }}
       upload-out-gen-artifacts: true
+      # For the WPT job of build.yml, which tests the linux-x64 build.
+      generate-wpt-mojojs: ${{ inputs.target-platform == 'linux' && inputs.target-arch == 'x64' }}
       run-include-analysis: ${{ inputs.run-include-analysis }}
       include-analysis-root-filter: ${{ inputs.include-analysis-root-filter }}
     secrets:

@@ -1,0 +1,114 @@
+# Known differences between Electron and Chromium in web-platform-tests.
+#
+# A failure that passes in the baseline fails the WPT summary job unless a
+# line here matches it. A line is up to three glob patterns separated by
+# " | ": test URL, subtest name, failure message. Patterns left out match
+# anything. See README.md for how to add lines from a CI run.
+#
+# Group lines under a comment that says why Electron differs. If the reason is
+# a bug rather than a decision, link the issue.
+
+# window.prompt() is not supported (shell/renderer/window_setup.cc).
+* | * | *prompt() is not supported*
+
+# Electron's permission check handler can only answer granted or denied, so
+# the shell app reports "denied" where Chrome without UI reports "prompt".
+* | * | *expected "prompt" but got "denied"*
+
+# Electron parses window.open() features itself and does not clamp or reject
+# the same values Blink does.
+/html/browsers/the-window-object/open-close/*
+
+# Electron does not support the back/forward cache: api::WebContents does not
+# override WebContentsDelegate::IsBackForwardCacheSupported(), which is false
+# unless the embedder opts in (CDP reports BackForwardCacheDisabledForDelegate).
+# Chromium's --enable-bfcache is a headless_shell switch and
+# --enable-features=BackForwardCache changes nothing.
+* | * | *Could have been BFCached but actually wasn't*
+* | * | *BFCache not supported*
+* | * | *Cannot read properties of undefined (reading 'persisted')*
+/html/browsers/browsing-the-web/back-forward-cache/*
+/performance-timeline/not-restored-reasons/*
+/performance-timeline/back-forward-cache-restoration.tentative.html
+
+# No on-device model service: the built-in AI APIs are unavailable.
+/ai/*
+
+# User-Agent Client Hints are not populated (empty Sec-CH-UA).
+/client-hints/*
+# ElectronBrowserContext::GetClientHintsControllerDelegate() returns null, so
+# Accept-CH is not remembered and a prefetch carries only the hints sent by
+# default.
+/speculation-rules/prefetch/client-hints/* | * | *sec-ch-device-memory*
+
+# Electron does not support prerender speculation rules: api::WebContents does
+# not override WebContentsDelegate::IsPrerender2Supported(), which refuses
+# every prerender unless the embedder opts in. The directories that only
+# prerender are in exclude.txt; these tests prerender among other things.
+/speculation-rules/activation-header/prerender-activation-beacon.tentative.https.html
+/speculation-rules/speculation-tags/no-tags.https.html
+/speculation-rules/speculation-tags/prerender-target-hint.https.html
+
+# The test does nothing when the user agent contains "HeadlessChrome", which
+# is how it passes in the baseline. What it skips there, a conservative
+# document rule prefetched on pointerdown, does not happen in headless_shell
+# either.
+/speculation-rules/speculation-measurement/performance-speculations-navigations-pointerdown.tentative.https.html
+
+# Electron runs in a window under Xvfb, where the native X pointer sits inside
+# the window and its mouse events cancel the hover the test sends through
+# WebDriver. Headless Chromium has no native pointer.
+/speculation-rules/speculation-tags/prefetch-eagerness-pointer-hover.https.html
+
+# screen.orientation.lock() has no ScreenOrientationDelegate.
+/screen-orientation/*
+
+# WebAuthn discoverable credentials: no account selection for requests
+# without allowCredentials.
+/webauthn/getcredential-rk-passing.https.html
+
+# Local Network Access checks are disabled (kLocalNetworkAccessChecks in
+# shell/browser/feature_list.cc).
+/infrastructure/assumptions/non-local-ports*
+/fetch/local-network-access/*
+# The same feature gates the WebSocket targetAddressSpace mismatch check.
+/websockets/constructor/target-address-space.any.* | *mismatched targetAddressSpace*
+
+# Reports are not delivered to the reporting endpoint. Not root-caused.
+/connection-allowlist/tentative/*
+
+# test_driver.minimize_window() needs CDP Browser.getWindowForTarget.
+# TODO: remove once https://github.com/electron/electron/pull/55945 lands.
+* | * | *Action minimize_window not implemented*
+/accelerometer/*
+/ambient-light/*
+/gyroscope/*
+/magnetometer/*
+/orientation-sensor/*
+/gravity-sensor/*
+
+# Builds with DCHECKs only: sqlite_vfs::PendingFileSet closes a file on the UI
+# thread and hits a thread-restrictions DCHECK in the browser process.
+/css/css-page/crashtests/counter-containment-00[12].html
+/print/crashtests/reload-crash.html
+
+# Electron has no DigitalIdentityProvider (ElectronBrowserClient does not
+# override ContentBrowserClient::CreateDigitalIdentityProvider()), so a Digital
+# Credentials request is rejected with NetworkError at once. content_shell and
+# headless_shell install a provider that leaves the request pending, which is
+# what the tests that abort a running request expect.
+/digital-credentials/* | * | *NetworkError*
+
+# Electron ships no hyphenation dictionaries, so `hyphens: auto` does nothing.
+/css/css-text/hyphens/lang-tag-case-insensitive.html
+
+# Transient user activation is not consumed by CloseWatcher. Not root-caused.
+/close-watcher/user-activation/y-preventDefault-consume-transient-activation.html*
+
+# chrome-extension: is registered as a standard scheme without ports
+# (ElectronContentClient::AddAdditionalSchemes, as in Chrome's
+# ChromeContentClient), so chrome-extension://x:0 parses to
+# chrome-extension://x/ with a tuple origin. content_shell and headless_shell
+# do not register the scheme and parse it as a non-special URL, which is what
+# the test data expects.
+/url/* | *<chrome-extension://x:0>*

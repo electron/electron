@@ -1,0 +1,18 @@
+# Tests that are not run on Electron at all, one URL prefix per line (passed
+# to wptrunner as --exclude-file). Use this for things that cannot work yet
+# and would only produce errors; smaller differences belong in
+# known-differences.txt.
+#
+# Two whole test types are left out as well (TEST_TYPES in wpt.py):
+#   print-reftest: ChromeDriver prints through CDP Page.printToPDF, which
+#     Electron does not implement.
+#   wdspec: most of WebDriver BiDi and New Window need CDP Target.createTarget
+#     and Target.createBrowserContext, which Electron does not implement.
+
+# Electron does not support prerender speculation rules.
+/speculation-rules/prerender/
+/speculation-rules/prerender-until-script/
+
+# WebDriver protocol tests (wdspec), in case the type filter is lifted.
+/webdriver/
+/infrastructure/webdriver/
