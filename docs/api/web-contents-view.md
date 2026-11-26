@@ -52,8 +52,11 @@ addition to those inherited from [View](view.md):
 
 #### `view.webContents` _Readonly_
 
-A `WebContents` property containing a reference to the displayed `WebContents`.
+A `WebContents | undefined` property containing a reference to the displayed `WebContents`.
 Use this to interact with the `WebContents`, for instance to load a URL.
+
+The value is `undefined` once the `WebContents` has been destroyed. Check it
+before use if the `WebContents` might have been destroyed in the meantime.
 
 ```js
 const { WebContentsView } = require('electron')
