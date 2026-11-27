@@ -6,6 +6,7 @@
 
 #include <string_view>
 #include <utility>
+#include <variant>
 
 #include "content/public/browser/render_frame_host.h"
 #include "gin/converter.h"

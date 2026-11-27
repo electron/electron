@@ -49,14 +49,14 @@ class ReplyChannel : public gin::Wrappable<ReplyChannel> {
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
 
-  // Invokes |callback| (if it's non-null) with |errmsg| for Invoke, or an
+  // Invokes `callback` (if it's non-null) with `errmsg` for Invoke, or an
   // empty reply for MessageSync.
   static void SendError(Callback callback, std::string_view errmsg);
 
   // Sends an error reply on this channel if it has not been replied to yet.
   void SendError(std::string_view errmsg);
 
-  // False if |arg| cannot be serialized (the channel stays usable) or a
+  // False if `arg` cannot be serialized (the channel stays usable) or a
   // reply was already sent.
   bool SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg);
 

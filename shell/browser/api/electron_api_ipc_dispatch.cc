@@ -6,6 +6,7 @@
 
 #include <initializer_list>
 #include <memory>
+#include <string>
 #include <string_view>
 #include <utility>
 
@@ -222,6 +223,34 @@ void AddReply(v8::Local<v8::Context> context, v8::Local<v8::Object> event) {
 
 // ---- invoke ------------------------------------------------------------
 
+// Try `error.toString()` for objects so custom `toString()` methods are
+// honored, then fall back to `ToDetailString()` (which never executes JS or
+// throws).
+std::string FormatErrorMessage(v8::Isolate* isolate,
+                               v8::Local<v8::Context> context,
+                               v8::Local<v8::Value> error) {
+  if (error->IsObject()) {
+    v8::TryCatch try_catch(isolate);
+    v8::Local<v8::Value> string;
+    if (CallMethod(context, error.As<v8::Object>(), "toString", 0, nullptr)
+            .ToLocal(&string) &&
+        string->IsString()) {
+      return gin::V8ToString(isolate, string);
+    }
+    if (try_catch.HasTerminated()) {
+      return "Failed to convert error to string";
+    }
+    if (try_catch.HasCaught()) {
+      try_catch.Reset();
+    }
+  }
+  v8::Local<v8::String> detail;
+  if (error->ToDetailString(context).ToLocal(&detail)) {
+    return gin::V8ToString(isolate, detail);
+  }
+  return "Failed to convert error to string";
+}
+
 void ReplyWithError(v8::Local<v8::Context> context,
                     v8::Local<v8::Object> event,
                     v8::Local<v8::Value> channel,
@@ -234,35 +263,13 @@ void ReplyWithError(v8::Local<v8::Context> context,
       {gin::StringToV8(isolate, base::StrCat({"Error occurred in handler for '",
                                               channel_name, "':"})),
        error});
-  // error.toString(), which unlike abstract ToString also works for a Symbol;
-  // anything that still throws is reported as a plain "Error".
-  v8::Local<v8::Value> message;
-  {
-    v8::TryCatch try_catch(isolate);
-    v8::Local<v8::Value> string;
-    if (error->IsObject() &&
-        CallMethod(context, error.As<v8::Object>(), "toString", 0, nullptr)
-            .ToLocal(&string) &&
-        string->IsString()) {
-      message = string;
-    } else if (!try_catch.HasCaught() && !error->IsObject() &&
-               error->ToDetailString(context).ToLocal(&string)) {
-      message = string;
-    } else {
-      message = Str(isolate, "Error");
-    }
-    if (try_catch.HasCaught() && !try_catch.HasTerminated())
-      try_catch.Reset();
-  }
-  std::string message_str;
-  gin::ConvertFromV8(isolate, message, &message_str);
   if (gin_helper::internal::ReplyChannel* reply_channel =
           api::ReplyChannelOf(isolate, event)) {
-    reply_channel->SendError(message_str);
+    reply_channel->SendError(FormatErrorMessage(isolate, context, error));
   }
 }
 
-// Replies with |result|, or with an error if |result| cannot be serialized (the
+// Replies with `result`, or with an error if `result` cannot be serialized (the
 // "An object could not be cloned" case).
 void ReplyWithResult(v8::Local<v8::Context> context,
                      v8::Local<v8::Object> event,

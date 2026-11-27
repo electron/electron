@@ -97,6 +97,9 @@ interface ElectronAutofillDriver {
   HideAutofillPopup();
 };
 
+// Response from ElectronApiIPC.Invoke: either a serialized return value on
+// success or an error string if the handler threw, rejected, or failed to
+// reply.
 union InvokeResult {
   SerializedValue result;
   string error;

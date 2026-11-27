@@ -110,12 +110,15 @@ class IPCBase : public gin::Wrappable<T> {
         base::BindOnce(
             [](gin_helper::Promise<electron::SerializedValue> p,
                std::string channel, electron::mojom::InvokeResultPtr result) {
-              if (result->is_error()) {
-                p.RejectWithErrorMessage(
-                    base::StrCat({"Error invoking remote method '", channel,
-                                  "': ", result->get_error()}));
-              } else {
-                p.Resolve(result->get_result());
+              switch (result->which()) {
+                case electron::mojom::InvokeResult::Tag::kError:
+                  p.RejectWithErrorMessage(
+                      base::StrCat({"Error invoking remote method '", channel,
+                                    "': ", result->get_error()}));
+                  break;
+                case electron::mojom::InvokeResult::Tag::kResult:
+                  p.Resolve(result->get_result());
+                  break;
               }
             },
             std::move(p), channel));
@@ -423,8 +426,9 @@ struct EmitterMethods {
     v8::Local<v8::Promise> reply =
         transport->Invoke(isolate, gin_helper::ErrorThrower(isolate), internal,
                           channel, Rest(info, 1));
-    if (!reply.IsEmpty())
+    if (!reply.IsEmpty()) {
       info.GetReturnValue().Set(reply);
+    }
   }
 };
 

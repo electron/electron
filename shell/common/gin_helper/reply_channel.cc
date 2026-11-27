@@ -20,7 +20,7 @@ const gin::WrapperInfo ReplyChannel::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronReplyChannel);
 
 ReplyChannel::ReplyChannel(Callback callback)
-    : callback_{std::move(callback)} {}
+    : callback_(std::move(callback)) {}
 
 ReplyChannel::~ReplyChannel() {
   SendError("reply was never sent");
@@ -41,8 +41,7 @@ void ReplyChannel::SendError(Callback callback, std::string_view errmsg) {
 }
 
 void ReplyChannel::SendError(std::string_view errmsg) {
-  SendError(std::move(callback_), errmsg);
-  callback_.emplace<std::monostate>();
+  SendError(std::exchange(callback_, std::monostate{}), errmsg);
 }
 
 // static
@@ -66,32 +65,37 @@ gin::ObjectTemplateBuilder ReplyChannel::GetObjectTemplateBuilder(
 }
 
 bool ReplyChannel::HasCallback() const {
-  if (const auto* invoke = std::get_if<InvokeCallback>(&callback_))
+  if (const auto* invoke = std::get_if<InvokeCallback>(&callback_)) {
     return static_cast<bool>(*invoke);
-  if (const auto* sync = std::get_if<MessageSyncCallback>(&callback_))
+  }
+  if (const auto* sync = std::get_if<MessageSyncCallback>(&callback_)) {
     return static_cast<bool>(*sync);
+  }
   return false;
 }
 
 bool ReplyChannel::SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg) {
-  if (!HasCallback())
+  if (!HasCallback()) {
     return false;
+  }
 
-  // Serialize first so a failed conversion leaves |callback_| usable.
+  // Serialize first so a failed conversion leaves `callback_` usable.
   electron::SerializedValue msg;
-  if (!gin::ConvertFromV8(isolate, arg, &msg))
+  if (!gin::ConvertFromV8(isolate, arg, &msg)) {
     return false;
+  }
   // Serialization can run JS that replied re-entrantly.
-  if (!HasCallback())
+  if (!HasCallback()) {
     return false;
+  }
 
-  if (auto* invoke = std::get_if<InvokeCallback>(&callback_)) {
+  Callback callback = std::exchange(callback_, std::monostate{});
+  if (auto* invoke = std::get_if<InvokeCallback>(&callback)) {
     std::move(*invoke).Run(
         electron::mojom::InvokeResult::NewResult(std::move(msg)));
-  } else if (auto* sync = std::get_if<MessageSyncCallback>(&callback_)) {
+  } else if (auto* sync = std::get_if<MessageSyncCallback>(&callback)) {
     std::move(*sync).Run(std::move(msg));
   }
-  callback_.emplace<std::monostate>();
   return true;
 }
 
