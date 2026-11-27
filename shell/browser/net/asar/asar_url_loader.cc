@@ -16,6 +16,8 @@
 #include "base/numerics/safe_conversions.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/task/thread_pool.h"
+#include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/file_url_loader.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
@@ -143,9 +145,15 @@ class AsarURLLoader : public network::mojom::URLLoader {
     const bool in_archive =
         GetAsarArchivePath(path, &asar_path, &relative_path);
     if (!in_archive && root.empty()) {
-      content::CreateFileURLLoaderBypassingSecurityChecks(
-          request, std::move(loader), std::move(client), nullptr, false,
-          extra_response_headers);
+      // Chromium's file loader must be created on the UI thread; it moves its
+      // own file I/O to a blocking sequence.
+      content::GetUIThreadTaskRunner({})->PostTask(
+          FROM_HERE,
+          base::BindOnce(&content::CreateFileURLLoaderBypassingSecurityChecks,
+                         request, std::move(loader), std::move(client),
+                         std::unique_ptr<content::FileURLLoaderObserver>(),
+                         /*allow_directory_listing=*/false,
+                         extra_response_headers));
       MaybeDeleteSelf();
       return;
     }
