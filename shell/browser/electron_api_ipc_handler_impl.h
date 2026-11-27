@@ -13,6 +13,7 @@
 #include "mojo/public/cpp/bindings/associated_receiver.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/common/api/api.mojom.h"
+#include "shell/common/gin_helper/reply_channel.h"
 
 namespace content {
 class RenderFrameHost;
@@ -80,8 +81,7 @@ class ElectronApiIPCHandlerImpl : public mojom::ElectronApiIPC,
       v8::Isolate* isolate,
       api::Session* session,
       bool internal,
-      electron::mojom::ElectronApiIPC::InvokeCallback callback =
-          electron::mojom::ElectronApiIPC::InvokeCallback());
+      gin_helper::internal::ReplyChannel::Callback callback = {});
 
   content::GlobalRenderFrameHostId render_frame_host_id_;
 

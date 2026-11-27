@@ -12,6 +12,7 @@
 #include "content/public/common/child_process_id.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
+#include "shell/common/gin_helper/reply_channel.h"
 #include "v8/include/v8-forward.h"
 
 namespace content {
@@ -79,8 +80,7 @@ class ElectronApiSWIPCHandlerImpl : public mojom::ElectronApiIPC,
       v8::Isolate* isolate,
       api::Session* session,
       bool internal,
-      electron::mojom::ElectronApiIPC::InvokeCallback callback =
-          electron::mojom::ElectronApiIPC::InvokeCallback());
+      gin_helper::internal::ReplyChannel::Callback callback = {});
 
   // content::RenderProcessHostObserver
   void RenderProcessExited(

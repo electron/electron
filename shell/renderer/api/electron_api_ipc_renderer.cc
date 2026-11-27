@@ -109,8 +109,19 @@ class IPCBase : public gin::Wrappable<T> {
         internal, channel, std::move(message),
         base::BindOnce(
             [](gin_helper::Promise<electron::SerializedValue> p,
-               electron::SerializedValue result) { p.Resolve(result); },
-            std::move(p)));
+               std::string channel, electron::mojom::InvokeResultPtr result) {
+              switch (result->which()) {
+                case electron::mojom::InvokeResult::Tag::kError:
+                  p.RejectWithErrorMessage(
+                      base::StrCat({"Error invoking remote method '", channel,
+                                    "': ", result->get_error()}));
+                  break;
+                case electron::mojom::InvokeResult::Tag::kResult:
+                  p.Resolve(result->get_result());
+                  break;
+              }
+            },
+            std::move(p), channel));
 
     return handle;
   }
@@ -412,50 +423,12 @@ struct EmitterMethods {
     if (!Unpack(info, "invoke", &transport, &internal, &channel))
       return;
     v8::Isolate* isolate = info.GetIsolate();
-    v8::Local<v8::Context> context = isolate->GetCurrentContext();
     v8::Local<v8::Promise> reply =
         transport->Invoke(isolate, gin_helper::ErrorThrower(isolate), internal,
                           channel, Rest(info, 1));
-    if (reply.IsEmpty())
-      return;
-    v8::Local<v8::Function> unwrap;
-    v8::Local<v8::Promise> result;
-    if (v8::Function::New(context, UnwrapInvokeResult, info[0], 1,
-                          v8::ConstructorBehavior::kThrow)
-            .ToLocal(&unwrap) &&
-        reply->Then(context, unwrap).ToLocal(&result)) {
-      info.GetReturnValue().Set(result);
+    if (!reply.IsEmpty()) {
+      info.GetReturnValue().Set(reply);
     }
-  }
-
-  static void UnwrapInvokeResult(
-      const v8::FunctionCallbackInfo<v8::Value>& info) {
-    v8::Isolate* isolate = info.GetIsolate();
-    v8::Local<v8::Context> context = isolate->GetCurrentContext();
-    v8::Local<v8::Value> error, result;
-    if (info.Length() < 1 || !info[0]->IsObject() ||
-        !info[0]
-             .As<v8::Object>()
-             ->Get(context, gin::StringToSymbol(isolate, "error"))
-             .ToLocal(&error) ||
-        !info[0]
-             .As<v8::Object>()
-             ->Get(context, gin::StringToSymbol(isolate, "result"))
-             .ToLocal(&result)) {
-      return;
-    }
-    if (error->BooleanValue(isolate)) {
-      v8::Local<v8::String> error_string;
-      if (!error->ToString(context).ToLocal(&error_string))
-        return;
-      isolate->ThrowException(v8::Exception::Error(gin::StringToV8(
-          isolate,
-          base::StrCat({"Error invoking remote method '",
-                        gin::V8ToString(isolate, info.DataV2().As<v8::Value>()),
-                        "': ", gin::V8ToString(isolate, error_string)}))));
-      return;
-    }
-    info.GetReturnValue().Set(result);
   }
 };
 
