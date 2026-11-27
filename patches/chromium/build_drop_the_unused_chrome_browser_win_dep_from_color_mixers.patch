@@ -10,10 +10,10 @@ into Electron's link, whose ProfileKeyedServiceFactory then collides with
 the one Electron provides for its spellchecker.
 
 diff --git a/chrome/browser/ui/color/BUILD.gn b/chrome/browser/ui/color/BUILD.gn
-index d5080d0b392e20ca4a1dea36f2157961304c2ef1..a75bfaa118e9f125f6662b9a68b7993bccf3ad91 100644
+index 57593baaea5338cf6fb855e31682f5938ab0bd33..3bf8c230430aa79ce8354ec13d3c2da3bd4d77f1 100644
 --- a/chrome/browser/ui/color/BUILD.gn
 +++ b/chrome/browser/ui/color/BUILD.gn
-@@ -82,7 +82,6 @@ source_set("mixers") {
+@@ -80,7 +80,6 @@ source_set("mixers") {
    if (is_win) {
      sources += [ "win/native_chrome_color_mixer_win.cc" ]
      deps += [

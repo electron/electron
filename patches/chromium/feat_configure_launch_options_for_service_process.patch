@@ -197,7 +197,7 @@ index 1d7706bf0525c24bd5fc87021e980370d43320a7..dedf61981c2a7749b34b18a9b75d4d9f
  #if BUILDFLAG(IS_MAC)
  
 diff --git a/content/browser/sandboxed_process_launcher_delegate.h b/content/browser/sandboxed_process_launcher_delegate.h
-index a92c1795611d0d1e9271444f7517c6460a9e4b48..1b54db8249cb6968cdcc2af7c7d878995ef34045 100644
+index 4d3cff50ca576bf154a37d200ab906c22d89b158..523d11028910e040d0cb733e41a8ef192c3f0060 100644
 --- a/content/browser/sandboxed_process_launcher_delegate.h
 +++ b/content/browser/sandboxed_process_launcher_delegate.h
 @@ -9,6 +9,7 @@
@@ -257,7 +257,7 @@ index de03ca6ba7c35f73669b5e605721b7d743798a25..4ee1bb15aaa40064869d42deb8cfb2c8
  
    UtilityProcessHost::Start(std::move(utility_options),
 diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
-index 208cea4f132fea8d44b2145db41d64bb8cbcbdeb..fbb779d88ba414171ab5d51a576744401aa59a4e 100644
+index 6f8241035859c37681a2af0c4afa86a8d23c0c1b..f22073a61c547bbfaa2266212bde915e23eb7ae8 100644
 --- a/content/browser/service_host/utility_process_host.cc
 +++ b/content/browser/service_host/utility_process_host.cc
 @@ -256,13 +256,13 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithFileToPreload(

@@ -58,7 +58,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 5eaab4100a7ec4f9ad8b6bd67310438b3af4aae0..4415c3e04f504f74ecae40dd74187f8dfb82cefd 100644
+index 05a6657395673b4e6e2be7567e8d3bbc56feab06..e587bcf714c3c6d2134f8a45fdddd78682512e5f 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1172,6 +1172,7 @@ component("base") {
@@ -1228,7 +1228,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 6dd2118595eca67dd8816fcdc631dd60a4e96c9a..d8ce9c90577e7919d3463a1b96aab16236e0d85f 100644
+index e8420cf2501204a33d220dc2518d8510ea4fce02..ed16cddba365b3461bd65572d8ed5066725de549 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -649,6 +649,7 @@ static_library("test_support") {
@@ -1248,7 +1248,7 @@ index 6dd2118595eca67dd8816fcdc631dd60a4e96c9a..d8ce9c90577e7919d3463a1b96aab162
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2068,6 +2071,7 @@ test("content_browsertests") {
+@@ -2069,6 +2072,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1256,7 +1256,7 @@ index 6dd2118595eca67dd8816fcdc631dd60a4e96c9a..d8ce9c90577e7919d3463a1b96aab162
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3486,6 +3490,7 @@ test("content_unittests") {
+@@ -3487,6 +3491,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1825,7 +1825,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 73dcf3d9229dd2848124bdb266a26162b41e913a..d0c7fa3714a9ff9416d738ec4f9c40a8a699e677 100644
+index 675d962c271ce44eb4ae5bf8643d8774b7505fe8..e18d87f8366d3edda7a97ea2c13ca8afeeffb9ca 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -446,6 +446,7 @@ component("core") {

@@ -19,10 +19,10 @@ that clearly establishes the worker script is ready for evaluation with the scop
 initialized.
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index fb843b3d995da5d3e13baa00413add2e0bf7ddeb..6d7d041f3ecd7a9a2fa16f2188462ee7f4282d19 100644
+index b7b1aa58af7a0b0b45d01161b480b00e5d7b5b26..7a0e8cbebdcd9614bf5f87035b4c4542348b2a87 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -425,6 +425,11 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -433,6 +433,11 @@ class CONTENT_EXPORT ContentRendererClient {
    virtual void DidInitializeWorkerContextOnWorkerThread(
        v8::Local<v8::Context> context) {}
  
@@ -35,10 +35,10 @@ index fb843b3d995da5d3e13baa00413add2e0bf7ddeb..6d7d041f3ecd7a9a2fa16f2188462ee7
    // from the worker thread.
    virtual void WillDestroyWorkerContextOnWorkerThread(
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index 7b4d0efbb7ae1f7a1f3332eb38be23e5c1ceba42..1c4c62848fc4a0ccaa1dfb327b02e8d548d5e1d7 100644
+index d72629f527ea8ebe6148a42b9cf9fd5bbd52d68d..7df7f85e671286a0eb4355603906952faae9aa62 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
-@@ -986,6 +986,12 @@ void RendererBlinkPlatformImpl::WorkerContextCreated(
+@@ -993,6 +993,12 @@ void RendererBlinkPlatformImpl::WorkerContextCreated(
        worker);
  }
  
@@ -52,7 +52,7 @@ index 7b4d0efbb7ae1f7a1f3332eb38be23e5c1ceba42..1c4c62848fc4a0ccaa1dfb327b02e8d5
  RendererBlinkPlatformImpl::GetProtocolHandlerSecurityLevel(
      const blink::WebSecurityOrigin& origin) {
 diff --git a/content/renderer/renderer_blink_platform_impl.h b/content/renderer/renderer_blink_platform_impl.h
-index b875faa5bb37a407940c0b131e4687b005673d0f..a24e1419e36c2dfefdb3c711630d9fababeca4a6 100644
+index 71e0927febc45930f9fbc34d29d4e213523c1e3f..12073970c7fce3c85696b17f98a02d22a0cbad21 100644
 --- a/content/renderer/renderer_blink_platform_impl.h
 +++ b/content/renderer/renderer_blink_platform_impl.h
 @@ -220,6 +220,8 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {

@@ -9,10 +9,10 @@ focus node change via TextInputManager.
 chromium-bug: https://crbug.com/1369605
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 967093b4d68177708dae777c9efc0aadb0540cb2..9338d190c410965f7650fe84371ae304e4eb6039 100644
+index b65e2d2276c31e65358b4362c37017aeb39c42e9..dd7b67734053886381e0d7c37effa1ab6866def9 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -4085,6 +4085,12 @@ void RenderWidgetHostViewAura::FlushPendingSelectionClipboard() {
+@@ -4133,6 +4133,12 @@ void RenderWidgetHostViewAura::FlushPendingSelectionClipboard() {
    }
  }
  
@@ -26,7 +26,7 @@ index 967093b4d68177708dae777c9efc0aadb0540cb2..9338d190c410965f7650fe84371ae304
      RenderWidgetHostViewAura* popup_child_host_view) {
    popup_child_host_view_ = popup_child_host_view;
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.h b/content/browser/renderer_host/render_widget_host_view_aura.h
-index d7bf300f6de529103a872f85439f74d4fcbae0d9..89f8bffa33bb1674a4dd13781c7888c454b09792 100644
+index 38849ce874548fe8370af8aaa4056b8e456f66b0..25f29ea60d79ea1e6f6a59749a83cccc8347edfe 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.h
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.h
 @@ -702,6 +702,8 @@ class CONTENT_EXPORT RenderWidgetHostViewAura
@@ -87,10 +87,10 @@ index 8fe220e7c3956d9dfaed030314023f6e956c4e85..89d0f7ae60ef62acea14d3475168fda4
    // The view with active text input state, i.e., a focused <input> element.
    // It will be nullptr if no such view exists. Note that the active view
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 4224080e33ec586f935673012c68c56a72046b81..352fb698ae04dff9345bf32bb871698ef051ba1b 100644
+index 2d6d6978f878aa32d9f667dd292896ca0c010ef1..d42afe53f327005a83a1274826fdec4366c72d24 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -11380,7 +11380,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
+@@ -11395,7 +11395,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
      return;
    }
    RenderWidgetHostViewBase* root_view =

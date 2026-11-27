@@ -71,10 +71,10 @@ index f92cf76bb7eecac6b7aaa6db45da25878199a6a6..3938de2ab8bc51929f6c4e91170e3b86
  
  // A per-navigation interface passed along with the BeginNavigation call, used
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index b8ed29f6d5d66207fb7ff8d662564a725a098065..30a6151f9092f9b190a3b1dbffb25e79891dbe79 100644
+index a80631c9e2704c1256e4978601089b8bcdb65bbf..ba4dcdf05f9c9c2e0d953490855c1769f4a48e6f 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -850,6 +850,13 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -840,6 +840,13 @@ bool ContentBrowserClient::CanCreateWindow(
    return true;
  }
  
@@ -89,7 +89,7 @@ index b8ed29f6d5d66207fb7ff8d662564a725a098065..30a6151f9092f9b190a3b1dbffb25e79
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 47f896424aa237d25953e76c249d644ab686a847..179aad013020814477d825497c52fdc16c3de8df 100644
+index 1fb25661403e6eb1c306a1fda32ba34630425257..9773423c43de47dc158fea22efdd10cbd2f79d18 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -61,6 +61,7 @@
@@ -100,7 +100,7 @@ index 47f896424aa237d25953e76c249d644ab686a847..179aad013020814477d825497c52fdc1
  #include "mojo/public/cpp/bindings/pending_remote.h"
  #include "mojo/public/cpp/bindings/remote.h"
  #include "mojo/public/cpp/system/message_pipe.h"
-@@ -1325,6 +1326,17 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1312,6 +1313,17 @@ class CONTENT_EXPORT ContentBrowserClient {
        bool opener_suppressed,
        bool* no_javascript_access);
  
@@ -119,7 +119,7 @@ index 47f896424aa237d25953e76c249d644ab686a847..179aad013020814477d825497c52fdc1
    // The delegate will be owned by the manager. It's valid to return nullptr.
    virtual SpeechRecognitionManagerDelegate*
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index db698a9a9adfd9bd2dfc8dd29932b3e4b7764f73..9088b206b2101b8e8b101d5a75809308f1b0c3d2 100644
+index 57377ee1fac910e95da3cfad732123e77af01537..4e5a8304a73b4f5fe3e6dc52b4fba719f275d08b 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
 @@ -24,6 +24,7 @@

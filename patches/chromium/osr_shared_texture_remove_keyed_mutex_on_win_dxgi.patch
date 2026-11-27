@@ -37,7 +37,7 @@ index 1b47aae2e5e0bbf645dc30d0f011f91f984995e0..9a5b13174a4d527057a50593b66070a2
    Microsoft::WRL::ComPtr<ID3D11Texture2D> d3d11_texture;
  
 diff --git a/media/gfx/renderable_mappable_shared_image_video_frame_pool.cc b/media/gfx/renderable_mappable_shared_image_video_frame_pool.cc
-index b5305162c8bb957e6195c4145ba158dbd382dc87..ff50a8cc80b2be4b248038f6a0e29d6627ab0bb0 100644
+index e9941dd2409a2861398093d77befb6bffd71de9f..aaa72eb4f2bf98d2ef8989bef4dd7e13023299b3 100644
 --- a/media/gfx/renderable_mappable_shared_image_video_frame_pool.cc
 +++ b/media/gfx/renderable_mappable_shared_image_video_frame_pool.cc
 @@ -223,6 +223,24 @@ bool FrameResources::Initialize(VideoPixelFormat format,
@@ -64,4 +64,4 @@ index b5305162c8bb957e6195c4145ba158dbd382dc87..ff50a8cc80b2be4b248038f6a0e29d66
 +
    gpu::SharedImageUsageSet usage =
  #if BUILDFLAG(IS_MAC)
-       gpu::SHARED_IMAGE_USAGE_MACOS_VIDEO_TOOLBOX |
+       gpu::SHARED_IMAGE_USAGE_VIDEO_ENCODE_ACCELERATOR |

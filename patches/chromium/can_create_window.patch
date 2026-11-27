@@ -36,7 +36,7 @@ index d9b9512c01ca7348f483402041f3c0cfe42d3802..eab3c5ea29ed9fd9a20b3c9356d0b285
    // important to do this before we return from the |opener_suppressed| case
    // below.
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 44a103ec3ca66aec01b1966f4c6208df741a3ef6..8f3f03f710ceee1fbe3a13eeb8cfbdf0b6f3e863 100644
+index 9a696f154ac1fd3eb50ea86f3c1bef02292bd025..21690d7a89de62d298ec3f208b73ad787caa3379 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5864,6 +5864,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -94,10 +94,10 @@ index e3aa942b5a53d4ba02172d196b7b908a8a415843..f92cf76bb7eecac6b7aaa6db45da2587
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 2e9fb50d172699a0edc4e0a9ff74d89538b92f1e..b8ed29f6d5d66207fb7ff8d662564a725a098065 100644
+index 157696805ea58c862fd2eb15de315d4da76fd6b1..a80631c9e2704c1256e4978601089b8bcdb65bbf 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -841,6 +841,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -831,6 +831,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -107,7 +107,7 @@ index 2e9fb50d172699a0edc4e0a9ff74d89538b92f1e..b8ed29f6d5d66207fb7ff8d662564a72
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index f871ccd9d33f86f07b84add9f5feb316a4abe234..6386846771354f242be45d67c66a0e2dcbcf653d 100644
+index 83a463762dd0abffe8a0bb035e3d0adcafb77ff3..24bf6cdd0612563d0cbc35a29fff3f89342b9773 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -211,6 +211,7 @@ class TrustedURLLoaderHeaderClient;
@@ -118,7 +118,7 @@ index f871ccd9d33f86f07b84add9f5feb316a4abe234..6386846771354f242be45d67c66a0e2d
  }  // namespace network
  
  namespace sandbox {
-@@ -1313,6 +1314,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1300,6 +1301,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
@@ -242,10 +242,10 @@ index fa85c237083f73e4fe5fb3359d1f51fbd25e70f5..68f37d13b45a4d3a4f695f6a5638739f
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 41f5895b72a897d43a460784de71361ac3a8bdd6..6f5876cad90b4d9ef149f0fbc296e1c041a28e11 100644
+index bb709fe01acfba64f3b6c2bf0706fec1676c6808..295aad7ca458ddf8e8a14fa8cea4285b1626b4fa 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2476,6 +2476,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -2477,6 +2477,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, entered_window);
  

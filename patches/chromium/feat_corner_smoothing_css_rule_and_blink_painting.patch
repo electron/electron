@@ -92,10 +92,10 @@ index 5ccd2402ccd59679c65272154d67025adccfbb54..744cbe4692ff0cd35563db6dca59fcfa
        return ValueEquals(a.EmptyCells(), b.EmptyCells());
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index e8236c00b2231a5772f0bc601cd07774d8533a0f..48552df20a11ef0ef21aded12888ea8290081342 100644
+index 29451a0b96bdd109ca588ed82f190cb966210a50..d7e4117e9c6aaa37730409f52de7fa61c1764b89 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-@@ -13104,5 +13104,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
+@@ -13086,5 +13086,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
                                           CSSValueID::kNone>(stream);
  }
  
@@ -315,7 +315,7 @@ index aac33fed6b728961596ed73ef40caa1c711c5206..49cc2c8260ada3a5370e6cf47016b699
  
    auto draw_as_single_path = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 0354eaed42a585085ef1ceff66913a7c83cfa670..a532afbb1ba92ff7b9a4b42db2cbced18bebffd0 100644
+index e377484cee143f6f832d6922c9f2c6daabe4d079..9fcf77d8b7d0053f18d92bf8be08984a657dba8f 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -237,6 +237,10 @@

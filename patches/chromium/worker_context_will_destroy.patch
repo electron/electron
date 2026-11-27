@@ -10,10 +10,10 @@ An attempt to upstream this was made, but rejected:
 https://chromium-review.googlesource.com/c/chromium/src/+/1954347
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 6f5ac6b22e249eb9dd6fc16c39e263a8e6d3d626..fb843b3d995da5d3e13baa00413add2e0bf7ddeb 100644
+index 896e2f61f6de2f88f8f5ff68a60b0f65bb9a978b..b7b1aa58af7a0b0b45d01161b480b00e5d7b5b26 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -425,6 +425,11 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -433,6 +433,11 @@ class CONTENT_EXPORT ContentRendererClient {
    virtual void DidInitializeWorkerContextOnWorkerThread(
        v8::Local<v8::Context> context) {}
  
@@ -26,10 +26,10 @@ index 6f5ac6b22e249eb9dd6fc16c39e263a8e6d3d626..fb843b3d995da5d3e13baa00413add2e
    // An empty URL is returned if the URL is not overriden.
    virtual GURL OverrideFlashEmbedWithHTML(const GURL& url);
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index a7a1fca94ced5910e064e9f919e69f5c56d704f1..7b4d0efbb7ae1f7a1f3332eb38be23e5c1ceba42 100644
+index 517afd5fe9a5fea877fea597ee9ec558ac154fe3..d72629f527ea8ebe6148a42b9cf9fd5bbd52d68d 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
-@@ -974,6 +974,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
+@@ -981,6 +981,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
    WorkerThreadRegistry::Instance()->WillStopCurrentWorkerThread();
  }
  
@@ -43,7 +43,7 @@ index a7a1fca94ced5910e064e9f919e69f5c56d704f1..7b4d0efbb7ae1f7a1f3332eb38be23e5
      const v8::Local<v8::Context>& worker) {
    GetContentClient()->renderer()->DidInitializeWorkerContextOnWorkerThread(
 diff --git a/content/renderer/renderer_blink_platform_impl.h b/content/renderer/renderer_blink_platform_impl.h
-index 7b0af0dd509bdbbe6ae4b7b905137cd9513df418..b875faa5bb37a407940c0b131e4687b005673d0f 100644
+index 7c0ccdf49ba573e2ec93380a5e67a88e90879623..71e0927febc45930f9fbc34d29d4e213523c1e3f 100644
 --- a/content/renderer/renderer_blink_platform_impl.h
 +++ b/content/renderer/renderer_blink_platform_impl.h
 @@ -220,6 +220,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
