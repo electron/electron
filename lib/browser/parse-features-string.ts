@@ -48,12 +48,12 @@ const keysOfTypeNumber = new Set([
  * https://html.spec.whatwg.org/multipage/window-object.html#concept-window-open-features-parse-boolean
  */
 type CoercedValue = string | number | boolean;
-function coerce(key: string, value: string): CoercedValue {
+function coerce(key: string, value: string | undefined): CoercedValue {
   if (key === 'opacity') {
-    return parseFloat(value);
+    return parseFloat(value ?? '');
   }
   if (keysOfTypeNumber.has(key)) {
-    return parseInt(value, 10);
+    return parseInt(value ?? '', 10);
   }
 
   switch (value) {
@@ -74,8 +74,12 @@ function coerce(key: string, value: string): CoercedValue {
 export function parseCommaSeparatedKeyValue(source: string) {
   const parsed = {} as { [key: string]: any };
   for (const keyValuePair of source.split(',')) {
-    const [key, value] = keyValuePair.split('=').map((str) => str.trim());
+    // Only split on the first '=' so that '=' characters inside the value
+    // (e.g. `title=My=Window`) are preserved.
+    const separator = keyValuePair.indexOf('=');
+    const key = (separator === -1 ? keyValuePair : keyValuePair.slice(0, separator)).trim();
     if (key) {
+      const value = separator === -1 ? undefined : keyValuePair.slice(separator + 1).trim();
       parsed[key] = coerce(key, value);
     }
   }

@@ -33,6 +33,16 @@ describe('feature-string parsing', () => {
     checkParse(' a = yes , c = d ', { a: true, c: 'd' });
   });
 
+  it('only splits a pair on the first "=", preserving "=" inside values', () => {
+    expect(parseCommaSeparatedKeyValue('title=My=Window')).toEqual({ title: 'My=Window' });
+    expect(parseCommaSeparatedKeyValue('title=My=Window,width=640')).toEqual({
+      title: 'My=Window',
+      width: 640
+    });
+    expect(parseCommaSeparatedKeyValue('title=window=')).toEqual({ title: 'window=' });
+    expect(parseFeatures('title=My=Window,width=640').options).toEqual({ title: 'My=Window', width: 640 });
+  });
+
   describe('parseFeatures allowlist', () => {
     it('passes through allowlisted presentational options', () => {
       const { options } = parseFeatures(
