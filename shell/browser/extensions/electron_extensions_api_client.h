@@ -25,7 +25,7 @@ class ElectronExtensionsAPIClient : public ExtensionsAPIClient {
       const scoped_refptr<value_store::ValueStoreFactory>& factory,
       SettingsChangedCallback observer,
       std::map<settings_namespace::Namespace,
-               raw_ptr<ValueStoreCache, CtnExperimental>>* caches) override;
+               raw_ptr<ValueStoreCache, DanglingUntriaged>>* caches) override;
   MessagingDelegate* GetMessagingDelegate() override;
   void AttachWebContentsHelpers(
       content::WebContents* web_contents) const override;

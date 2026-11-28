@@ -26,10 +26,10 @@ hook called before the new RenderFrame is created so it can be picked up
 by RenderFrameCreated() on the same call stack.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 834fcf961e586d3cc375610186db54e81ed6c1b9..00e658f90d83366ee6bd230284a7be9282c80e23 100644
+index e81773c4c6be7deb0c78f275432a75c7d9cfdcfd..ab11d00f6ced6b626b7823b6db9ecf3615b85147 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -11194,7 +11194,12 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -11198,7 +11198,12 @@ void RenderFrameHostImpl::CreateNewWindow(
        new_main_rfh->GetSiteInstance()->browsing_instance_token(),
        delegate_->GetColorProviderColorMaps(),
        /*widget_screen_rect=*/std::nullopt,
@@ -44,18 +44,18 @@ index 834fcf961e586d3cc375610186db54e81ed6c1b9..00e658f90d83366ee6bd230284a7be92
    new_main_rfh->render_view_host()->RenderViewCreated(new_main_rfh);
  
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 0c368f0f665341d6f1bb847afa30b0fe399bd824..84a34dc576000b73d46cf70393eeb14f19ebf441 100644
+index f92cf76bb7eecac6b7aaa6db45da25878199a6a6..3938de2ab8bc51929f6c4e91170e3b864882ab10 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -13,6 +13,7 @@ import "content/public/common/window_container_type.mojom";
+@@ -12,6 +12,7 @@ import "content/public/common/extra_mojo_js_features.mojom";
+ import "content/public/common/window_container_type.mojom";
  import "ipc/constants.mojom";
- import "mojo/public/mojom/base/file_path.mojom";
  import "mojo/public/mojom/base/time.mojom";
 +import "mojo/public/mojom/base/big_buffer.mojom";
  import "mojo/public/mojom/base/unguessable_token.mojom";
  import "skia/public/mojom/skcolor.mojom";
  import "services/network/public/mojom/content_security_policy.mojom";
-@@ -676,6 +677,14 @@ struct CreateNewWindowReply {
+@@ -651,6 +652,14 @@ struct CreateNewWindowReply {
    // Initial window geometry.
    gfx.mojom.Rect? widget_screen_rect;
    gfx.mojom.Rect? window_screen_rect;
@@ -71,10 +71,10 @@ index 0c368f0f665341d6f1bb847afa30b0fe399bd824..84a34dc576000b73d46cf70393eeb14f
  
  // A per-navigation interface passed along with the BeginNavigation call, used
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index b8ed29f6d5d66207fb7ff8d662564a725a098065..30a6151f9092f9b190a3b1dbffb25e79891dbe79 100644
+index a80631c9e2704c1256e4978601089b8bcdb65bbf..ba4dcdf05f9c9c2e0d953490855c1769f4a48e6f 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -850,6 +850,13 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -840,6 +840,13 @@ bool ContentBrowserClient::CanCreateWindow(
    return true;
  }
  
@@ -89,7 +89,7 @@ index b8ed29f6d5d66207fb7ff8d662564a725a098065..30a6151f9092f9b190a3b1dbffb25e79
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 4f92a1edf762ad3233af38f0346ad70e417bd22a..1fb6e139821da1b0419820c2e41fa02cdea87673 100644
+index 1fb25661403e6eb1c306a1fda32ba34630425257..9773423c43de47dc158fea22efdd10cbd2f79d18 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -61,6 +61,7 @@
@@ -100,7 +100,7 @@ index 4f92a1edf762ad3233af38f0346ad70e417bd22a..1fb6e139821da1b0419820c2e41fa02c
  #include "mojo/public/cpp/bindings/pending_remote.h"
  #include "mojo/public/cpp/bindings/remote.h"
  #include "mojo/public/cpp/system/message_pipe.h"
-@@ -1328,6 +1329,17 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1312,6 +1313,17 @@ class CONTENT_EXPORT ContentBrowserClient {
        bool opener_suppressed,
        bool* no_javascript_access);
  
@@ -119,7 +119,7 @@ index 4f92a1edf762ad3233af38f0346ad70e417bd22a..1fb6e139821da1b0419820c2e41fa02c
    // The delegate will be owned by the manager. It's valid to return nullptr.
    virtual SpeechRecognitionManagerDelegate*
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index db698a9a9adfd9bd2dfc8dd29932b3e4b7764f73..9088b206b2101b8e8b101d5a75809308f1b0c3d2 100644
+index 57377ee1fac910e95da3cfad732123e77af01537..4e5a8304a73b4f5fe3e6dc52b4fba719f275d08b 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
 @@ -24,6 +24,7 @@
@@ -148,10 +148,10 @@ index db698a9a9adfd9bd2dfc8dd29932b3e4b7764f73..9088b206b2101b8e8b101d5a75809308
    // `outermost_origin` is only set if it is an extension scheme, otherwise
    // it will be null. It is null to avoid leaking unnecessary information into
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 08490a7cecab12c2496405460607ec33139c62f8..7448c8ff5cef52fd1439decc103769a9f6ff7339 100644
+index db4f9cfb4ec08039faa2df9930e176835762464f..cf522d4e1ba6bec2cef2c7db8d8f1f9595c00116 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6920,6 +6920,14 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6773,6 +6773,14 @@ WebView* RenderFrameImpl::CreateNewWindow(
      return nullptr;
    }
  

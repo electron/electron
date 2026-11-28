@@ -17,7 +17,7 @@ as this patch already did in sandboxes.
 Upstream bug: https://issues.chromium.org/issues/554905106
 
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-index a850af1a7626c7cb62593c424058993829e45e9e..6e330c794e4278dc8c6757889f10407096202411 100644
+index 62df60a6ea945dcf62e047c02142b619abab2048..59091b7f7456076d45e53dd695aacfe11c980c34 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 @@ -30,7 +30,6 @@
@@ -53,7 +53,7 @@ index a850af1a7626c7cb62593c424058993829e45e9e..6e330c794e4278dc8c6757889f104070
    return CreateSessionBus();
  }
  
-@@ -353,17 +351,11 @@ StatusIconLinuxDbus::~StatusIconLinuxDbus() {
+@@ -357,17 +355,11 @@ StatusIconLinuxDbus::~StatusIconLinuxDbus() {
    watcher_ = nullptr;
  
    if (bus_) {

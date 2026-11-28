@@ -26,7 +26,7 @@ behavior for Chrome and other embedders.
 Fixes: https://github.com/electron/electron/issues/51035
 
 diff --git a/content/browser/devtools/devtools_http_handler.cc b/content/browser/devtools/devtools_http_handler.cc
-index 4cb4ec6ea27ac909b2196cf3704b4116768764a1..47c7760641be7fee6b73e1b89162904edf1ca879 100644
+index 55b08d0ecda1f9bbba4b84344a309ea15f6a4c8d..8c1827cd4d7e5677bee366aa0db21c6006f9c325 100644
 --- a/content/browser/devtools/devtools_http_handler.cc
 +++ b/content/browser/devtools/devtools_http_handler.cc
 @@ -566,7 +566,8 @@ std::string DevToolsHttpHandler::GetFrontendURLInternal(
@@ -40,10 +40,10 @@ index 4cb4ec6ea27ac909b2196cf3704b4116768764a1..47c7760641be7fee6b73e1b89162904e
      frontend_url = "/devtools/inspector.html";
    } else {
 diff --git a/content/public/browser/devtools_manager_delegate.cc b/content/public/browser/devtools_manager_delegate.cc
-index d25e534bb725f75b901b8013188f26fb987ac427..2d4b98407aa75bbe1dfe425a9374426980394931 100644
+index 66a03911bb1bf48866d966f1e09bce09fe59610e..47472649900eb40c02e57dba6c69648e9b83a645 100644
 --- a/content/public/browser/devtools_manager_delegate.cc
 +++ b/content/public/browser/devtools_manager_delegate.cc
-@@ -126,6 +126,10 @@ bool DevToolsManagerDelegate::HasBundledFrontendResources() {
+@@ -129,6 +129,10 @@ bool DevToolsManagerDelegate::HasBundledFrontendResources() {
    return false;
  }
  
@@ -55,10 +55,10 @@ index d25e534bb725f75b901b8013188f26fb987ac427..2d4b98407aa75bbe1dfe425a93744269
    return false;
  }
 diff --git a/content/public/browser/devtools_manager_delegate.h b/content/public/browser/devtools_manager_delegate.h
-index 9f66813915d19e7bb187caccba94c921ee5a0183..94804ad64ecc8af869a7465e59e04919fe54fb1c 100644
+index efa1830a0439d7098a1e9596fc078a532690a6a2..0d51721ce2d349f3cbef1fe7826bef0dd160230a 100644
 --- a/content/public/browser/devtools_manager_delegate.h
 +++ b/content/public/browser/devtools_manager_delegate.h
-@@ -173,6 +173,13 @@ class CONTENT_EXPORT DevToolsManagerDelegate {
+@@ -183,6 +183,13 @@ class CONTENT_EXPORT DevToolsManagerDelegate {
    // Returns whether frontend resources are bundled within the binary.
    virtual bool HasBundledFrontendResources();
  

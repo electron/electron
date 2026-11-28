@@ -56,9 +56,8 @@ namespace {
 // padding, so encode credential IDs and user handles the same way to keep the
 // event payload string-comparable to values returned by navigator.credentials.
 std::string Base64UrlEncodeNoPad(base::span<const uint8_t> input) {
-  std::string out;
-  base::Base64UrlEncode(input, base::Base64UrlEncodePolicy::OMIT_PADDING, &out);
-  return out;
+  return base::Base64UrlEncode(input,
+                               base::Base64UrlEncodePolicy::OMIT_PADDING);
 }
 
 std::string CredentialIdFor(

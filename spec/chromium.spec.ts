@@ -2543,9 +2543,11 @@ describe('chromium features', () => {
         expect(calls).toHaveLength(1);
         // Filters are a(sa(us)): a name and its (type, glob) patterns, where
         // type 0 is a glob. Chromium adds an "All Files" filter after them.
+        // The name lists the patterns after the description
+        // (https://chromium-review.googlesource.com/c/chromium/src/+/8866586).
         const options = getLoggedOptions(calls[0]);
         const customFilter = [
-          'Custom Files',
+          'Custom Files (*.png, *.txt)',
           [
             [0, '*.[pP][nN][gG]'],
             [0, '*.[tT][xX][tT]']

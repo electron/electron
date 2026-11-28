@@ -42,7 +42,7 @@ index 492f0c4c485f9283bd6c43e2223dcfd4921f6089..7db481f512ac3d02a7d02ca1c93b495b
              &GetAssertionOperation::PromptTouchIdDone,
              // Safe to use Unretained because `touch_id_context_` is owned by
 diff --git a/device/fido/mac/make_credential_operation.mm b/device/fido/mac/make_credential_operation.mm
-index 21560e3704279e7720e0651262934d3b39f71775..0d6b25e513f5361b6c188ba18f41ef0dd3868a8f 100644
+index be034e451a333fc69e31095fdfdab7496a6e191a..7983860c71bd01c58ae569fd955d6b0ec139f4fa 100644
 --- a/device/fido/mac/make_credential_operation.mm
 +++ b/device/fido/mac/make_credential_operation.mm
 @@ -56,9 +56,19 @@

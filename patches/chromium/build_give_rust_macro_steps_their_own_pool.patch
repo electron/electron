@@ -38,10 +38,10 @@ index 6f3bc67d1fa38724f7c475a1160c1e9c7814a53a..8fa1b59b0e5ae693028943e83b31b2fd
      depth = action_pool_depth
    }
 diff --git a/build/toolchain/gcc_toolchain.gni b/build/toolchain/gcc_toolchain.gni
-index 747bb03f96703868ccf6db92ea1fb01d16867a7a..4910842f48a4131402e2eb26492011747582d090 100644
+index 3e6143c786273d9ec72ae9609fe7fc8c9f6b0246..084b95949a45064e01ea34b7fb241d43cdc6a838 100644
 --- a/build/toolchain/gcc_toolchain.gni
 +++ b/build/toolchain/gcc_toolchain.gni
-@@ -868,7 +868,7 @@ template("single_gcc_toolchain") {
+@@ -876,7 +876,7 @@ template("single_gcc_toolchain") {
          dllname = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
          depfile = "$dllname.d"
          rspfile = rustc_rsp_path

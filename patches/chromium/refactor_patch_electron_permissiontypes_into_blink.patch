@@ -6,69 +6,57 @@ Subject: refactor: patch electron PermissionTypes into blink
 6387077: [PermissionOptions] Generalize PermissionRequestDescription | https://chromium-review.googlesource.com/c/chromium/src/+/6387077
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index a9726d11467131d10f33e509de07a37eefe3fdac..d893fd4f18dba321989c59686c9422da24878843 100644
+index 490e15d65cd408696412e2456cfefc5d339f40be..18a96c40ac6907bbc81e03acd195eecd73abfd55 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -603,9 +603,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
-       return ContentSettingsType::LOCAL_NETWORK;
-     case PermissionType::LOOPBACK_NETWORK:
-       return ContentSettingsType::LOOPBACK_NETWORK;
--    case PermissionType::GEOLOCATION_APPROXIMATE:
--    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:    case PermissionType::NUM:
+@@ -614,7 +614,16 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+     case PermissionType::PUBLIC_KEY_CREDENTIALS_REMOTE_CLIENT_DATA_JSON:
+       return ContentSettingsType::
+           PUBLIC_KEY_CREDENTIALS_REMOTE_CLIENT_DATA_JSON;
 +    // Permissions added by Electron
-+    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
+     case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
 +    case PermissionType::ELECTRON_FULLSCREEN:
 +    case PermissionType::FILE_SYSTEM:
 +    case PermissionType::HID:
 +    case PermissionType::OPEN_EXTERNAL:
 +    case PermissionType::SERIAL:
 +    case PermissionType::USB:
-       break;
++      break;
 +
-+    case PermissionType::NUM:      break;
+     case PermissionType::NUM:
+       break;
    }
- 
-   return ContentSettingsType::DEFAULT;
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index e2bd99590e51b0ef5911507f294bdeb7985232f7..602de8c660ea7c18f45d8741949bb1052f2943af 100644
+index e9b6a4fccfda7a90ac9a93379d54d23cb67de1a3..99a533f52a0cb5414dc233763fe40136010488f5 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
-@@ -96,9 +96,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
-     case PermissionType::LOCAL_NETWORK_ACCESS:
+@@ -97,7 +97,14 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
      case PermissionType::LOCAL_NETWORK:
      case PermissionType::LOOPBACK_NETWORK:
--    case PermissionType::GEOLOCATION_APPROXIMATE:
--    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:      return std::nullopt;
--  }
+     case PermissionType::PUBLIC_KEY_CREDENTIALS_REMOTE_CLIENT_DATA_JSON:
 +    // Permissions added by Electron
-+    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
+     case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
 +    case PermissionType::FILE_SYSTEM:
 +    case PermissionType::ELECTRON_FULLSCREEN:
 +    case PermissionType::HID:
 +    case PermissionType::OPEN_EXTERNAL:
 +    case PermissionType::SERIAL:
 +    case PermissionType::USB:
-+      return std::nullopt;  }
+       return std::nullopt;
+   }
  }
- 
- #if !BUILDFLAG(IS_ANDROID)
 diff --git a/content/browser/permissions/permission_descriptor_util.cc b/content/browser/permissions/permission_descriptor_util.cc
-index 32e63aa8a9e72f761a2413e76f4ff4bd25cc3b92..028072df25a08937585cbd9ab4aa3b622752b65b 100644
+index 02db0c057df45b1e495d45a5b27b4085947c03ba..8d313b66f13e1ac29a7e7d175d047a6eb00f2128 100644
 --- a/content/browser/permissions/permission_descriptor_util.cc
 +++ b/content/browser/permissions/permission_descriptor_util.cc
-@@ -177,13 +177,27 @@ content::PermissionDescriptorUtil::CreatePermissionDescriptorForPermissionType(
-     case blink::PermissionType::LOOPBACK_NETWORK:
+@@ -181,9 +181,26 @@ content::PermissionDescriptorUtil::CreatePermissionDescriptorForPermissionType(
        return CreatePermissionDescriptor(
-           blink::mojom::PermissionName::LOOPBACK_NETWORK);
--    case blink::PermissionType::GEOLOCATION_APPROXIMATE:
--      return CreatePermissionDescriptor(
--          blink::mojom::PermissionName::GEOLOCATION_APPROXIMATE);
+           blink::mojom::PermissionName::
+               PUBLIC_KEY_CREDENTIALS_REMOTE_CLIENT_DATA_JSON);
 +    // Permissions added by Electron
      case blink::PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
        return CreatePermissionDescriptor(
--          blink::mojom::PermissionName::DEPRECATED_SYNC_CLIPBOARD_READ);    case blink::PermissionType::NUM:
--      NOTREACHED();
-+          blink::mojom::PermissionName::DEPRECATED_SYNC_CLIPBOARD_READ);
+           blink::mojom::PermissionName::DEPRECATED_SYNC_CLIPBOARD_READ);
 +    case blink::PermissionType::FILE_SYSTEM:
 +      return CreatePermissionDescriptor(
 +          blink::mojom::PermissionName::FILE_SYSTEM);
@@ -85,24 +73,17 @@ index 32e63aa8a9e72f761a2413e76f4ff4bd25cc3b92..028072df25a08937585cbd9ab4aa3b62
 +    case blink::PermissionType::USB:
 +      return CreatePermissionDescriptor(blink::mojom::PermissionName::USB);
 +
-+    case blink::PermissionType::NUM:      NOTREACHED();
+     case blink::PermissionType::NUM:
+       NOTREACHED();
    }
-   NOTREACHED();
- }
 diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_party/blink/common/permissions/permission_utils.cc
-index 51281321d37f69499e06072509fa9aa704b33a85..69c5c6f349146a658ca90f24e403933ef974606a 100644
+index 3f28fad6e5c2e838d74410935201a1d83bff7d6e..9e754aea8526cb87c673e9dc0d7fb0c244956406 100644
 --- a/third_party/blink/common/permissions/permission_utils.cc
 +++ b/third_party/blink/common/permissions/permission_utils.cc
-@@ -108,11 +108,21 @@ std::string GetPermissionString(PermissionType permission) {
-       return "LocalNetwork";
-     case PermissionType::LOOPBACK_NETWORK:
-       return "LoopbackNetwork";
--    case PermissionType::GEOLOCATION_APPROXIMATE:
--      return "GeolocationApproximate";
+@@ -112,6 +112,18 @@ std::string GetPermissionString(PermissionType permission) {
+       return "PublicKeyCredentialsRemoteClientDataJson";
      case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
--      return "DeprecatedSyncClipboardRead";    case PermissionType::NUM:
--      NOTREACHED();
-+      return "DeprecatedSyncClipboardRead";
+       return "DeprecatedSyncClipboardRead";
 +    case PermissionType::FILE_SYSTEM:
 +      return "FileSystem";
 +    case PermissionType::ELECTRON_FULLSCREEN:
@@ -115,11 +96,10 @@ index 51281321d37f69499e06072509fa9aa704b33a85..69c5c6f349146a658ca90f24e403933e
 +      return "Serial";
 +    case PermissionType::USB:
 +      return "USB";
-+    case PermissionType::NUM:      NOTREACHED();
+     case PermissionType::NUM:
+       NOTREACHED();
    }
-   NOTREACHED();
- }
-@@ -190,7 +200,15 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
+@@ -194,7 +206,15 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
      case PermissionType::NOTIFICATIONS:
      case PermissionType::KEYBOARD_LOCK:
      case PermissionType::POINTER_LOCK:
@@ -135,10 +115,10 @@ index 51281321d37f69499e06072509fa9aa704b33a85..69c5c6f349146a658ca90f24e403933e
        return std::nullopt;
  
      case PermissionType::NUM:
-@@ -366,6 +384,21 @@ std::optional<PermissionType> PermissionDescriptorInfoToPermissionType(
-       return PermissionType::WEB_PRINTING;
-     case PermissionName::SMART_CARD:
+@@ -372,6 +392,21 @@ std::optional<PermissionType> PermissionDescriptorInfoToPermissionType(
        return PermissionType::SMART_CARD;
+     case PermissionName::PUBLIC_KEY_CREDENTIALS_REMOTE_CLIENT_DATA_JSON:
+       return PermissionType::PUBLIC_KEY_CREDENTIALS_REMOTE_CLIENT_DATA_JSON;
 +    // Permissions added by Electron
 +    case PermissionName::DEPRECATED_SYNC_CLIPBOARD_READ:
 +      return PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ;
@@ -158,18 +138,18 @@ index 51281321d37f69499e06072509fa9aa704b33a85..69c5c6f349146a658ca90f24e403933e
  }
  
 diff --git a/third_party/blink/public/common/permissions/permission_utils.h b/third_party/blink/public/common/permissions/permission_utils.h
-index c0672a2c9ddd9b9566acab1be1a63b33c37a6796..e430dc3a20f5b2c508ebf09e3472464d18908113 100644
+index 6c6c0acdbf65349e540b7bb230fa4f6658616f88..31abce40537917476493f8e62e2bcf08e477feb9 100644
 --- a/third_party/blink/public/common/permissions/permission_utils.h
 +++ b/third_party/blink/public/common/permissions/permission_utils.h
-@@ -69,8 +69,17 @@ enum class PermissionType {
-   LOCAL_NETWORK = 44,
+@@ -70,9 +70,17 @@ enum class PermissionType {
    LOOPBACK_NETWORK = 45,
    GEOLOCATION_APPROXIMATE = 46,
--  DEPRECATED_SYNC_CLIPBOARD_READ = 47,
+   PUBLIC_KEY_CREDENTIALS_REMOTE_CLIENT_DATA_JSON = 47,
+-  DEPRECATED_SYNC_CLIPBOARD_READ = 48,
+ 
 -  // Always keep this at the end.
-+
 +  // Permissions added by Electron
-+  ELECTRON_FIRST = 47,
++  ELECTRON_FIRST = 48,
 +  DEPRECATED_SYNC_CLIPBOARD_READ = ELECTRON_FIRST,
 +  FILE_SYSTEM,
 +  ELECTRON_FULLSCREEN,
@@ -182,35 +162,35 @@ index c0672a2c9ddd9b9566acab1be1a63b33c37a6796..e430dc3a20f5b2c508ebf09e3472464d
    MIN_VALUE = MIDI_SYSEX,
  };
 diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third_party/blink/public/mojom/permissions/permission.mojom
-index 34a617acec16daaa1b8736e6127e6d2d7e2e644b..fddab72482b3a6d76737ca85b14fe6e074bcefa5 100644
+index 5d1b39f329962a8a5a45f6c89a229bf996bcb428..6ed9b570f03a757be5166e4bc66bf15cc3228ec1 100644
 --- a/third_party/blink/public/mojom/permissions/permission.mojom
 +++ b/third_party/blink/public/mojom/permissions/permission.mojom
-@@ -46,8 +46,16 @@ enum PermissionName {
-   WEB_PRINTING,
+@@ -47,9 +47,16 @@ enum PermissionName {
    SMART_CARD,
    GEOLOCATION_APPROXIMATE,
--  DEPRECATED_SYNC_CLIPBOARD_READ};
- 
+   PUBLIC_KEY_CREDENTIALS_REMOTE_CLIENT_DATA_JSON,
++
 +  // Permissions added by Electron
-+  DEPRECATED_SYNC_CLIPBOARD_READ,
+   DEPRECATED_SYNC_CLIPBOARD_READ,
 +  FILE_SYSTEM,
 +  ELECTRON_FULLSCREEN,
 +  HID,
 +  OPEN_EXTERNAL,
 +  SERIAL,
 +  USB
-+};
+ };
+-
  struct MidiPermissionDescriptor {
    bool sysex;
  };
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index 2e5f04a8ad48da0ae2e1a8613b3a59da80a43070..818aaa0732aa8b03e35ca2a10811b57baf325707 100644
+index 832cf37496d01b4177b3f98cce187750a0921a97..3f3f8cf5a5c6d5a52b68f40ab78d4235a60b73c0 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-@@ -162,8 +162,22 @@ String PermissionNameToString(PermissionName name) {
-       return "web-printing";
-     case PermissionName::SMART_CARD:
+@@ -164,8 +164,22 @@ String PermissionNameToString(PermissionName name) {
        return "smart-card";
+     case PermissionName::PUBLIC_KEY_CREDENTIALS_REMOTE_CLIENT_DATA_JSON:
+       return "publickey-credentials-remote-client-data-json";
 +
 +    // Permissions added by Electron
      case PermissionName::DEPRECATED_SYNC_CLIPBOARD_READ:

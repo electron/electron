@@ -127,7 +127,7 @@ void ElectronExtensionsAPIClient::AddAdditionalValueStoreCaches(
     const scoped_refptr<value_store::ValueStoreFactory>& factory,
     SettingsChangedCallback observer,
     std::map<settings_namespace::Namespace,
-             raw_ptr<ValueStoreCache, CtnExperimental>>* caches) {
+             raw_ptr<ValueStoreCache, DanglingUntriaged>>* caches) {
   // Add support for chrome.storage.sync. There is no sync service in
   // Electron, so the cache is backed by a second local store, the same as
   // Chrome when sync is disabled.

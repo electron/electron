@@ -215,6 +215,9 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
       return StringToV8(isolate, "loopback-network");
     case blink::PermissionType::GEOLOCATION_APPROXIMATE:
       return StringToV8(isolate, "geolocation-approximate");
+    case blink::PermissionType::PUBLIC_KEY_CREDENTIALS_REMOTE_CLIENT_DATA_JSON:
+      return StringToV8(isolate,
+                        "publickey-credentials-remote-client-data-json");
 
     // Permissions added by Electron
     case blink::PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:

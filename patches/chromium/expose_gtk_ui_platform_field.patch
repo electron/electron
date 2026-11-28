@@ -10,10 +10,10 @@ This patch should be proposed upstream.
 Ref: https://chromium-review.googlesource.com/c/chromium/src/+/7237910 "7237910: Remove g_gtk_ui global"
 
 diff --git a/ui/gtk/gtk_ui.h b/ui/gtk/gtk_ui.h
-index f4bd52dc69d51178323b59d1210f59bb01998cd7..9f655ed4b612d3d0a0a7be7c3d054030e22dab80 100644
+index aba0520c4a480870f737c0545760f35d7c465f56..d78a6562caeee2ba5c21d4a5c98c3efe4eab9146 100644
 --- a/ui/gtk/gtk_ui.h
 +++ b/ui/gtk/gtk_ui.h
-@@ -53,6 +53,8 @@ class GtkUi : public ui::LinuxUiAndTheme {
+@@ -54,6 +54,8 @@ class GtkUi : public ui::LinuxUiAndTheme {
  
    ~GtkUi() override;
  

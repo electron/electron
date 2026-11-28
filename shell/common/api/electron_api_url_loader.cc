@@ -170,6 +170,7 @@ class BufferDataSource : public mojo::DataPipeProducer::DataSource {
     tgt.first(n_copied).copy_from(src.first(n_copied));
     return ReadResult{.bytes_read = n_copied};
   }
+  bool MayInspectReadBuffer() const override { return false; }
 
   std::vector<char> buffer_;
 };

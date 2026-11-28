@@ -32,7 +32,7 @@ index dad4fbbf16f060a76bc7842135506f30aed7ffc0..d874d4b1e4079b392ba7652ea6bfc7de
        "NCRYPTO_ENGINE_COMPAT=1",
        "OPENSSL_SUPPRESS_DEPRECATED",
 diff --git a/unofficial.gni b/unofficial.gni
-index 84908a3564722fc4ff445376856114def1faab65..c36e685f22192304c84db923cb8f41647c010142 100644
+index 102fceb9cee119b1a2359de35bed1043ad78be35..f9326ace1628d4b6733f15c5f348448fd11a22bd 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -154,7 +154,10 @@ template("node_gn_build") {
@@ -47,7 +47,7 @@ index 84908a3564722fc4ff445376856114def1faab65..c36e685f22192304c84db923cb8f4164
      public_configs = [
        ":node_external_config",
        "deps/googletest:googletest_config",
-@@ -383,6 +386,7 @@ template("node_gn_build") {
+@@ -382,6 +385,7 @@ template("node_gn_build") {
        "tools",
        get_label_info(node_simdutf_path, "dir"),
      ]

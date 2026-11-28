@@ -28,17 +28,21 @@ again.
 This should be upstreamed.
 
 diff --git a/src/snapshot/serializer.cc b/src/snapshot/serializer.cc
-index e67b7640006373001d734780f45eda667545979a..7e048dbb257e39cad2783fb7e64223e4441763a8 100644
+index f927bc89c35a5cba953301e8653cf3305a18990e..11ff0db45d005176f5fc8530b64c8396cb8fe6d8 100644
 --- a/src/snapshot/serializer.cc
 +++ b/src/snapshot/serializer.cc
-@@ -1405,10 +1405,14 @@ void Serializer::ObjectSerializer::VisitTrustedPointer(
+@@ -1434,14 +1434,18 @@ void Serializer::ObjectSerializer::VisitTrustedPointer(
    CHECK(IsHeapObject(*slot_value));
    bytes_processed_so_far_ += kTrustedPointerSize;
  
 -  // Currently we cannot see pending objects here, but we may need to support
 -  // them in the future. They should already be supported by the deserializer.
 -  CHECK(!serializer_->SerializePendingObject(*slot_value));
-   sink_->Put(kTrustedPointerPrefix, "TrustedPointer");
+   // Split snapshots serialize exposed trusted objects in the trusted section
+   // and reference them with kTrustedExportRef.
+   if (serializer_->trusted_serializer() == nullptr) {
+     sink_->Put(kTrustedPointerPrefix, "TrustedPointer");
+   }
 +  // The referenced object may already be pending if an earlier reference to
 +  // it was deferred by ObjectSerializer::Serialize(), e.g. a RegExpData shared
 +  // by several JSRegExp objects that was first reached at the maximum
