@@ -517,3 +517,4 @@ cherry-pick-03d05bbe1d20.patch
 cherry-pick-6d070361d55e.patch
 cherry-pick-28e2d315f844.patch
 cherry-pick-73c78a52d2b7.patch
+fix_x11_keyboard_mapping_after_xkb_changes.patch
