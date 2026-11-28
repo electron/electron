@@ -20,10 +20,20 @@ This could be upstreamed if Chrome ever wants a combined picker, but
 Chrome itself has no caller for it today.
 
 diff --git a/content/browser/media/capture/native_screen_capture_picker_mac.mm b/content/browser/media/capture/native_screen_capture_picker_mac.mm
-index 842e066fa1b440c0ed6a5948901d7683c409dd32..6ef955c94b10aa1cadb672024fe0d1f915c355f0 100644
+index 630223df82bb5ceb9bfc8431706e98b3eea9f238..1083c929e87597133d912a592df8b38320c70cab 100644
 --- a/content/browser/media/capture/native_screen_capture_picker_mac.mm
 +++ b/content/browser/media/capture/native_screen_capture_picker_mac.mm
-@@ -435,7 +435,8 @@ void API_AVAILABLE(macos(14.0))
+@@ -340,6 +340,9 @@ void LogSessionEvent(SCContentSharingPickerSessionEvent event) {
+     case DesktopMediaID::Type::TYPE_WINDOW:
+       return "Window";
+     case DesktopMediaID::Type::TYPE_NONE:
++      // No histogram variant exists for the combined picker; report it as a
++      // window picker, matching the Log*ToUma helpers above.
++      return "Window";
+     case DesktopMediaID::Type::TYPE_WEB_CONTENTS:
+       NOTREACHED();
+   }
+@@ -503,7 +506,8 @@ void API_AVAILABLE(macos(14.0))
    CHECK(device_task_runner_->RunsTasksInCurrentSequence(),
          base::NotFatalUntil::M160);
    CHECK(type == DesktopMediaID::Type::TYPE_SCREEN ||
@@ -31,9 +41,9 @@ index 842e066fa1b440c0ed6a5948901d7683c409dd32..6ef955c94b10aa1cadb672024fe0d1f9
 +        type == DesktopMediaID::Type::TYPE_WINDOW ||
 +        type == DesktopMediaID::Type::TYPE_NONE);
    if (@available(macOS 14.0, *)) {
-     if (picker_callback_) {
-       // The system picker is already showing for another request; reject this
-@@ -500,7 +501,19 @@ void API_AVAILABLE(macos(14.0))
+     LogPickerRequestTracking(type,
+                              SCContentSharingPickerRequestTracking::kOpened);
+@@ -575,7 +579,19 @@ void API_AVAILABLE(macos(14.0))
      }
      config.excludedWindowIDs = excluded_window_ids;
      NSNumber* max_stream_count = @(kMaxContentShareCountValue.Get());
@@ -54,7 +64,7 @@ index 842e066fa1b440c0ed6a5948901d7683c409dd32..6ef955c94b10aa1cadb672024fe0d1f9
        config.allowedPickerModes = SCContentSharingPickerModeSingleDisplay;
        picker.defaultConfiguration = config;
        picker.maximumStreamCount = max_stream_count;
-@@ -635,7 +648,10 @@ void API_AVAILABLE(macos(14.0))
+@@ -711,7 +727,10 @@ void API_AVAILABLE(macos(14.0))
    Source source;
    source.id = session_id;
    if (@available(macOS 15.2, *)) {
