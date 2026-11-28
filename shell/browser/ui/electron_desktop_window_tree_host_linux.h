@@ -44,6 +44,8 @@ class ElectronDesktopWindowTreeHostLinux
 
   // views::DesktopWindowTreeHostLinux:
   void UpdateFrameHints() override;
+
+  // views::DesktopWindowTreeHostPlatform:
   void SetShape(
       std::unique_ptr<views::Widget::ShapeRects> native_shape) override;
 

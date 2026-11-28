@@ -15,7 +15,6 @@
 #include "shell/browser/native_window_views.h"
 #include "ui/aura/window_delegate.h"
 #include "ui/base/hit_test.h"
-#include "ui/compositor/compositor.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/linux/linux_ui.h"
@@ -251,18 +250,17 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
   } else if (!x11_util::IsX11() && shape_rects_.has_value()) {
     // On Wayland, PlatformWindow::SetShape() is a no-op, but the input region
     // can be restricted using wl_surface.set_input_region so mouse events
-    // outside the shape fall through to the window below.
-    if (shape_rects_->empty()) {
-      platform_window()->SetInputRegion(std::nullopt);
-    } else {
-      float scale = device_scale_factor();
-      std::vector<gfx::Rect> input_region_px;
-      input_region_px.reserve(shape_rects_->size());
-      for (const auto& rect : *shape_rects_) {
-        input_region_px.push_back(gfx::ScaleToEnclosingRect(rect, scale));
-      }
-      platform_window()->SetInputRegion(input_region_px);
+    // outside the shape fall through to the window below. This has no effect
+    // on framed windows when the compositor draws the decorations
+    // (server-side decorations), since WaylandSurface::set_input_region
+    // returns early for windows using a native frame.
+    float scale = device_scale_factor();
+    std::vector<gfx::Rect> input_region_px;
+    input_region_px.reserve(shape_rects_->size());
+    for (const auto& rect : *shape_rects_) {
+      input_region_px.push_back(gfx::ScaleToEnclosingRect(rect, scale));
     }
+    platform_window()->SetInputRegion(input_region_px);
   }
 
   SizeConstraintsChanged();
@@ -278,12 +276,6 @@ void ElectronDesktopWindowTreeHostLinux::SetShape(
 
   views::DesktopWindowTreeHostLinux::SetShape(std::move(native_shape));
   UpdateFrameHints();
-
-  if (!x11_util::IsX11()) {
-    if (auto* compositor = this->compositor()) {
-      compositor->ScheduleFullRedraw();
-    }
-  }
 }
 
 void ElectronDesktopWindowTreeHostLinux::DispatchEvent(ui::Event* event) {
