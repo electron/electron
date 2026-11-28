@@ -3726,6 +3726,19 @@ describe('BrowserWindow module', { retry: 0 }, () => {
         w.setShape([]);
       }).not.toThrow();
     });
+
+    it('can be combined with setIgnoreMouseEvents', () => {
+      const w = new BrowserWindow({ show: false, frame: false, transparent: true });
+      expect(() => {
+        w.setShape([]);
+        w.setShape([{ x: 0, y: 0, width: 100, height: 100 }]);
+        w.setIgnoreMouseEvents(true);
+        w.setIgnoreMouseEvents(false);
+        w.setShape([]);
+        w.setIgnoreMouseEvents(true);
+        w.setIgnoreMouseEvents(false);
+      }).not.toThrow();
+    });
   });
 
   describe('"useContentSize" option', () => {

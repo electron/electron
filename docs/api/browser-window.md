@@ -1427,6 +1427,14 @@ will be drawn and no mouse events will be registered. Mouse events outside of
 the region will not be received by that window, but will fall through to
 whatever is behind the window.
 
+> [!NOTE]
+> On Wayland, `setShape` only changes the window's input region: mouse events
+> outside the shape fall through to the window below, but the window is not
+> visually clipped. To get a non-rectangular appearance, use a transparent
+> window (`transparent: true`) and render the areas outside the shape as
+> transparent. `setShape` has no effect on framed windows when the compositor
+> draws the window decorations (server-side decorations).
+
 #### `win.setThumbarButtons(buttons)` _Windows_
 
 * `buttons` [ThumbarButton[]](structures/thumbar-button.md)

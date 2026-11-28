@@ -245,10 +245,37 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
 
   // setIgnoreMouseEvents(true): a 1x1 input region lets every click through
   // to the window below (X11 input shape, Wayland wl_surface input region).
-  if (native_window_view_->ignore_mouse_events())
+  if (native_window_view_->ignore_mouse_events()) {
     platform_window()->SetInputRegion(std::vector<gfx::Rect>{{0, 0, 1, 1}});
+  } else if (!x11_util::IsX11() && shape_rects_.has_value()) {
+    // On Wayland, PlatformWindow::SetShape() is a no-op, but the input region
+    // can be restricted using wl_surface.set_input_region so mouse events
+    // outside the shape fall through to the window below. This has no effect
+    // on framed windows when the compositor draws the decorations
+    // (server-side decorations), since WaylandSurface::set_input_region
+    // returns early for windows using a native frame.
+    float scale = device_scale_factor();
+    std::vector<gfx::Rect> input_region_px;
+    input_region_px.reserve(shape_rects_->size());
+    for (const auto& rect : *shape_rects_) {
+      input_region_px.push_back(gfx::ScaleToEnclosingRect(rect, scale));
+    }
+    platform_window()->SetInputRegion(input_region_px);
+  }
 
   SizeConstraintsChanged();
+}
+
+void ElectronDesktopWindowTreeHostLinux::SetShape(
+    std::unique_ptr<views::Widget::ShapeRects> native_shape) {
+  if (native_shape && !native_shape->empty()) {
+    shape_rects_ = *native_shape;
+  } else {
+    shape_rects_.reset();
+  }
+
+  views::DesktopWindowTreeHostLinux::SetShape(std::move(native_shape));
+  UpdateFrameHints();
 }
 
 void ElectronDesktopWindowTreeHostLinux::DispatchEvent(ui::Event* event) {
