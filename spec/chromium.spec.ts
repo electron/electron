@@ -676,12 +676,20 @@ describe('command line switches', () => {
       await testLocaleEnvironment({}, 'en-US');
     });
 
-    it('honors LC_ALL over an invalid LANG', async () => {
+    it('falls back to a valid LC_ALL when LANG is invalid', async () => {
       await testLocaleEnvironment({ LANG: invalidLocale, LC_ALL: 'fr_FR.UTF-8' }, 'fr');
     });
 
-    it('honors LC_MESSAGES over an invalid LANG', async () => {
+    it('falls back to a valid LC_MESSAGES when LANG is invalid', async () => {
       await testLocaleEnvironment({ LANG: invalidLocale, LC_MESSAGES: 'fr_FR.UTF-8' }, 'fr');
+    });
+
+    it('prefers LC_ALL over LANG', async () => {
+      await testLocaleEnvironment({ LANG: 'de_DE.UTF-8', LC_ALL: 'fr_FR.UTF-8' }, 'fr');
+    });
+
+    it('prefers LC_MESSAGES over LANG', async () => {
+      await testLocaleEnvironment({ LANG: 'de_DE.UTF-8', LC_MESSAGES: 'fr_FR.UTF-8' }, 'fr');
     });
 
     it('starts with an empty LC_ALL override', async () => {
