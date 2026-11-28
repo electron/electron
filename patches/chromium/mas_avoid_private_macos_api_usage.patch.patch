@@ -58,7 +58,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 05a6657395673b4e6e2be7567e8d3bbc56feab06..e587bcf714c3c6d2134f8a45fdddd78682512e5f 100644
+index 038ecd8b39cc0b1189084fefedba4159a4ef8a15..ce02486c637fe783ef71d2c8dbdf26a92604f17a 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1172,6 +1172,7 @@ component("base") {
@@ -137,10 +137,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index c47476ec63b0292d2a1348b463c3ece421433a09..2fde0dde04c8f6273bda19087e15c8de83dccc28 100644
+index 208e2977234538d38578b7b7cecbaa9b433eac64..0c4ae55279cecb355d9d7a391207d27b67995513 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -1039,6 +1039,7 @@ if (is_clang_or_gcc) {
+@@ -1049,6 +1049,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -2292,7 +2292,7 @@ index 93e90c4eba9bc9b93d68e834eb6baabeb2d0ecf0..1b90f41d05f847a94adf2f4da827b1d0
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 5c5ed9503abd20b8879323615b49670403714581..a367d93cd7faafc85d9cf45dfc8fe4611aea1c55 100644
+index f25c241aee429d85993def8ae12e69e7ae51724d..0458e029c231b750927221fdb92252d24dead38b 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -139,6 +139,12 @@ component("display") {

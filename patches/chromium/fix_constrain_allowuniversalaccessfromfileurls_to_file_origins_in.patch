@@ -101,7 +101,7 @@ index a13cd92bc70a5eb20cfc46469a6be481766d793c..b26653958baa3a35b6f9a6b4f5deee2e
    // universal access privilege.
    WeakMember<WindowAgent> universal_access_agent_;
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index b40b0d5db947baefd13891b765458d4f377cf444..c48b3f92841e527668e3e3a0e5ca428999785f47 100644
+index 85109a1dd937a488cf364039c36f619c0c2ea2ec..1ed3e08c8afb1b4625fd22e3b4b5086827f27c11 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
 @@ -2810,22 +2810,16 @@ bool ShouldReuseDOMWindow(LocalDOMWindow* window,

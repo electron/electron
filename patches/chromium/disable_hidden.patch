@@ -15,7 +15,7 @@ makes it defer main frames until the view is eventually shown. Key the
 decision off the host's visibility, as RenderWidgetHostViewMac does.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 17199fec48530ed2d8096d8eff70bc2f9485615b..4508825fea2d1e19c8f08030d18b009c969376c9 100644
+index ba45713318c9e6d6caccb2ec0b7bb2c37df6c8fb..c7041e8e887d8d2e58e7738cf836c3ebf0b7e180 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -917,6 +917,10 @@ void RenderWidgetHostImpl::WasHidden() {

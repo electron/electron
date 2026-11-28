@@ -37,7 +37,7 @@ index 93f741e20c9376c3da56eb2b0949a9df7c766c79..ac217d27eb2f916782617e606044eddd
           allow_cookies_from_browser == other.allow_cookies_from_browser &&
           include_request_cookies_with_response ==
 diff --git a/services/network/public/cpp/resource_request.h b/services/network/public/cpp/resource_request.h
-index d53c8789d5eb97a397bcee64af1f66d0f890d378..0cadf8b93cc64ec1aedb78ad4405d1b26fbbf7f2 100644
+index a1ac744c9609578a6efd55cdf9ae078fad920707..c5dfd0dbd2341d40499074aaf192cbcce8bfb4f0 100644
 --- a/services/network/public/cpp/resource_request.h
 +++ b/services/network/public/cpp/resource_request.h
 @@ -116,6 +116,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
@@ -112,10 +112,10 @@ index 2551c74d161edc11e3d4e95c858c144a063ae80a..a3d1eb8d487a207a5a9c8cdc01ae01dd
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index ad166f7290586e9d36bf0fdaa8664c5a882f0d92..aefe07521224ac8f8b4edbab15864eb72c8a7745 100644
+index 3fd6f5973f1857252c4c4e5f69265ddbc0ff2f0b..f11518f8c8e68a8b2cc2cddb0ecdacad7660b6c0 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -376,6 +376,9 @@ URLLoader::URLLoader(
+@@ -378,6 +378,9 @@ URLLoader::URLLoader(
                                    mojo::SimpleWatcher::ArmingPolicy::MANUAL,
                                    TaskRunner(request.priority)),
        per_factory_orb_state_(context.GetMutableOrbState()),
@@ -125,7 +125,7 @@ index ad166f7290586e9d36bf0fdaa8664c5a882f0d92..aefe07521224ac8f8b4edbab15864eb7
        devtools_request_id_(request.devtools_request_id),
        options_(PopulateOptions(options,
                                 factory_params_->is_orb_enabled,
-@@ -595,7 +598,7 @@ void URLLoader::SetUpUrlRequestCallbacks(
+@@ -597,7 +600,7 @@ void URLLoader::SetUpUrlRequestCallbacks(
          &URLLoader::IsSharedDictionaryReadAllowed, base::Unretained(this)));
    }
  
@@ -134,7 +134,7 @@ index ad166f7290586e9d36bf0fdaa8664c5a882f0d92..aefe07521224ac8f8b4edbab15864eb7
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1210,6 +1213,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1212,6 +1215,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
@@ -155,10 +155,10 @@ index ad166f7290586e9d36bf0fdaa8664c5a882f0d92..aefe07521224ac8f8b4edbab15864eb7
  
    if (expected_response_headers_for_synthetic_response &&
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 36daf2ec3bfb300ba5fca9a3e6c35987d16fd950..b9b4899631123f353ac50339afa0d1e1b6d7915a 100644
+index 4d90dc8989da9a4d2986f1b8da8bf93c0820b2d8..f3331b4ec88abf854b7cb788c328b7d767b88a79 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
-@@ -562,6 +562,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -571,6 +571,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
    std::unique_ptr<ResourceScheduler::ScheduledResourceRequest>
        resource_scheduler_request_handle_;
  

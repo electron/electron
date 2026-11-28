@@ -92,10 +92,10 @@ index 5ccd2402ccd59679c65272154d67025adccfbb54..744cbe4692ff0cd35563db6dca59fcfa
        return ValueEquals(a.EmptyCells(), b.EmptyCells());
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index 29451a0b96bdd109ca588ed82f190cb966210a50..d7e4117e9c6aaa37730409f52de7fa61c1764b89 100644
+index 2e724fb51eb934fd1ab36a3c8f053bc828969268..6439f2f40d936b31692acad1d3321d5675fda273 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-@@ -13086,5 +13086,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
+@@ -13074,5 +13074,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
                                           CSSValueID::kNone>(stream);
  }
  
@@ -204,7 +204,7 @@ index 3a378e7ad63d2b5c9bdaae6606ade1e10d16e5b1..9bc870fcaa5eedaf70399822bf0976f4
      // Keep the border box as the origin rect so that inset/outset contours
      // derived from it (e.g. the inner border) remain aligned to it.
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index de67e021bd497067d63a791b2cb8d96785b2ade3..f8146d69e64b1cccab2daffa6bde48bd1ad7bde0 100644
+index 3504824bddb2f154befc512bd51ec758d3586630..84976c94bed6ace8dbec1d8b6307940613035982 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
 @@ -1755,6 +1755,8 @@ component("platform") {
@@ -315,7 +315,7 @@ index aac33fed6b728961596ed73ef40caa1c711c5206..49cc2c8260ada3a5370e6cf47016b699
  
    auto draw_as_single_path = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index e377484cee143f6f832d6922c9f2c6daabe4d079..9fcf77d8b7d0053f18d92bf8be08984a657dba8f 100644
+index f742ee3afe9f6333bb2796de5d6d95ec482db631..2a12afec0900f33596db37da2d3d488716650d71 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -237,6 +237,10 @@

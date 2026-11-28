@@ -42,10 +42,10 @@ index 90cfa9056373141a20f2e86e43e33c0c0b1e5cbd..aa7c528f668d267f2e0c86c84e8c831c
        bool unadjusted_movement,
        blink::mojom::WidgetInputHandlerHost::RequestMouseLockCallback
 diff --git a/components/input/input_router_impl.cc b/components/input/input_router_impl.cc
-index d0140d4a01cb3d3e6487c03ae7a82166b0363d75..a3afc4f2f93f128c21dbc7ea30498d02d7e81b71 100644
+index e1c71350ab9a3bb238459c071d1cc8fbfc4a6ecb..c46e9d60a2d80ebb67bc05e866c44bae858e8651 100644
 --- a/components/input/input_router_impl.cc
 +++ b/components/input/input_router_impl.cc
-@@ -435,11 +435,13 @@ void InputRouterImpl::SetAutoscrollSelectionActiveInMainFrame(
+@@ -490,11 +490,13 @@ void InputRouterImpl::SetAutoscrollSelectionActiveInMainFrame(
    client_->SetAutoscrollSelectionActiveInMainFrame(autoscroll_selection);
  }
  
@@ -79,7 +79,7 @@ index 016e12288ec354905f0b172a7f8b6d8ecdff8346..ad387eaf0b1d8e07593419378315ded7
                          RequestMouseLockCallback response) override;
    // Notifies touch action filter and touch event queue whether there are
 diff --git a/components/input/render_input_router.cc b/components/input/render_input_router.cc
-index f50634d22e0b0f78a88b6e3333fe1198773167e4..ab476472853114adb5e8af378d29110c382c39ce 100644
+index 316954d52a6412eb137e0357ea99b94de2377262..df552d576da4d641a4175506e86e9752d105d704 100644
 --- a/components/input/render_input_router.cc
 +++ b/components/input/render_input_router.cc
 @@ -331,11 +331,13 @@ void RenderInputRouter::SetAutoscrollSelectionActiveInMainFrame(
@@ -152,10 +152,10 @@ index 0f7bd9afaad54ae646d47b68d1bda4ae90732f14..22fc13c747c9dc306cdf7b1d6550de32
    virtual void UnlockPointer(RenderWidgetHostImpl* render_widget_host) {}
  
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index c27130bf0472f1e5c708f8213049089aa77e0509..39cf69a864c1c40e242d1237658edeeb74d2099d 100644
+index 280a3e6c5f94fe8a3189e9ff06668e44422730dc..114fe499c6c3ade8a0e1b740a3ccc5c675d92ddf 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -3788,6 +3788,7 @@ void RenderWidgetHostImpl::SetAutoscrollSelectionActiveInMainFrame(
+@@ -3803,6 +3803,7 @@ void RenderWidgetHostImpl::SetAutoscrollSelectionActiveInMainFrame(
  }
  
  void RenderWidgetHostImpl::RequestMouseLock(
@@ -163,7 +163,7 @@ index c27130bf0472f1e5c708f8213049089aa77e0509..39cf69a864c1c40e242d1237658edeeb
      bool from_user_gesture,
      bool unadjusted_movement,
      input::InputRouterImpl::RequestMouseLockCallback response) {
-@@ -3824,7 +3825,7 @@ void RenderWidgetHostImpl::RequestMouseLock(
+@@ -3839,7 +3840,7 @@ void RenderWidgetHostImpl::RequestMouseLock(
      return;
    }
  
