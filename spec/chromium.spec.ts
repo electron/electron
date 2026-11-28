@@ -693,7 +693,7 @@ describe('command line switches', () => {
     });
 
     it('starts with an empty LC_ALL override', async () => {
-      await testLocaleEnvironment({ LANG: 'en_US.UTF-8', LC_ALL: '' }, 'en-US');
+      await testLocaleEnvironment({ LANG: 'fr_FR.UTF-8', LC_ALL: '' }, 'fr');
     });
 
     it('honors --lang with an invalid LANG', async () => {
