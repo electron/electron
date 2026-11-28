@@ -642,7 +642,7 @@ describe('command line switches', () => {
       const appPath = path.join(fixturesPath, 'api', 'locale-check');
       const result = await spawnAndWait(process.execPath, [appPath, `--set-lang=${lang}`, '--print-locale-env'], {
         env,
-        timeout: (Number(process.env.ELECTRON_SPEC_TIMEOUT) || 30_000) - 5_000      
+        timeout: getSpecTimeout() - 5_000
       });
       expect(result.signal, result.stderr).toBeNull();
       expect(result.code, result.stderr).toBe(0);
