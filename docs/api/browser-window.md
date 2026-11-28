@@ -1428,10 +1428,12 @@ the region will not be received by that window, but will fall through to
 whatever is behind the window.
 
 > [!NOTE]
-> On Linux Wayland sessions, `setShape` restricts the mouse input region so that
-> events outside the given shape fall through to the window below. Due to Wayland
-> protocol limitations, non-rectangular drawing requires a transparent window
-> (`transparent: true`).
+> On Wayland, `setShape` only changes the window's input region: mouse events
+> outside the shape fall through to the window below, but the window is not
+> visually clipped. To get a non-rectangular appearance, use a transparent
+> window (`transparent: true`) and render the areas outside the shape as
+> transparent. `setShape` has no effect on framed windows when the compositor
+> draws the window decorations (server-side decorations).
 
 #### `win.setThumbarButtons(buttons)` _Windows_
 
