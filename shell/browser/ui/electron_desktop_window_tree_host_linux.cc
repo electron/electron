@@ -270,7 +270,7 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
 
 void ElectronDesktopWindowTreeHostLinux::SetShape(
     std::unique_ptr<views::Widget::ShapeRects> native_shape) {
-  if (native_shape) {
+  if (native_shape && !native_shape->empty()) {
     shape_rects_ = *native_shape;
   } else {
     shape_rects_.reset();
