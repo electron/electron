@@ -56,7 +56,7 @@ index 387fa1e8ba750f852460124fec0cf98224aa8f9b..b9c6b82e4f3352ee8d3afaa13bd79b8a
    if (auto* configure = event.As<ConfigureNotifyEvent>()) {
      int index = ScreenIndexFromRootWindow(configure->window);
 diff --git a/ui/gfx/x/connection_unittest.cc b/ui/gfx/x/connection_unittest.cc
-index 7db0f0da5f0f5ada07c3d3f12d9f9806b3e94b65..10d0fee5be6fa5a47e3ca40496459f810726bf95 100644
+index 7db0f0da5f0f5ada07c3d3f12d9f9806b3e94b65..32fd7625e2bcf6682626a51b7166e2ca387853bc 100644
 --- a/ui/gfx/x/connection_unittest.cc
 +++ b/ui/gfx/x/connection_unittest.cc
 @@ -4,6 +4,8 @@
@@ -83,7 +83,7 @@ index 7db0f0da5f0f5ada07c3d3f12d9f9806b3e94b65..10d0fee5be6fa5a47e3ca40496459f81
 +TEST(X11ConnectionTest, XkbEventsUseSubtype) {
 +  Connection connection;
 +  ASSERT_TRUE(connection.Ready());
-+  auto extension = connection.QueryExtension({"XKEYBOARD"}).Sync();
++  auto extension = connection.QueryExtension("XKEYBOARD").Sync();
 +  ASSERT_TRUE(extension);
 +  if (!extension->present) {
 +    GTEST_SKIP() << "XKB is not available";
