@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: lousberg <25581128+p0nti@users.noreply.github.com>
-Date: Sat, 28 Nov 2026 13:48:11 +0100
+Date: Sat, 28 Nov 2026 14:12:11 +0100
 Subject: fix: refresh X11 keyboard mappings on XKB map changes
 
 Partially backport Chromium f9e103beb9c505ee81424b81f7b652eb67b33691
@@ -13,7 +13,8 @@ reported as ArrowDown while NumLock is on and its character is 2.
 This was reproduced in Electron 42.11.18 with and without Xpra.
 
 Add raw-wire regression coverage for all twelve XKB event subtypes,
-synthetic events and an unknown subtype.
+synthetic events and an unknown subtype. Also verify that a map
+notification refreshes cached keysyms after a server-side mapping update.
 
 This patch can be removed when Electron updates to Chromium containing
 f9e103beb9c505ee81424b81f7b652eb67b33691.
@@ -55,10 +56,10 @@ index 70e8628456f338139d860d0383d1dcd00061cd6a..85db797fc337221dbc2081747224de60
    if (auto* configure = event.As<ConfigureNotifyEvent>()) {
      int index = ScreenIndexFromRootWindow(configure->window);
 diff --git a/ui/gfx/x/connection_unittest.cc b/ui/gfx/x/connection_unittest.cc
-index fc451c4fbbad753f5977fd7da51d21d686d76871..4f6a567dd18eb6dbaab7f3a95551558df2f0386e 100644
+index fc451c4fbbad753f5977fd7da51d21d686d76871..9e75272699e0852483912a74896ec7b5f2031eaf 100644
 --- a/ui/gfx/x/connection_unittest.cc
 +++ b/ui/gfx/x/connection_unittest.cc
-@@ -4,11 +4,14 @@
+@@ -4,11 +4,15 @@
  
  #include "ui/gfx/x/connection.h"
  
@@ -69,11 +70,12 @@ index fc451c4fbbad753f5977fd7da51d21d686d76871..4f6a567dd18eb6dbaab7f3a95551558d
  #include "testing/gtest/include/gtest/gtest.h"
  #include "ui/gfx/x/event.h"
  #include "ui/gfx/x/future.h"
++#include "ui/gfx/x/keysyms/keysyms.h"
 +#include "ui/gfx/x/xkb.h"
  #include "ui/gfx/x/xproto.h"
  
  namespace x11 {
-@@ -38,6 +41,48 @@ TEST(X11ConnectionTest, Basic) {
+@@ -38,6 +42,95 @@ TEST(X11ConnectionTest, Basic) {
    ASSERT_TRUE(connection.Ready());
  }
  
@@ -117,6 +119,53 @@ index fc451c4fbbad753f5977fd7da51d21d686d76871..4f6a567dd18eb6dbaab7f3a95551558d
 +  Event unknown(ThrowAwaySizeRefCountedMemory::From(std::move(data)),
 +                &connection);
 +  EXPECT_EQ(unknown.As<Xkb::NewKeyboardNotifyEvent>(), nullptr);
++}
++
++TEST(X11ConnectionTest, XkbMapNotifyRefreshesKeyboardMapping) {
++  Connection connection;
++  ASSERT_TRUE(connection.Ready());
++  if (!connection.xkb().present()) {
++    GTEST_SKIP() << "XKB is not available";
++  }
++  Connection mutator;
++  ASSERT_TRUE(mutator.Ready());
++  const KeyCode keycode = connection.setup().max_keycode;
++  auto original = mutator.GetKeyboardMapping({keycode, 1}).Sync();
++  ASSERT_TRUE(original);
++  ASSERT_GT(original->keysyms_per_keycode, 0);
++  const uint32_t before = connection.KeycodeToKeysym(keycode, 0);
++  const uint32_t replacement = before == XK_F35 ? XK_F34 : XK_F35;
++
++  // Use a separate connection and do not dispatch the mapping notifications
++  // queued for `connection`: only the explicit XKB event below may refresh it.
++  auto changed =
++      mutator
++          .ChangeKeyboardMapping({
++              .keycode_count = 1,
++              .first_keycode = keycode,
++              .keysyms_per_keycode = original->keysyms_per_keycode,
++              .keysyms = std::vector<KeySym>(original->keysyms.size(),
++                                             static_cast<KeySym>(replacement)),
++          })
++          .Sync();
++  EXPECT_FALSE(changed.error);
++  EXPECT_EQ(connection.KeycodeToKeysym(keycode, 0), before);
++  connection.DispatchEvent(Event(false, Xkb::MapNotifyEvent{}));
++  EXPECT_EQ(connection.KeycodeToKeysym(keycode, 0), replacement);
++
++  // Keep all checks after the mutation nonfatal so that restoration runs even
++  // when the cache-refresh expectation fails on the unpatched implementation.
++  auto restored = mutator
++                      .ChangeKeyboardMapping({
++                          .keycode_count = 1,
++                          .first_keycode = keycode,
++                          .keysyms_per_keycode = original->keysyms_per_keycode,
++                          .keysyms = original->keysyms,
++                      })
++                      .Sync();
++  EXPECT_FALSE(restored.error);
++  connection.DispatchEvent(Event(false, Xkb::MapNotifyEvent{}));
++  EXPECT_EQ(connection.KeycodeToKeysym(keycode, 0), before);
 +}
 +
  TEST(X11ConnectionTest, Request) {
