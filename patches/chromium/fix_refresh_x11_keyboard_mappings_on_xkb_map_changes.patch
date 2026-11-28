@@ -1,0 +1,238 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: lousberg <25581128+p0nti@users.noreply.github.com>
+Date: Sat, 28 Nov 2026 14:12:12 +0100
+Subject: fix: refresh X11 keyboard mappings on XKB map changes
+
+Partially backport Chromium f9e103beb9c505ee81424b81f7b652eb67b33691
+by Thomas Anderson (https://crrev.com/c/8778792). Include only its
+XKB event classification, subscription and cached-keymap refresh fixes,
+without the navigator.keyboard.getLayoutMap() feature changes.
+
+Without map notifications an XKB type update can leave a keypad key
+reported as ArrowDown while NumLock is on and its character is 2.
+This was reproduced in Electron 42.11.18 with and without Xpra.
+
+Add raw-wire regression coverage for all twelve XKB event subtypes,
+synthetic events and an unknown subtype. Also verify that a map
+notification refreshes cached keysyms after a server-side mapping update.
+
+This patch can be removed when Electron updates to Chromium containing
+f9e103beb9c505ee81424b81f7b652eb67b33691.
+
+diff --git a/ui/events/platform/x11/x11_event_source.cc b/ui/events/platform/x11/x11_event_source.cc
+index 4306173f172b9715ae984ee795c2f76f83495c9f..2ae9d2c36612f497f8cf36d35866bafcaad8ad32 100644
+--- a/ui/events/platform/x11/x11_event_source.cc
++++ b/ui/events/platform/x11/x11_event_source.cc
+@@ -62,11 +62,14 @@ void InitializeXkb(x11::Connection* connection) {
+       }));
+ 
+   constexpr auto kXkbAllMapPartMask = static_cast<x11::Xkb::MapPart>(0xff);
++  constexpr auto kXkbEvents =
++      x11::Xkb::EventType::NewKeyboardNotify | x11::Xkb::EventType::MapNotify;
+   xkb.SelectEvents(x11::Xkb::SelectEventsRequest{
+       .deviceSpec = static_cast<x11::Xkb::DeviceSpec>(x11::Xkb::Id::UseCoreKbd),
+-      .affectWhich = x11::Xkb::EventType::NewKeyboardNotify,
+-      .selectAll = x11::Xkb::EventType::NewKeyboardNotify,
++      .affectWhich = kXkbEvents,
++      .selectAll = kXkbEvents,
+       .affectMap = kXkbAllMapPartMask,
++      .map = kXkbAllMapPartMask,
+   });
+ }
+ 
+diff --git a/ui/gfx/x/connection.cc b/ui/gfx/x/connection.cc
+index 387fa1e8ba750f852460124fec0cf98224aa8f9b..b9c6b82e4f3352ee8d3afaa13bd79b8a02e4c685 100644
+--- a/ui/gfx/x/connection.cc
++++ b/ui/gfx/x/connection.cc
+@@ -888,6 +888,10 @@ void Connection::PreDispatchEvent(const Event& event) {
+     keyboard_state_->UpdateMapping();
+   }
+ 
++  if (event.As<Xkb::MapNotifyEvent>()) {
++    keyboard_state_->UpdateMapping();
++  }
++
+   // This is adapted from XRRUpdateConfiguration.
+   if (auto* configure = event.As<ConfigureNotifyEvent>()) {
+     int index = ScreenIndexFromRootWindow(configure->window);
+diff --git a/ui/gfx/x/connection_unittest.cc b/ui/gfx/x/connection_unittest.cc
+index 7db0f0da5f0f5ada07c3d3f12d9f9806b3e94b65..10d0fee5be6fa5a47e3ca40496459f810726bf95 100644
+--- a/ui/gfx/x/connection_unittest.cc
++++ b/ui/gfx/x/connection_unittest.cc
+@@ -4,6 +4,8 @@
+ 
+ #include "ui/gfx/x/connection.h"
+ 
++#include <xcb/xcb.h>
++
+ #include "base/functional/bind.h"
+ #include "base/memory/raw_ptr.h"
+ #include "base/memory/ref_counted.h"
+@@ -16,6 +18,7 @@
+ #include "ui/gfx/x/event.h"
+ #include "ui/gfx/x/event_observer.h"
+ #include "ui/gfx/x/future.h"
++#include "ui/gfx/x/keysyms/keysyms.h"
+ #include "ui/gfx/x/shm.h"
+ #include "ui/gfx/x/xkb.h"
+ #include "ui/gfx/x/xproto.h"
+@@ -134,6 +137,95 @@ TEST(X11ConnectionTest, NewKeyboardNotifyUpdatesKeycodeRange) {
+   EXPECT_EQ(GetKeysymsForRange(connection, min_keycode, max_keycode), keysyms);
+ }
+ 
++TEST(X11ConnectionTest, XkbEventsUseSubtype) {
++  Connection connection;
++  ASSERT_TRUE(connection.Ready());
++  auto extension = connection.QueryExtension({"XKEYBOARD"}).Sync();
++  ASSERT_TRUE(extension);
++  if (!extension->present) {
++    GTEST_SKIP() << "XKB is not available";
++  }
++
++  auto check_type = [&]<typename T>() {
++    SCOPED_TRACE(T::opcode);
++    for (bool send_event : {false, true}) {
++      std::vector<uint8_t> data(sizeof(xcb_generic_event_t), 0);
++      data[0] = extension->first_event | (send_event ? 0x80 : 0);
++      data[1] = T::opcode;
++      Event event(ThrowAwaySizeRefCountedMemory::From(std::move(data)),
++                  &connection);
++      EXPECT_NE(event.As<T>(), nullptr);
++      EXPECT_EQ(event.send_event(), send_event);
++    }
++  };
++  check_type.operator()<Xkb::NewKeyboardNotifyEvent>();
++  check_type.operator()<Xkb::MapNotifyEvent>();
++  check_type.operator()<Xkb::StateNotifyEvent>();
++  check_type.operator()<Xkb::ControlsNotifyEvent>();
++  check_type.operator()<Xkb::IndicatorStateNotifyEvent>();
++  check_type.operator()<Xkb::IndicatorMapNotifyEvent>();
++  check_type.operator()<Xkb::NamesNotifyEvent>();
++  check_type.operator()<Xkb::CompatMapNotifyEvent>();
++  check_type.operator()<Xkb::BellNotifyEvent>();
++  check_type.operator()<Xkb::ActionMessageEvent>();
++  check_type.operator()<Xkb::AccessXNotifyEvent>();
++  check_type.operator()<Xkb::ExtensionDeviceNotifyEvent>();
++
++  std::vector<uint8_t> data(sizeof(xcb_generic_event_t), 0);
++  data[0] = extension->first_event;
++  data[1] = 0xff;
++  Event unknown(ThrowAwaySizeRefCountedMemory::From(std::move(data)),
++                &connection);
++  EXPECT_EQ(unknown.As<Xkb::NewKeyboardNotifyEvent>(), nullptr);
++}
++
++TEST(X11ConnectionTest, XkbMapNotifyRefreshesKeyboardMapping) {
++  Connection connection;
++  ASSERT_TRUE(connection.Ready());
++  if (!connection.xkb().present()) {
++    GTEST_SKIP() << "XKB is not available";
++  }
++  Connection mutator;
++  ASSERT_TRUE(mutator.Ready());
++  const KeyCode keycode = connection.setup().max_keycode;
++  auto original = mutator.GetKeyboardMapping({keycode, 1}).Sync();
++  ASSERT_TRUE(original);
++  ASSERT_GT(original->keysyms_per_keycode, 0);
++  const uint32_t before = connection.KeycodeToKeysym(keycode, 0);
++  const uint32_t replacement = before == XK_F35 ? XK_F34 : XK_F35;
++
++  // Use a separate connection and do not dispatch the mapping notifications
++  // queued for `connection`: only the explicit XKB event below may refresh it.
++  auto changed =
++      mutator
++          .ChangeKeyboardMapping({
++              .keycode_count = 1,
++              .first_keycode = keycode,
++              .keysyms_per_keycode = original->keysyms_per_keycode,
++              .keysyms = std::vector<KeySym>(original->keysyms.size(),
++                                             static_cast<KeySym>(replacement)),
++          })
++          .Sync();
++  EXPECT_FALSE(changed.error);
++  EXPECT_EQ(connection.KeycodeToKeysym(keycode, 0), before);
++  connection.DispatchEvent(Event(false, Xkb::MapNotifyEvent{}));
++  EXPECT_EQ(connection.KeycodeToKeysym(keycode, 0), replacement);
++
++  // Keep all checks after the mutation nonfatal so that restoration runs even
++  // when the cache-refresh expectation fails on the unpatched implementation.
++  auto restored = mutator
++                      .ChangeKeyboardMapping({
++                          .keycode_count = 1,
++                          .first_keycode = keycode,
++                          .keysyms_per_keycode = original->keysyms_per_keycode,
++                          .keysyms = original->keysyms,
++                      })
++                      .Sync();
++  EXPECT_FALSE(restored.error);
++  connection.DispatchEvent(Event(false, Xkb::MapNotifyEvent{}));
++  EXPECT_EQ(connection.KeycodeToKeysym(keycode, 0), before);
++}
++
+ TEST(X11ConnectionTest, Request) {
+   Connection connection;
+   ASSERT_TRUE(connection.Ready());
+diff --git a/ui/gfx/x/event.cc b/ui/gfx/x/event.cc
+index b3321d17829a0b0557ca483255a37e2ea778c717..f4bd6b6f901bc0ead69eb38a67e5d39d69ac7745 100644
+--- a/ui/gfx/x/event.cc
++++ b/ui/gfx/x/event.cc
+@@ -6,17 +6,45 @@
+ 
+ #include <xcb/xcb.h>
+ 
++#include <array>
+ #include <cstring>
+ 
+ #include "base/check_op.h"
+ #include "base/memory/scoped_refptr.h"
+ #include "ui/gfx/x/connection.h"
++#include "ui/gfx/x/xkb.h"
+ #include "ui/gfx/x/xproto.h"
+ #include "ui/gfx/x/xproto_internal.h"
+ #include "ui/gfx/x/xproto_types.h"
+ 
+ namespace x11 {
+ 
++namespace {
++
++// Returns the type id of the XKB event with the given `xkbType`, or 0 if it is
++// unknown.
++uint8_t GetXkbEventTypeId(uint8_t xkb_type) {
++  // Indexed by each event's `opcode`, which is its `xkbType`.
++  constexpr auto kTypeIds = std::to_array<uint8_t>({
++      Xkb::NewKeyboardNotifyEvent::type_id,
++      Xkb::MapNotifyEvent::type_id,
++      Xkb::StateNotifyEvent::type_id,
++      Xkb::ControlsNotifyEvent::type_id,
++      Xkb::IndicatorStateNotifyEvent::type_id,
++      Xkb::IndicatorMapNotifyEvent::type_id,
++      Xkb::NamesNotifyEvent::type_id,
++      Xkb::CompatMapNotifyEvent::type_id,
++      Xkb::BellNotifyEvent::type_id,
++      Xkb::ActionMessageEvent::type_id,
++      Xkb::AccessXNotifyEvent::type_id,
++      Xkb::ExtensionDeviceNotifyEvent::type_id,
++  });
++  static_assert(Xkb::ExtensionDeviceNotifyEvent::opcode + 1 == kTypeIds.size());
++  return xkb_type < kTypeIds.size() ? kTypeIds[xkb_type] : 0;
++}
++
++}  // namespace
++
+ Event::Event() = default;
+ 
+ Event::Event(scoped_refptr<UnsizedRefCountedMemory> event_bytes,
+@@ -39,6 +67,13 @@ Event::Event(scoped_refptr<UnsizedRefCountedMemory> event_bytes,
+     UNSAFE_TODO(memmove(&ge->full_sequence, &ge[1], extended_length));
+   }
+   connection->GetEventTypeAndOp(event_bytes->bytes(), &type_id_, &opcode_);
++  // XKB sends all of its events with the extension's single event code and
++  // tells them apart by the `xkbType` byte, so GetEventTypeAndOp() reports
++  // every XKB event as an Xkb::NewKeyboardNotifyEvent.
++  if (type_id_ == Xkb::NewKeyboardNotifyEvent::type_id) {
++    opcode_ = xcb_event->pad0;
++    type_id_ = GetXkbEventTypeId(opcode_);
++  }
+   if (type_id_) {
+     raw_event_ = event_bytes;
+   }
