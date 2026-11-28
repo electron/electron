@@ -277,10 +277,10 @@ index 856878c33681a73d41016729dabe48b0a6a80589..91a11852d206b65485fe90fd037a0bd1
      if sys.platform == 'win32':
        files = [ x.replace('\\', '/') for x in files ]
 diff --git a/unofficial.gni b/unofficial.gni
-index 5878f079d94e8becff276619d0ca204c329a6675..0658bde90c316a0f938927e26cd0f967e4329403 100644
+index 5878f079d94e8becff276619d0ca204c329a6675..c5943e4f8fad4fbc238bb084ac6596a39fca7822 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -158,32 +158,42 @@ template("node_gn_build") {
+@@ -158,32 +158,41 @@ template("node_gn_build") {
      public_configs = [
        ":node_external_config",
        "deps/googletest:googletest_config",
@@ -310,7 +310,6 @@ index 5878f079d94e8becff276619d0ca204c329a6675..0658bde90c316a0f938927e26cd0f967
 +      "//third_party/brotli:dec",
 +      "//third_party/brotli:enc",
 +      "//third_party/zstd:decompress",
-+      "//third_party/zstd:headers",
        "$node_simdutf_path",
        "$node_v8_path:v8_libplatform",
      ]
@@ -326,7 +325,7 @@ index 5878f079d94e8becff276619d0ca204c329a6675..0658bde90c316a0f938927e26cd0f967
        "$target_gen_dir/node_javascript.cc",
      ] + gypi_values.node_sources
  
-@@ -216,9 +226,11 @@ template("node_gn_build") {
+@@ -216,9 +225,11 @@ template("node_gn_build") {
      if (node_enable_inspector) {
        deps += [
          "$node_inspector_protocol_path:crdtp",
@@ -339,7 +338,7 @@ index 5878f079d94e8becff276619d0ca204c329a6675..0658bde90c316a0f938927e26cd0f967
        include_dirs = [
          "$target_gen_dir/src",
          "$target_gen_dir/src/inspector",
-@@ -235,6 +247,10 @@ template("node_gn_build") {
+@@ -235,6 +246,10 @@ template("node_gn_build") {
      }
    }
  
@@ -350,7 +349,7 @@ index 5878f079d94e8becff276619d0ca204c329a6675..0658bde90c316a0f938927e26cd0f967
    executable(target_name) {
      forward_variables_from(invoker, "*")
  
-@@ -326,6 +342,7 @@ template("node_gn_build") {
+@@ -326,6 +341,7 @@ template("node_gn_build") {
    }
  
    executable("node_js2c") {
@@ -358,7 +357,7 @@ index 5878f079d94e8becff276619d0ca204c329a6675..0658bde90c316a0f938927e26cd0f967
      deps = [
        "deps/uv",
        "$node_simdutf_path",
-@@ -340,27 +357,77 @@ template("node_gn_build") {
+@@ -340,27 +356,77 @@ template("node_gn_build") {
      ]
      include_dirs = [
        "src",
@@ -445,7 +444,7 @@ index 5878f079d94e8becff276619d0ca204c329a6675..0658bde90c316a0f938927e26cd0f967
      outputs = [ "$target_gen_dir/node_javascript.cc" ]
  
      # Get the path to node_js2c executable of the host toolchain.
-@@ -374,11 +441,11 @@ template("node_gn_build") {
+@@ -374,11 +440,11 @@ template("node_gn_build") {
          get_label_info(":node_js2c($host_toolchain)", "name") +
          host_executable_suffix
  
