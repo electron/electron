@@ -509,7 +509,7 @@ index 60add492d36ae0e99959209aff6a307b505d44c5..17b990455e7d6a791998ab304418c256
  
  #endif  // SRC_TRACING_TRACE_EVENT_PERFETTO_H_
 diff --git a/unofficial.gni b/unofficial.gni
-index 6048a019d6faf532b86154e585c87003e1ebd054..799cf8684be9c8b8963098d7bffc99048371007d 100644
+index 76015267a82b2a99a1b1a3a2250fc25f3df60373..8ccbddbb1d1b2f4107e1b45753854454ed3791f7 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -62,6 +62,11 @@ template("node_gn_build") {
@@ -532,15 +532,15 @@ index 6048a019d6faf532b86154e585c87003e1ebd054..799cf8684be9c8b8963098d7bffc9904
        "//build/config/compiler:no_exit_time_destructors"
      ]
      public_configs = [
-@@ -213,6 +219,7 @@ template("node_gn_build") {
-       "//third_party/zstd:headers",
+@@ -212,6 +218,7 @@ template("node_gn_build") {
+       "//third_party/zstd:decompress",
        "$node_simdutf_path",
        "$node_v8_path:v8_libplatform",
 +      "$node_v8_path:v8_tracing",
      ]
  
      cflags_cc = [
-@@ -229,6 +236,12 @@ template("node_gn_build") {
+@@ -228,6 +235,12 @@ template("node_gn_build") {
        "$target_gen_dir/node_javascript.cc",
      ] + gypi_values.node_sources
  

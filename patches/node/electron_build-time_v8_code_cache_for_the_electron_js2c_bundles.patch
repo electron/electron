@@ -215,7 +215,7 @@ index d65f2db8616709ddbe257e50394c97398128e8a1..bd0e49259ee772327b6bd67198bef678
  
  }  // namespace node
 diff --git a/unofficial.gni b/unofficial.gni
-index c36e685f22192304c84db923cb8f41647c010142..49abd004e74c6e6efe558d1790ab72a42f0fce4b 100644
+index f9326ace1628d4b6733f15c5f348448fd11a22bd..0ca4b8a0d7392676a0a20443cdc77654aeccd774 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -169,6 +169,11 @@ template("node_gn_build") {
