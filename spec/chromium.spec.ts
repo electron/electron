@@ -699,7 +699,7 @@ describe('command line switches', () => {
       }
       const result = await spawnAndWait(process.execPath, ['-e', 'new Intl.DateTimeFormat().format(0)'], {
         env,
-        timeout: (Number(process.env.ELECTRON_SPEC_TIMEOUT) || 30_000) - 5_000
+        timeout: getSpecTimeout() - 5_000
       });
       expect(result.signal, result.stderr).toBeNull();
       expect(result.code, result.stderr).toBe(0);
