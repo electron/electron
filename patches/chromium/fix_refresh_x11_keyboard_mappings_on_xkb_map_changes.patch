@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: lousberg <25581128+p0nti@users.noreply.github.com>
 Date: Sat, 28 Nov 2026 13:48:11 +0100
-Subject: [PATCH] fix: refresh X11 keyboard mappings on XKB map changes
+Subject: fix: refresh X11 keyboard mappings on XKB map changes
 
 Partially backport Chromium f9e103beb9c505ee81424b81f7b652eb67b33691
 by Thomas Anderson (https://crrev.com/c/8778792). Include only its
@@ -17,15 +17,9 @@ synthetic events and an unknown subtype.
 
 This patch can be removed when Electron updates to Chromium containing
 f9e103beb9c505ee81424b81f7b652eb67b33691.
----
- ui/events/platform/x11/x11_event_source.cc |  7 +++-
- ui/gfx/x/connection.cc                     |  4 ++
- ui/gfx/x/connection_unittest.cc            | 45 ++++++++++++++++++++++
- ui/gfx/x/event.cc                          | 35 +++++++++++++++++
- 4 files changed, 89 insertions(+), 2 deletions(-)
 
 diff --git a/ui/events/platform/x11/x11_event_source.cc b/ui/events/platform/x11/x11_event_source.cc
-index fa6a2bb..d3146aa 100644
+index fa6a2bb25528805eab966566fa486827f782fe6f..d3146aa213a0118ea45100a80902f324969bfe40 100644
 --- a/ui/events/platform/x11/x11_event_source.cc
 +++ b/ui/events/platform/x11/x11_event_source.cc
 @@ -61,11 +61,14 @@ void InitializeXkb(x11::Connection* connection) {
@@ -46,7 +40,7 @@ index fa6a2bb..d3146aa 100644
  }
  
 diff --git a/ui/gfx/x/connection.cc b/ui/gfx/x/connection.cc
-index 70e8628..85db797 100644
+index 70e8628456f338139d860d0383d1dcd00061cd6a..85db797fc337221dbc2081747224de607e16fee5 100644
 --- a/ui/gfx/x/connection.cc
 +++ b/ui/gfx/x/connection.cc
 @@ -905,6 +905,10 @@ void Connection::PreDispatchEvent(const Event& event) {
@@ -61,7 +55,7 @@ index 70e8628..85db797 100644
    if (auto* configure = event.As<ConfigureNotifyEvent>()) {
      int index = ScreenIndexFromRootWindow(configure->window);
 diff --git a/ui/gfx/x/connection_unittest.cc b/ui/gfx/x/connection_unittest.cc
-index fc451c4..4f6a567 100644
+index fc451c4fbbad753f5977fd7da51d21d686d76871..4f6a567dd18eb6dbaab7f3a95551558df2f0386e 100644
 --- a/ui/gfx/x/connection_unittest.cc
 +++ b/ui/gfx/x/connection_unittest.cc
 @@ -4,11 +4,14 @@
@@ -129,7 +123,7 @@ index fc451c4..4f6a567 100644
    Connection connection;
    ASSERT_TRUE(connection.Ready());
 diff --git a/ui/gfx/x/event.cc b/ui/gfx/x/event.cc
-index b3321d1..f4bd6b6 100644
+index b3321d17829a0b0557ca483255a37e2ea778c717..f4bd6b6f901bc0ead69eb38a67e5d39d69ac7745 100644
 --- a/ui/gfx/x/event.cc
 +++ b/ui/gfx/x/event.cc
 @@ -6,17 +6,45 @@
