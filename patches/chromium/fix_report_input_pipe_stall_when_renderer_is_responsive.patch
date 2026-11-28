@@ -1,0 +1,91 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: benjaminfrombe <benjamin@plusmore.net>
+Date: Fri, 28 Nov 2026 14:30:00 +0000
+Subject: fix: report a wedged input pipe when the renderer is responsive
+
+The input ack hang monitor escalates to RendererUnresponsive only when
+its PingMainThread probe times out. When the input path is wedged but
+the renderer main thread is alive, the ping always succeeds, so the
+monitor loops monitoring -> pinging -> ping ack -> restart forever while
+dispatched input events are never received or acked. No unresponsive
+event is emitted and all input stays dead until the WebContents is
+reloaded.
+
+We observed this in a packaged Electron 45 app on macOS: after an app
+switch, the browser process forwards input (ForwardMouseEvent /
+ForwardKeyboardEvent, InputEventSentBlocking posted immediately before
+the mojo DispatchEvent) while the renderer receives nothing, its main
+thread healthy and pumping tasks, for minutes on end.
+
+Bound the loop: if several consecutive monitoring cycles complete with
+the main thread answering pings while the in-flight event count never
+decreases, report the stall through the existing
+delegate_->OnInputEventAckTimeout() path so apps get the unresponsive
+event and can recover, and reset the lost in-flight accounting so later
+events can restart the monitoring cycle.
+
+diff --git a/components/input/render_input_router.cc b/components/input/render_input_router.cc
+index f50634d..a539b0b 100644
+--- a/components/input/render_input_router.cc
++++ b/components/input/render_input_router.cc
+@@ -475,7 +475,12 @@ void RenderInputRouter::IncrementInFlightEventCount() {
+ 
+ void RenderInputRouter::DecrementInFlightEventCount(
+     blink::mojom::InputEventResultSource ack_source) {
+-  --in_flight_event_count_;
++  ping_ack_cycles_without_input_ack_ = 0;
++  // The count can be reset by the input-pipe stall handling in OnPingAck;
++  // a late ack for a dropped event must not drive it negative.
++  if (in_flight_event_count_ > 0) {
++    --in_flight_event_count_;
++  }
+   if (in_flight_event_count_ <= 0) {
+     // Cancel pending hung renderer checks since the renderer is
+     // responsive.
+@@ -500,6 +505,30 @@ void RenderInputRouter::OnPingAck() {
+   }
+ 
+   // The main thread executed the ping task. It is responsive.
++  if (in_flight_event_count_ > 0) {
++    ++ping_ack_cycles_without_input_ack_;
++  } else {
++    ping_ack_cycles_without_input_ack_ = 0;
++  }
++
++  // If several monitoring cycles pass with the main thread answering pings
++  // while input events still go un-acked, the input path is wedged rather
++  // than the renderer being hung. Report the stall so the embedder can
++  // recover (e.g. by reloading), and drop the lost in-flight accounting so
++  // later events can restart the monitoring cycle.
++  constexpr int kMaxPingAckCyclesWithoutInputAck = 3;
++  if (ping_ack_cycles_without_input_ack_ >= kMaxPingAckCyclesWithoutInputAck) {
++    ping_ack_cycles_without_input_ack_ = 0;
++    in_flight_event_count_ = 0;
++    input_event_ack_timeout_.Stop();
++    hang_monitor_timer_state_ = HangMonitorTimerState::kStopped;
++    delegate_->OnInputEventAckTimeout(
++        /* ack_timeout_ts= */ base::TimeTicks::Now());
++    // Do not add code after this since the Delegate may delete this
++    // RenderInputRouter in RendererUnresponsive.
++    return;
++  }
++
+   RestartInputEventAckTimeoutIfNecessary();
+ }
+ 
+diff --git a/components/input/render_input_router.h b/components/input/render_input_router.h
+index b326f67..7adade6 100644
+--- a/components/input/render_input_router.h
++++ b/components/input/render_input_router.h
+@@ -256,6 +256,11 @@ class COMPONENT_EXPORT(INPUT) RenderInputRouter
+   // by the renderer.
+   int in_flight_event_count_ = 0;
+ 
++  // Number of consecutive hang-monitor cycles in which the renderer main
++  // thread answered PingMainThread but no input event was acked. Used to
++  // detect an input pipe that is wedged while the renderer is responsive.
++  int ping_ack_cycles_without_input_ack_ = 0;
++
+   bool is_blocked_ = false;
+ 
+   base::OneShotTimer input_event_ack_timeout_;
